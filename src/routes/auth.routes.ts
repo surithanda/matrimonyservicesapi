@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
+import { authenticateJWT } from '../middlewares/auth.middleware';
 
 const router = Router();
 const authController = new AuthController();
@@ -127,5 +128,55 @@ router.post('/login', validateApiKey, authController.login);
  *         description: Server error
  */
 router.post('/verify-otp', validateApiKey, authController.verifyOTP);
+
+/**
+ * @swagger
+ * /auth/change-password:
+ *   post:
+ *     summary: Change user password
+ *     tags: [Auth]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - current_password
+ *               - new_password
+ *               - confirm_new_password
+ *             properties:
+ *               current_password:
+ *                 type: string
+ *                 description: Current password
+ *               new_password:
+ *                 type: string
+ *                 description: New password (must be at least 8 characters with uppercase, lowercase, number, and special character)
+ *               confirm_new_password:
+ *                 type: string
+ *                 description: Confirm new password
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid request or password validation failed
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post('/change-password', validateApiKey, authenticateJWT, authController.changePassword);
 
 export default router; 

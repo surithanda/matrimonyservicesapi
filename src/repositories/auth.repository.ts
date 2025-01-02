@@ -9,6 +9,14 @@ export class AuthRepository {
     return (results as any[])[0];
   }
 
+  async findUserByAccountCode(accountCode: string): Promise<any> {
+    const [results] = await pool.query(
+      'SELECT account_code, email, password, first_name, last_name FROM account WHERE account_code = ?',
+      [accountCode]
+    );
+    return (results as any[])[0];
+  }
+
   async createLoginHistory(email: string, otp: string): Promise<number> {
     const [results] = await pool.query(
       `INSERT INTO login_history (
@@ -62,4 +70,12 @@ export class AuthRepository {
   }
 
   // No need for separate saveOTP and clearOTP methods as we're using the login_history table
+
+  async updatePassword(accountCode: string, hashedPassword: string): Promise<boolean> {
+    const [result] = await pool.execute(
+      'UPDATE account SET password = ? WHERE account_code = ?',
+      [hashedPassword, accountCode]
+    );
+    return (result as any).affectedRows > 0;
+  }
 } 

@@ -88,4 +88,50 @@ export class AuthService {
       }
     };
   }
+
+  async changePassword(accountCode: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Get user details
+      const user = await this.authRepository.findUserByAccountCode(accountCode);
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not found'
+        };
+      }
+
+      // Verify current password
+      const validPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!validPassword) {
+        return {
+          success: false,
+          message: 'Current password is incorrect'
+        };
+      }
+
+      // Hash new password
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update password
+      const updated = await this.authRepository.updatePassword(user.account_code, hashedPassword);
+      if (!updated) {
+        return {
+          success: false,
+          message: 'Failed to update password'
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Password updated successfully'
+      };
+    } catch (error) {
+      console.error('Password change error:', error);
+      return {
+        success: false,
+        message: 'Internal server error'
+      };
+    }
+  }
 } 

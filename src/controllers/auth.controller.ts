@@ -3,6 +3,13 @@ import { AuthService } from '../services/auth.service';
 import jwt from 'jsonwebtoken';
 import { OTPVerificationResponse } from '../interfaces/auth.interface';
 
+// Add custom interface for Request with user
+interface AuthenticatedRequest extends Request {
+  user?: {
+    account_code: string;
+  };
+}
+
 export class AuthController {
   private authService: AuthService;
 
@@ -87,6 +94,60 @@ export class AuthController {
       });
     } catch (error) {
       console.error('OTP verification error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  };
+
+  public changePassword = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
+    try {
+      const { current_password, new_password, confirm_new_password } = req.body;
+      const accountCode = req.user?.account_code; // This will come from JWT middleware
+      console.log(accountCode, req.user);
+
+      // Validate request
+      if (!current_password || !new_password || !confirm_new_password) {
+        return res.status(400).json({
+          success: false,
+          message: 'All password fields are required'
+        });
+      }
+
+      // Check if new passwords match
+      if (new_password !== confirm_new_password) {
+        return res.status(400).json({
+          success: false,
+          message: 'New passwords do not match'
+        });
+      }
+
+      // Validate password strength
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(new_password)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+        });
+      }
+
+      if (!accountCode) {
+        return res.status(401).json({
+          success: false,
+          message: 'Unauthorized'
+        });
+      }
+
+      const result = await this.authService.changePassword(accountCode, current_password, new_password);
+      
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Password change error:', error);
       return res.status(500).json({
         success: false,
         message: 'Internal server error'
