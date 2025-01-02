@@ -10,9 +10,11 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:3000/api',
-        description: 'Development server',
-      },
+        url: process.env.NODE_ENV === 'production'
+          ? 'https://matrimoney-backend.vercel.app/api'
+          : 'http://localhost:3000/api',
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
+      }
     ],
     components: {
       securitySchemes: {
@@ -21,11 +23,6 @@ const options = {
           in: 'header',
           name: 'x-api-key',
         },
-        BearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT'
-        }
       },
     },
     security: [
@@ -34,7 +31,7 @@ const options = {
       },
     ],
   },
-  apis: ['./src/routes/*.ts'], // Path to the API routes
+  apis: ['./src/routes/*.ts', './dist/routes/*.js'], // Include both TS and JS paths
 };
 
 export const specs = swaggerJsdoc(options); 
