@@ -10,8 +10,20 @@ const options = {
     },
     servers: [
       {
-        url: '/api',
-        description: 'API Base URL',
+        url: process.env.NODE_ENV === 'production'
+          ? 'https://matrimoney-backend.vercel.app/api'
+          : 'http://localhost:3000/api',
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
+      }
+    ],
+    tags: [
+      {
+        name: 'Auth',
+        description: 'Authentication endpoints'
+      },
+      {
+        name: 'Account',
+        description: 'Account management endpoints'
       }
     ],
     components: {
@@ -21,11 +33,17 @@ const options = {
           in: 'header',
           name: 'x-api-key',
         },
+        BearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
+        }
       },
     },
     security: [
       {
         ApiKeyAuth: [],
+        BearerAuth: []
       },
     ],
   },
