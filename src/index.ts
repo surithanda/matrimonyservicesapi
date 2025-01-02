@@ -2,6 +2,8 @@ import express from 'express';
 import dotenv from 'dotenv';
 import accountRoutes from './routes/account.routes';
 import loginRoutes from './routes/login.routes';
+import swaggerUi from 'swagger-ui-express';
+import { specs } from './config/swagger';
 
 dotenv.config();
 
@@ -15,6 +17,9 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/account', accountRoutes);
 app.use('/api/auth', loginRoutes);
+
+// Swagger documentation route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
