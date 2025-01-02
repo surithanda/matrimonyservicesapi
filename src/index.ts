@@ -26,15 +26,15 @@ app.use('/api/account', accountRoutes);
 app.use('/api/auth', authRoutes);
 
 // Swagger documentation setup
+// In your index.ts file
 app.use('/api-docs', swaggerUi.serve);
 app.get('/api-docs', swaggerUi.setup(specs, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: "Account Management API Documentation",
-  customfavIcon: "/assets/favicon.ico",
-  swaggerUrl: "/api-docs/swagger.json",
-  explorer: true,
-  customJs: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.10.5/swagger-ui-bundle.js',
-  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.10.5/swagger-ui.min.css'
+  swaggerOptions: {
+    url: "/api-docs/swagger.json",
+  },
+  // Remove customJs and customCssUrl as they're causing MIME type issues
 }));
 
 // Serve swagger spec
