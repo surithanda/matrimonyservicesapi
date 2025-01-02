@@ -4,8 +4,6 @@ import { validateApiKey } from '../middlewares/apiKey.middleware';
 
 const router = Router();
 
-router.post('/register', validateApiKey, registerAccount);
-
 /**
  * @swagger
  * /account/register:
@@ -24,6 +22,8 @@ router.post('/register', validateApiKey, registerAccount);
  *               - email
  *               - password
  *               - primary_phone
+ *               - primary_phone_country
+ *               - primary_phone_type
  *               - first_name
  *               - last_name
  *               - birth_date
@@ -47,9 +47,18 @@ router.post('/register', validateApiKey, registerAccount);
  *               primary_phone_type:
  *                 type: string
  *                 enum: [MOBILE, HOME, WORK]
+ *               secondary_phone:
+ *                 type: string
+ *               secondary_phone_country:
+ *                 type: string
+ *               secondary_phone_type:
+ *                 type: string
+ *                 enum: [MOBILE, HOME, WORK]
  *               first_name:
  *                 type: string
  *               last_name:
+ *                 type: string
+ *               middle_name:
  *                 type: string
  *               birth_date:
  *                 type: string
@@ -69,15 +78,36 @@ router.post('/register', validateApiKey, registerAccount);
  *                 type: string
  *               country:
  *                 type: string
+ *               photo:
+ *                 type: string
+ *               secret_question:
+ *                 type: string
+ *               secret_answer:
+ *                 type: string
+ *               driving_license:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Account created successfully
- *       400:
- *         description: Invalid input data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     account_code:
+ *                       type: string
  *       409:
  *         description: Account already exists
  *       500:
  *         description: Server error
  */
+router.post('/register', validateApiKey, registerAccount);
 
 export default router; 
