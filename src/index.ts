@@ -37,16 +37,22 @@ const options = {
     servers: [
       {
         url: process.env.NODE_ENV === 'production'
-          ? 'https://matrimoney-backend-j9tsnbj9m-b4xabhisheks-projects.vercel.app'
+          ? 'https://matrimoney-backend.vercel.app'
           : 'http://localhost:3000',
         description: process.env.NODE_ENV === 'production' ? 'Production Server' : 'Development Server'
       },
     ],
   },
-  apis: ['./src/routes/*.ts'],
+  apis: [
+    './src/routes/*.ts',    // for development
+    './dist/routes/*.js',   // for production
+    './routes/*.js'         // for production (alternative path)
+  ],
 };
 
 const specs = swaggerJsdoc(options);
+console.log('Swagger specs generated:', !!specs);
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Error handling middleware
