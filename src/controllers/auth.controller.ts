@@ -16,9 +16,9 @@ export class AuthController {
         });
       }
 
-      // Check if user exists
+      // Check if user exists in the account table
       const [users] = await pool.execute(
-        'SELECT * FROM login WHERE user_name = ?',
+        'SELECT account_code, email, password, first_name, last_name FROM account WHERE email = ?',
         [email]
       );
 
@@ -31,9 +31,8 @@ export class AuthController {
         });
       }
 
-      // Verify password
-      // const validPassword = await bcrypt.compare(password, user.password);
-      const validPassword = password;
+      // Verify password 
+      const validPassword = await bcrypt.compare(password, user.password);
 
       if (!validPassword) {
         return res.status(401).json({
@@ -47,8 +46,10 @@ export class AuthController {
         success: true,
         message: 'Login successful',
         user: {
-          id: user.id,
-          email: user.email
+          account_code: user.account_code,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name
         }
       };
 

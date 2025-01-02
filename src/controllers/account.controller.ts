@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import pool from '../config/database';
 import { IAccount } from '../interfaces/account.interface';
 import { generateAccountCode } from '../utils/helpers';
+import bcrypt from 'bcrypt';
 
 export const registerAccount = async (req: Request, res: Response) => {
   try {
@@ -26,20 +27,25 @@ export const registerAccount = async (req: Request, res: Response) => {
       // Generate unique account code
       accountData.account_code = await generateAccountCode();
       
+      // Hash the password
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(accountData.password, saltRounds);
+      
       await connection.beginTransaction();
       
       const [result] = await connection.execute(
         `INSERT INTO account (
-          account_code, email, primary_phone, primary_phone_country, primary_phone_type,
+          account_code, email, password, primary_phone, primary_phone_country, primary_phone_type,
           secondary_phone, secondary_phone_country, secondary_phone_type,
           first_name, last_name, middle_name, birth_date, gender,
           address_line1, address_line2, city, state, zip, country,
           photo, secret_question, secret_answer, driving_license,
           created_user, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
           accountData.account_code,
           accountData.email,
+          hashedPassword,
           accountData.primary_phone,
           accountData.primary_phone_country,
           accountData.primary_phone_type,

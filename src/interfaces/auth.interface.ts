@@ -7,9 +7,10 @@ export interface LoginResponse {
   success: boolean;
   message: string;
   user?: {
-    id: number;
+    account_code: string;
     email: string;
-    [key: string]: any; // For any additional user properties
+    first_name: string;
+    last_name: string;
   };
 }
 
