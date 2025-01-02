@@ -5,7 +5,6 @@ import authRoutes from './routes/auth.routes';
 import swaggerUi from 'swagger-ui-express';
 import cors from './config/cors';
 import { specs } from './config/swagger';
-import path from 'path';
 
 dotenv.config();
 
@@ -17,9 +16,6 @@ app.use(cors);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve swagger static files
-app.use('/api-docs', express.static(path.join(__dirname, 'node_modules/swagger-ui-dist')));
-
 // Health check endpoint
 app.get('/', (req, res) => {
   res.status(200).json({ status: 'OK' });
@@ -30,20 +26,17 @@ app.use('/api/account', accountRoutes);
 app.use('/api/auth', authRoutes);
 
 // Swagger documentation setup
-app.use('/api-docs', swaggerUi.serve);
-app.get('/api-docs', swaggerUi.setup(specs, {
-  customSiteTitle: "Account Management API Docs",
-  swaggerOptions: {
-    url: '/api-docs/swagger.json',
-    persistAuthorization: true
-  }
-}));
-
-// Serve swagger spec
-app.get('/api-docs/swagger.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(specs);
-});
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(specs, {
+    customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui.min.css',
+    customJs: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.1.0/swagger-ui-bundle.js',
+    swaggerOptions: {
+      persistAuthorization: true
+    }
+  })
+);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

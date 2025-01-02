@@ -10,10 +10,8 @@ const options = {
     },
     servers: [
       {
-        url: process.env.NODE_ENV === 'production'
-          ? 'https://matrimoney-backend.vercel.app'
-          : 'http://localhost:3000',
-        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
+        url: '/api',
+        description: 'API Base URL',
       }
     ],
     components: {
