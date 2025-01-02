@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc",
-    "postinstall": "tsc"
+    "build": "tsc --project tsconfig.json",
+    "postinstall": "npm run build"
   },
   "keywords": [],
   "author": "",
@@ -37,6 +37,8 @@
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.6",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "@types/mysql2": "types/mysql2",
+    "@types/winston": "^2.4.4"
   }
 }

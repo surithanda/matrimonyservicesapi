@@ -2,15 +2,15 @@ import pool from '../config/database';
 
 export class AuthRepository {
   async findUserByEmail(email: string): Promise<any> {
-    const [users] = await pool.execute(
+    const [results] = await pool.query(
       'SELECT account_code, email, password, first_name, last_name FROM account WHERE email = ?',
       [email]
     );
-    return (users as any[])[0];
+    return (results as any[])[0];
   }
 
   async createLoginHistory(email: string, otp: string): Promise<number> {
-    const [result]: any = await pool.execute(
+    const [results] = await pool.query(
       `INSERT INTO login_history (
         login_name, 
         login_date, 
@@ -29,11 +29,11 @@ export class AuthRepository {
         'web' // You might want to pass this from the request
       ]
     );
-    return result.insertId;
+    return (results as any).insertId;
   }
 
   async verifyOTP(historyId: number, otp: string): Promise<any> {
-    const [rows] = await pool.execute(
+    const [results] = await pool.query(
       `SELECT h.*, a.* 
        FROM login_history h
        JOIN account a ON h.login_name = a.email
@@ -44,17 +44,17 @@ export class AuthRepository {
       [historyId, otp]
     );
 
-    if ((rows as any[]).length > 0) {
+    if ((results as any[]).length > 0) {
       // Update login status to success (1)
-      await pool.execute(
+      await pool.query(
         'UPDATE login_history SET login_status = 1 WHERE history_id = ?',
         [historyId]
       );
-      return (rows as any[])[0];
+      return (results as any[])[0];
     }
 
     // Update login status to failed (2) if OTP is invalid
-    await pool.execute(
+    await pool.query(
       'UPDATE login_history SET login_status = 2, login_failure_reason = ? WHERE history_id = ?',
       ['Invalid OTP', historyId]
     );

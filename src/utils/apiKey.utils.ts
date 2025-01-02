@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import pool from '../config/database';
 
 export const generateApiKey = (): string => {
