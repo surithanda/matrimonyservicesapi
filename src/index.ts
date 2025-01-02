@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.routes';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './config/swagger';
 import cors from './config/cors';
+import swaggerJsdoc from 'swagger-jsdoc';
 
 dotenv.config();
 
@@ -27,6 +28,26 @@ app.use('/api/auth', authRoutes);
 
 // Swagger documentation route
 if (process.env.NODE_ENV !== 'production') {
+  const options = {
+    definition: {
+      openapi: '3.0.0',
+      info: {
+        title: 'Matrimoney API Documentation',
+        version: '1.0.0',
+        description: 'API documentation for Matrimoney backend',
+      },
+      servers: [
+        {
+          url: process.env.NODE_ENV === 'production' 
+            ? 'https://matrimoney-backend-j9tsnbj9m-b4xabhisheks-projects.vercel.app'
+            : 'http://localhost:3000',
+        },
+      ],
+    },
+    apis: ['./src/routes/*.ts'], // Path to your route files
+  };
+
+  const specs = swaggerJsdoc(options);
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 }
 
