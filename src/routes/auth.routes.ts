@@ -179,4 +179,94 @@ router.post('/verify-otp', validateApiKey, authController.verifyOTP);
  */
 router.post('/change-password', validateApiKey, authenticateJWT, authController.changePassword);
 
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Auth]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Password reset OTP sent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 history_id:
+ *                   type: number
+ *       400:
+ *         description: Invalid request
+ *       500:
+ *         description: Server error
+ */
+router.post('/forgot-password', validateApiKey, authController.forgotPassword);
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password using OTP
+ *     tags: [Auth]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - history_id
+ *               - otp
+ *               - new_password
+ *               - confirm_new_password
+ *             properties:
+ *               history_id:
+ *                 type: number
+ *               otp:
+ *                 type: string
+ *               new_password:
+ *                 type: string
+ *                 description: New password (must be at least 8 characters with uppercase, lowercase, number, and special character)
+ *               confirm_new_password:
+ *                 type: string
+ *                 description: Confirm new password
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid request or password validation failed
+ *       500:
+ *         description: Server error
+ */
+router.post('/reset-password', validateApiKey, authController.resetPassword);
+
 export default router; 

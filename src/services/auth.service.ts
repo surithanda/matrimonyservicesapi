@@ -134,4 +134,86 @@ export class AuthService {
       };
     }
   }
+
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string; history_id?: number }> {
+    try {
+      // Find user by email
+      const user = await this.authRepository.findUserByEmail(email);
+      
+      // For security, don't reveal if email exists or not
+      if (!user) {
+        return {
+          success: true,
+          message: 'If your email is registered, you will receive a password reset OTP'
+        };
+      }
+
+      // Generate OTP
+      const otp = generateOTP();
+      
+      // Create password reset history entry with OTP
+      const historyId = await this.authRepository.createLoginHistory(email, otp);
+
+      // Send OTP via email
+      const otpSent = await sendOTP(email, otp);
+
+      if (!otpSent) {
+        return {
+          success: false,
+          message: 'Failed to send OTP'
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Password reset OTP has been sent to your email',
+        history_id: historyId
+      };
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      return {
+        success: false,
+        message: 'Internal server error'
+      };
+    }
+  }
+
+  async resetPassword(historyId: number, otp: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Verify OTP
+      const result = await this.authRepository.verifyOTP(historyId, otp);
+      
+      if (!result) {
+        return {
+          success: false,
+          message: 'Invalid or expired OTP'
+        };
+      }
+
+      // Hash new password
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update password
+      const updated = await this.authRepository.updatePassword(result.account_code, hashedPassword);
+      
+      if (!updated) {
+        return {
+          success: false,
+          message: 'Failed to update password'
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Password has been reset successfully'
+      };
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return {
+        success: false,
+        message: 'Internal server error'
+      };
+    }
+  }
 } 

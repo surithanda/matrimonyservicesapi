@@ -82,4 +82,26 @@ export interface ChangePasswordRequest {
 export interface ChangePasswordResponse {
   success: boolean;
   message: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+  history_id?: number;
+}
+
+export interface ResetPasswordRequest {
+  history_id: number;
+  otp: string;
+  new_password: string;
+  confirm_new_password: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
 } 

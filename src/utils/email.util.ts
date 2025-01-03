@@ -23,11 +23,20 @@ export const sendOTP = async (email: string, otp: string): Promise<boolean> => {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Login Verification OTP',
+      subject: 'Your One-Time Password (OTP) for Account Verification',
       html: `
-        <h1>Login Verification</h1>
-        <p>Your OTP for login verification is: <strong>${otp}</strong></p>
-        <p>This OTP will expire in 5 minutes.</p>
+        <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
+          <h2 style="color: #4CAF50;">Account Verification</h2>
+          <p>Dear User,</p>
+          <p>We received a request to verify your account. Please use the OTP below to proceed:</p>
+          <div style="font-size: 18px; font-weight: bold; margin: 20px 0; color: #333;">
+            ${otp}
+          </div>
+          <p><strong>Note:</strong> This OTP is valid for <strong>5 minutes</strong>. If you did not request this, please ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+          <p style="font-size: 12px; color: #555;">For your security, do not share this OTP with anyone.</p>
+          <p style="font-size: 12px; color: #555;">If you have any questions, please contact our support team.</p>
+        </div>
       `
     });
     return true;
@@ -35,4 +44,4 @@ export const sendOTP = async (email: string, otp: string): Promise<boolean> => {
     console.error('Email sending failed:', error);
     return false;
   }
-}; 
+};
