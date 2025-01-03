@@ -6,7 +6,7 @@ const options = {
     info: {
       title: 'Account Management API',
       version: '1.0.0',
-      description: 'API documentation for Account Management System',
+      description: 'API documentation for Account Management System\n\nAuthentication:\n- API Key (Required for all endpoints): Send as "x-api-key" header\n- JWT Token (Required for protected endpoints): Send as "Bearer" token in Authorization header',
     },
     servers: [
       {
@@ -19,7 +19,7 @@ const options = {
     tags: [
       {
         name: 'Auth',
-        description: 'Authentication endpoints'
+        description: 'Authentication endpoints including login, registration, password management'
       },
       {
         name: 'Account',
@@ -32,19 +32,20 @@ const options = {
           type: 'apiKey',
           in: 'header',
           name: 'x-api-key',
+          description: 'API key required for all endpoints'
         },
         BearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          bearerFormat: 'JWT'
+          bearerFormat: 'JWT',
+          description: 'JWT token required for protected endpoints'
         }
       },
     },
     security: [
       {
-        ApiKeyAuth: [],
-        BearerAuth: []
-      },
+        ApiKeyAuth: []
+      }
     ],
   },
   apis: ['./src/routes/*.ts', './dist/routes/*.js'], // Include both TS and JS paths
