@@ -1,3 +1,5 @@
+import { Request } from 'express';
+
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -104,4 +106,13 @@ export interface ResetPasswordRequest {
 export interface ResetPasswordResponse {
   success: boolean;
   message: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: {
+    account_code: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+  };
 } 

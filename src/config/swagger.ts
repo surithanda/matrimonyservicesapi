@@ -23,7 +23,7 @@ const options = {
       },
       {
         name: 'Account',
-        description: 'Account management endpoints'
+        description: 'Account management endpoints including profile updates and photo management'
       }
     ],
     components: {
@@ -41,6 +41,105 @@ const options = {
           description: 'JWT token required for protected endpoints'
         }
       },
+      schemas: {
+        AccountUpdate: {
+          type: 'object',
+          properties: {
+            primary_phone: {
+              type: 'string',
+              example: '1234567890'
+            },
+            primary_phone_country: {
+              type: 'string',
+              example: 'US'
+            },
+            primary_phone_type: {
+              type: 'string',
+              enum: ['MOBILE', 'HOME', 'WORK']
+            },
+            secondary_phone: {
+              type: 'string',
+              example: '0987654321'
+            },
+            secondary_phone_country: {
+              type: 'string',
+              example: 'US'
+            },
+            secondary_phone_type: {
+              type: 'string',
+              enum: ['MOBILE', 'HOME', 'WORK']
+            },
+            first_name: {
+              type: 'string',
+              example: 'John'
+            },
+            last_name: {
+              type: 'string',
+              example: 'Doe'
+            },
+            middle_name: {
+              type: 'string',
+              example: 'Smith'
+            },
+            birth_date: {
+              type: 'string',
+              format: 'date',
+              example: '1990-01-01'
+            },
+            gender: {
+              type: 'string',
+              enum: ['M', 'F', 'O']
+            },
+            address_line1: {
+              type: 'string',
+              example: '123 Main St'
+            },
+            address_line2: {
+              type: 'string',
+              example: 'Apt 4B'
+            },
+            city: {
+              type: 'string',
+              example: 'New York'
+            },
+            state: {
+              type: 'string',
+              example: 'NY'
+            },
+            zip: {
+              type: 'string',
+              example: '10001'
+            },
+            country: {
+              type: 'string',
+              example: 'US'
+            },
+            secret_question: {
+              type: 'string',
+              example: 'What is your pet\'s name?'
+            },
+            secret_answer: {
+              type: 'string',
+              example: 'Max'
+            },
+            driving_license: {
+              type: 'string',
+              example: 'DL123456'
+            }
+          }
+        },
+        PhotoUpload: {
+          type: 'object',
+          required: ['photo'],
+          properties: {
+            photo: {
+              type: 'string',
+              format: 'binary',
+              description: 'Profile photo (max 5MB, image files only)'
+            }
+          }
+        }
+      }
     },
     security: [
       {

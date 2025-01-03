@@ -53,4 +53,75 @@ export class AccountService {
       connection.release();
     }
   }
+
+  async getAccount(accountCode: string): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const account = await this.accountRepository.findByAccountCode(accountCode);
+      
+      if (!account) {
+        return {
+          success: false,
+          message: 'Account not found'
+        };
+      }
+
+      // Remove sensitive fields
+      delete account.password;
+      delete account.secret_answer;
+      
+      return {
+        success: true,
+        message: 'Account found',
+        data: account
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateAccount(accountCode: string, accountData: Partial<IAccount>): Promise<{ success: boolean; message: string; data?: any }> {
+    const connection = await pool.getConnection();
+    
+    try {
+      // Check if account exists
+      const existingAccount = await this.accountRepository.findByAccountCode(accountCode);
+      
+      if (!existingAccount) {
+        return {
+          success: false,
+          message: 'Account not found'
+        };
+      }
+
+      // If updating phone, check if it's already used by another account
+      if (accountData.primary_phone) {
+        const accountsWithPhone = await this.accountRepository.findByEmailOrPhone('', accountData.primary_phone);
+        if (Array.isArray(accountsWithPhone) && accountsWithPhone.length > 0) {
+          const isOwnPhone = accountsWithPhone.some(acc => acc.account_code === accountCode);
+          if (!isOwnPhone) {
+            return {
+              success: false,
+              message: 'Phone number is already in use by another account'
+            };
+          }
+        }
+      }
+      
+      await connection.beginTransaction();
+      
+      await this.accountRepository.update(accountCode, accountData, connection);
+      
+      await connection.commit();
+      
+      return {
+        success: true,
+        message: 'Account updated successfully'
+      };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
 } 

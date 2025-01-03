@@ -12,6 +12,14 @@ export class AccountRepository {
     return accounts;
   }
 
+  async findByAccountCode(accountCode: string): Promise<any> {
+    const [accounts] = await pool.execute(
+      `SELECT * FROM account WHERE account_code = ?`,
+      [accountCode]
+    );
+    return (accounts as any[])[0];
+  }
+
   async create(accountData: IAccount, hashedPassword: string, connection: PoolConnection): Promise<void> {
     await connection.execute(
       `INSERT INTO account (
@@ -49,6 +57,36 @@ export class AccountRepository {
         accountData.driving_license || null,
         'SYSTEM'
       ]
+    );
+  }
+
+  async update(accountCode: string, accountData: Partial<IAccount>, connection: PoolConnection): Promise<void> {
+    const updateFields: string[] = [];
+    const values: any[] = [];
+
+    // Build dynamic update query based on provided fields
+    Object.entries(accountData).forEach(([key, value]) => {
+      if (value !== undefined && key !== 'account_code' && key !== 'email' && key !== 'password') {
+        updateFields.push(`${key} = ?`);
+        values.push(value);
+      }
+    });
+
+    if (updateFields.length === 0) {
+      return;
+    }
+
+    // Add modified date and user
+    updateFields.push('modified_date = NOW()');
+    updateFields.push('modified_user = ?');
+    values.push('SYSTEM');
+
+    // Add account_code for WHERE clause
+    values.push(accountCode);
+
+    await connection.execute(
+      `UPDATE account SET ${updateFields.join(', ')} WHERE account_code = ?`,
+      values
     );
   }
 } 
