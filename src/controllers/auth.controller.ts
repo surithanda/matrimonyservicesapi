@@ -29,7 +29,6 @@ export class AuthController {
       }
 
       const result = await this.authService.login({ email, password });
-
       if (!result.success) {
         return res.status(401).json(result);
       }
@@ -56,7 +55,6 @@ export class AuthController {
       }
 
       const result = await this.authService.verifyOTP(history_id, otp);
-      
       if (!result || !result.user) {
         return res.status(401).json({
           success: false,

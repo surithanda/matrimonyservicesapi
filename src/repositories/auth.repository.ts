@@ -2,11 +2,14 @@ import pool from '../config/database';
 
 export class AuthRepository {
   async findUserByEmail(email: string): Promise<any> {
-    const [results] = await pool.query(
-      'SELECT account_code, email, password, first_name, last_name FROM account WHERE email = ?',
+    const [results] = await pool.execute(
+      'CALL usp_api_find_user_for_auth(?)',
       [email]
     );
-    return (results as any[])[0];
+    
+    // The SP returns a result set with all login table fields
+    // First array element is the result set, second element is the first row
+    return (results as any[])[0][0];
   }
 
   async findUserByAccountCode(accountCode: string): Promise<any> {
@@ -41,32 +44,24 @@ export class AuthRepository {
   }
 
   async verifyOTP(historyId: number, otp: string): Promise<any> {
-    const [results] = await pool.query(
-      `SELECT h.*, a.* 
-       FROM login_history h
-       JOIN account a ON h.login_name = a.email
-       WHERE h.history_id = ? 
-       AND h.email_otp = ? 
-       AND h.email_otp_valid_end > NOW()
-       AND h.login_status = 0`,
-      [historyId, otp]
-    );
-
-    if ((results as any[]).length > 0) {
-      // Update login status to success (1)
-      await pool.query(
-        'UPDATE login_history SET login_status = 1 WHERE history_id = ?',
-        [historyId]
+    try {
+      
+      // If status checks pass, proceed with OTP verification
+      const [results] = await pool.execute(
+        'CALL usp_api_verify_otp(?, ?)',
+        [historyId, otp]
       );
-      return (results as any[])[0];
-    }
+      
+      const userDetails = (results as any[])[0];
+      if (!userDetails || userDetails.length === 0) {
+        return { error: 'Invalid OTP' };
+      }
 
-    // Update login status to failed (2) if OTP is invalid
-    await pool.query(
-      'UPDATE login_history SET login_status = 2, login_failure_reason = ? WHERE history_id = ?',
-      ['Invalid OTP', historyId]
-    );
-    return null;
+      return userDetails[0];
+    } catch (error) {
+      console.error('Error in verifyOTP:', error);
+      throw error;
+    }
   }
 
   // No need for separate saveOTP and clearOTP methods as we're using the login_history table

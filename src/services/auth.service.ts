@@ -20,8 +20,8 @@ export class AuthService {
       };
     }
 
-    const validPassword = await bcrypt.compare(credentials.password, user.password);
-
+    // const validPassword = await bcrypt.compare(credentials.password, user.password);
+    const validPassword = credentials.password === user.password;
     if (!validPassword) {
       return {
         success: false,
@@ -33,10 +33,10 @@ export class AuthService {
     const otp = generateOTP();
     
     // Create login history entry with OTP
-    const historyId = await this.authRepository.createLoginHistory(user.email, otp);
+    const historyId = await this.authRepository.createLoginHistory(user.user_name, otp);
 
     // Send OTP via email
-    const otpSent = await sendOTP(user.email, otp);
+    const otpSent = await sendOTP(user.user_name, otp);
 
     if (!otpSent) {
       return {
@@ -59,34 +59,42 @@ export class AuthService {
   }
 
   async verifyOTP(historyId: number, otp: string): Promise<VerifyOTPResult> {
-    const result = await this.authRepository.verifyOTP(historyId, otp);
+    try {
+      const result = await this.authRepository.verifyOTP(historyId, otp);
 
-    if (!result) {
+      if (result.error) {
+        return {
+          success: false,
+          message: result.error
+        };
+      }
+
+      return {
+        success: true,
+        user: {
+          login_id: result.login_id,
+          account_code: result.account_code,
+          email: result.email,
+          password: result.password,
+          first_name: result.first_name,
+          last_name: result.last_name,
+          phone: result.primary_phone,
+          date_of_birth: result.birth_date,
+          age: result.age,
+          address: result.address_line1,
+          city: result.city,
+          state: result.state,
+          country: result.country,
+          zip_code: result.zip
+        }
+      };
+    } catch (error) {
+      console.error('OTP verification error:', error);
       return {
         success: false,
-        message: 'Invalid or expired OTP'
+        message: 'Internal server error'
       };
     }
-
-    return {
-      success: true,
-      user: {
-        login_id: result.login_id,
-        account_code: result.account_code,
-        email: result.email,
-        password: result.password,
-        first_name: result.first_name,
-        last_name: result.last_name,
-        phone: result.primary_phone,
-        date_of_birth: result.birth_date,
-        age: result.age,
-        address: result.address_line1,
-        city: result.city,
-        state: result.state,
-        country: result.country,
-        zip_code: result.zip
-      }
-    };
   }
 
   async changePassword(accountCode: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
