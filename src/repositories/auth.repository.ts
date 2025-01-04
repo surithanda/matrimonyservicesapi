@@ -13,34 +13,38 @@ export class AuthRepository {
   }
 
   async findUserByAccountCode(accountCode: string): Promise<any> {
-    const [results] = await pool.query(
-      'SELECT account_code, email, password, first_name, last_name FROM account WHERE account_code = ?',
+    const [results] = await pool.execute(
+      'CALL usp_api_find_account_by_code(?)',
       [accountCode]
     );
-    return (results as any[])[0];
+    
+    // The SP returns a result set with all account fields
+    // First array element is the result set, second element is the first row
+    return (results as any[])[0][0];
   }
 
-  async createLoginHistory(email: string, otp: string): Promise<number> {
-    const [results] = await pool.query(
-      `INSERT INTO login_history (
-        login_name, 
-        login_date, 
-        login_status, 
-        email_otp,
-        email_otp_valid_start,
-        email_otp_valid_end,
-        ip_address,
-        user_agent
-      ) VALUES (?, NOW(), ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 5 MINUTE), ?, ?)`,
+  async createLoginHistory(
+    email: string, 
+    otp: string, 
+    ipAddress: string = '127.0.0.1',
+    systemName: string = 'web',
+    userAgent: string = 'web',
+    location: string = 'unknown'
+  ): Promise<number> {
+    const [results] = await pool.execute(
+      'CALL usp_api_create_login_history(?, ?, ?, ?, ?, ?)',
       [
-        email,
-        0, // 0 for pending
-        otp,
-        '127.0.0.1', // You might want to pass this from the request
-        'web' // You might want to pass this from the request
+        email,           // p_login_name
+        parseInt(otp),   // p_email_otp
+        ipAddress,       // p_ip_address
+        systemName,      // p_system_name
+        userAgent,       // p_user_agent
+        location         // p_location
       ]
     );
-    return (results as any).insertId;
+    
+    // The SP returns a result set with the history_id
+    return (results as any[])[0][0].history_id;
   }
 
   async verifyOTP(historyId: number, otp: string): Promise<any> {

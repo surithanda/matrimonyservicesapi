@@ -28,7 +28,20 @@ export class AuthController {
         });
       }
 
-      const result = await this.authService.login({ email, password });
+      // Get client information from request
+      const clientInfo = {
+        ipAddress: req.ip || req.socket.remoteAddress || '127.0.0.1',
+        userAgent: req.get('user-agent') || 'unknown',
+        systemName: req.get('sec-ch-ua-platform') || 'web', // Gets OS platform
+        location: req.get('accept-language') || 'unknown'    // Gets user's locale
+      };
+
+      const result = await this.authService.login({ 
+        email, 
+        password,
+        clientInfo  // Pass client info to service
+      });
+
       if (!result.success) {
         return res.status(401).json(result);
       }

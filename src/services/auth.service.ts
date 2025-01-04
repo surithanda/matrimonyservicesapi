@@ -10,52 +10,76 @@ export class AuthService {
     this.authRepository = new AuthRepository();
   }
 
-  async login(credentials: LoginCredentials): Promise<LoginResponse> {
-    const user = await this.authRepository.findUserByEmail(credentials.email);
-
-    if (!user) {
-      return {
-        success: false,
-        message: 'Invalid email or password'
-      };
+  async login(credentials: { 
+    email: string; 
+    password: string; 
+    clientInfo: {
+      ipAddress: string;
+      userAgent: string;
+      systemName: string;
+      location: string;
     }
+  }): Promise<LoginResponse> {
+    try {
+      const user = await this.authRepository.findUserByEmail(credentials.email);
 
-    // const validPassword = await bcrypt.compare(credentials.password, user.password);
-    const validPassword = credentials.password === user.password;
-    if (!validPassword) {
-      return {
-        success: false,
-        message: 'Invalid email or password'
-      };
-    }
-
-    // Generate OTP
-    const otp = generateOTP();
-    
-    // Create login history entry with OTP
-    const historyId = await this.authRepository.createLoginHistory(user.user_name, otp);
-
-    // Send OTP via email
-    const otpSent = await sendOTP(user.user_name, otp);
-
-    if (!otpSent) {
-      return {
-        success: false,
-        message: 'Failed to send OTP'
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Login successful. Please verify OTP sent to your email.',
-      user: {
-        history_id: historyId,
-        account_code: user.account_code,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name
+      if (!user) {
+        return {
+          success: false,
+          message: 'Invalid email or password'
+        };
       }
-    };
+
+      // const validPassword = await bcrypt.compare(credentials.password, user.password);
+      const validPassword = credentials.password === user.password;
+      if (!validPassword) {
+        return {
+          success: false,
+          message: 'Invalid email or password'
+        };
+      }
+
+      // Generate OTP
+      const otp = generateOTP();
+      
+      // Create login history entry with OTP and client info
+      const historyId = await this.authRepository.createLoginHistory(
+        credentials.email, 
+        otp,
+        credentials.clientInfo.ipAddress,
+        credentials.clientInfo.systemName,
+        credentials.clientInfo.userAgent,
+        credentials.clientInfo.location
+      );
+
+      // Send OTP via email
+      const otpSent = await sendOTP(credentials.email, otp);
+
+      if (!otpSent) {
+        return {
+          success: false,
+          message: 'Failed to send OTP'
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Login successful. Please verify OTP sent to your email.',
+        user: {
+          history_id: historyId,
+          account_code: user.account_code,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name
+        }
+      };
+    } catch (error) {
+      console.error('Login error:', error);
+      return {
+        success: false,
+        message: 'Internal server error'
+      };
+    }
   }
 
   async verifyOTP(historyId: number, otp: string): Promise<VerifyOTPResult> {

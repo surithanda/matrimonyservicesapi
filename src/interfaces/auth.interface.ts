@@ -3,6 +3,12 @@ import { Request } from 'express';
 export interface LoginCredentials {
   email: string;
   password: string;
+  clientInfo: {
+    ipAddress: string;
+    userAgent: string;
+    systemName: string;
+    location: string;
+  };
 }
 
 export interface User {
