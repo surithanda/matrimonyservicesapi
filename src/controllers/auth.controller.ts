@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import jwt from 'jsonwebtoken';
 import { OTPVerificationResponse } from '../interfaces/auth.interface';
+import logger from '../config/logger';
 
 // Add custom interface for Request with user
 interface AuthenticatedRequest extends Request {
@@ -20,6 +21,13 @@ export class AuthController {
   public login = async (req: Request, res: Response): Promise<Response> => {
     try {
       const { email, password } = req.body;
+
+      logger.info('Login attempt', {
+        email,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        timestamp: new Date().toISOString()
+      });
 
       if (!email || !password) {
         return res.status(400).json({
@@ -48,10 +56,24 @@ export class AuthController {
 
       return res.status(200).json(result);
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', {
+        error: {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : 'No stack trace'
+        },
+        request: {
+          body: req.body,
+          headers: req.headers,
+          ip: req.ip
+        },
+        timestamp: new Date().toISOString()
+      });
+
       return res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: 'Internal server error',
+        errorCode: 'AUTH_LOGIN_ERROR',
+        timestamp: new Date().toISOString()
       });
     }
   };
