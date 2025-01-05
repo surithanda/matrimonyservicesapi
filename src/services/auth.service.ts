@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { LoginCredentials, LoginResponse, VerifyOTPResult } from '../interfaces/auth.interface';
 import { AuthRepository } from '../repositories/auth.repository';
 import { generateOTP, sendOTP } from '../utils/email.util';
+import { AppError } from '../middleware/error.middleware';
 
 export class AuthService {
   private authRepository: AuthRepository;
@@ -121,34 +122,17 @@ export class AuthService {
     }
   }
 
-  async changePassword(accountCode: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+  async changePassword(email: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
     try {
-      // Get user details
-      const user = await this.authRepository.findUserByAccountCode(accountCode);
-      if (!user) {
-        return {
-          success: false,
-          message: 'User not found'
-        };
-      }
+      // Call the stored procedure directly
+      const [updateResult] = await this.authRepository.updatePassword(
+        email,
+        currentPassword,
+        newPassword
+      );
 
-      // Verify current password
-      const validPassword = await bcrypt.compare(currentPassword, user.password);
-      if (!validPassword) {
-        return {
-          success: false,
-          message: 'Current password is incorrect'
-        };
-      }
-
-      // Hash new password
-      const saltRounds = 10;
-      // const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-      const hashedPassword = newPassword;
-
-      // Update password
-      const updated = await this.authRepository.updatePassword(user.account_code, hashedPassword);
-      if (!updated) {
+      // Check if we have a result and it has the expected message
+      if (!updateResult || !updateResult[0] || !updateResult[0].message) {
         return {
           success: false,
           message: 'Failed to update password'
@@ -157,13 +141,22 @@ export class AuthService {
 
       return {
         success: true,
-        message: 'Password updated successfully'
+        message: updateResult[0].message
       };
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('Password change error:', error);
+      // Handle specific SQL error states
+      if (error.sqlState === '45000') {
+        return {
+          success: false,
+          message: error.message
+        };
+      }
+
       return {
         success: false,
-        message: 'Internal server error'
+        message: 'Failed to update password. Please try again.'
       };
     }
   }
@@ -216,21 +209,18 @@ export class AuthService {
       // Verify OTP
       const result = await this.authRepository.verifyOTP(historyId, otp);
       
-      if (!result) {
+      if (!result || !result.email) {
         return {
           success: false,
           message: 'Invalid or expired OTP'
         };
       }
 
-      // Hash new password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-      // Update password
-      const updated = await this.authRepository.updatePassword(result.account_code, hashedPassword);
+      // Update password with null as currentPassword for reset flow
+      const [updateResult] = await this.authRepository.updatePassword(result.email, null, newPassword);
       
-      if (!updated) {
+      // Check if we have a result and it has the expected message
+      if (!updateResult || !updateResult[0] || !updateResult[0].message) {
         return {
           success: false,
           message: 'Failed to update password'
@@ -239,10 +229,16 @@ export class AuthService {
 
       return {
         success: true,
-        message: 'Password has been reset successfully'
+        message: updateResult[0].message
       };
     } catch (error) {
       console.error('Reset password error:', error);
+      if (error instanceof Error && error.message.includes('45000')) {
+        return {
+          success: false,
+          message: error.message
+        };
+      }
       return {
         success: false,
         message: 'Internal server error'

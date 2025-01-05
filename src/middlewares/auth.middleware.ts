@@ -3,8 +3,9 @@ import jwt from 'jsonwebtoken';
 
 interface AuthenticatedRequest extends Request {
   user?: {
-    user_id: number;
-    account_code: string;
+    email: string;
+    iat?: number;
+    exp?: number;
   };
 }
 
@@ -28,11 +29,17 @@ export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: 
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'Abhishek@123') as {
-      user_id: number;
-      account_code: string;
+      email: string;
+      iat: number;
+      exp: number;
     };
 
-    req.user = decoded;
+    req.user = {
+      email: decoded.email,
+      iat: decoded.iat,
+      exp: decoded.exp
+    };
+
     next();
   } catch (error) {
     return res.status(401).json({

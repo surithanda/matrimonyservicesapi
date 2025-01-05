@@ -70,11 +70,16 @@ export class AuthRepository {
 
   // No need for separate saveOTP and clearOTP methods as we're using the login_history table
 
-  async updatePassword(accountCode: string, hashedPassword: string): Promise<boolean> {
-    const [result] = await pool.execute(
-      'UPDATE account SET password = ? WHERE account_code = ?',
-      [hashedPassword, accountCode]
-    );
-    return (result as any).affectedRows > 0;
+  async updatePassword(email: string, currentPassword: string | null, newPassword: string): Promise<any> {
+    try {
+      const [results] = await pool.execute(
+        'CALL usp_api_update_password(?, ?, ?)',
+        [email, currentPassword, newPassword]
+      );
+      return results;
+    } catch (error) {
+      console.error('Update password error:', error);
+      throw error;
+    }
   }
 } 
