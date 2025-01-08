@@ -1,4 +1,4 @@
-import { IProfilePersonal } from '../interfaces/profile.interface';
+import { IProfilePersonal, IProfileAddress } from '../interfaces/profile.interface';
 import pool from '../config/database';
 
 export class ProfileRepository {
@@ -46,10 +46,37 @@ export class ProfileRepository {
           params
         );
   
-        const profileId = (result as any[])[0][0].profile_id;
+        const profileId = (result as any[])[0][0];
         return profileId;
       } catch (error) {
         console.error('Error in createPersonalProfile:', error);
+        throw error;
+      }
+    }
+
+    async createProfileAddress(addressData: IProfileAddress): Promise<void> {
+      try {
+        const params = [
+          addressData.profile_id,
+          addressData.address_type,
+          addressData.address_line1,
+          addressData.address_line2 || null,
+          addressData.city,
+          addressData.state,
+          addressData.country,
+          addressData.zip,
+          addressData.phone,
+          addressData.landmark1 || null,
+          addressData.landmark2 || null,
+          addressData.account_id
+        ];
+
+        await pool.execute(
+          'CALL usp_profile_address_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+      } catch (error) {
+        console.error('Error in createProfileAddress:', error);
         throw error;
       }
     }

@@ -1,34 +1,5 @@
 import winston from 'winston';
-import { ElasticsearchTransport } from 'winston-elasticsearch';
-import { Client } from '@elastic/elasticsearch';
-
-const esClient = new Client({
-  node: process.env.ELASTICSEARCH_NODE || 'http://localhost:9200',
-  auth: {
-    username: process.env.ELASTICSEARCH_USERNAME || 'elastic',
-    password: process.env.ELASTICSEARCH_PASSWORD || 'changeme'
-  }
-});
-
-const esTransport = new ElasticsearchTransport({
-  client: esClient,
-  level: 'info',
-  index: 'logs-app',
-  indexPrefix: 'logs-app',
-  indexSuffixPattern: 'YYYY.MM.DD',
-  transformer: (logData) => {
-    return {
-      '@timestamp': new Date().toISOString(),
-      severity: logData.level,
-      message: logData.message,
-      fields: {
-        ...logData.meta,
-        environment: process.env.NODE_ENV || 'development',
-        service: 'auth-service'
-      }
-    };
-  }
-});
+import path from 'path';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -36,12 +7,17 @@ const logger = winston.createLogger({
     winston.format.timestamp(),
     winston.format.json()
   ),
-  defaultMeta: { service: 'auth-service' },
+  defaultMeta: { service: 'account-service' },
   transports: [
-    new winston.transports.Console({
-      format: winston.format.simple()
+    new winston.transports.File({ 
+      filename: path.join('logs', 'app.log')
     }),
-    esTransport
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      )
+    })
   ]
 });
 

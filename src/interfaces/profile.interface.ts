@@ -35,4 +35,19 @@ export interface IProfileResponse {
   data?: {
     profile_id: number;
   };
+}
+
+export interface IProfileAddress {
+  profile_id: number;
+  address_type: number;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state: string;
+  country: string;
+  zip: string;
+  phone: string;
+  landmark1?: string;
+  landmark2?: string;
+  account_id: number;
 } 

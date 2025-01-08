@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createPersonalProfile } from '../controllers/profile.controller';
+import { createPersonalProfile, createProfileAddress } from '../controllers/profile.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 
@@ -10,6 +10,13 @@ router.post(
   validateApiKey,
   authenticateJWT,
   createPersonalProfile
+);
+
+router.post(
+  '/address',
+  validateApiKey,
+  authenticateJWT,
+  createProfileAddress
 );
 
 export default router; 
