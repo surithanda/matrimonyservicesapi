@@ -46,7 +46,7 @@ export class ProfileRepository {
           params
         );
   
-        const profileId = (result as any[])[0][0];
+        const profileId = (result as any[])[0][0].profile_id;
         return profileId;
       } catch (error) {
         console.error('Error in createPersonalProfile:', error);

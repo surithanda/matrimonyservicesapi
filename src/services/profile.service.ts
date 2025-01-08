@@ -16,7 +16,8 @@ export class ProfileService {
         success: true,
         message: 'Personal profile created successfully',
         data: {
-          profile_id: profileId
+          profile_id: profileId,
+          profile: profileData
         }
       };
     } catch (error: any) {

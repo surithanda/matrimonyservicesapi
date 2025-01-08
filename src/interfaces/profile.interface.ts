@@ -34,6 +34,7 @@ export interface IProfileResponse {
   message: string;
   data?: {
     profile_id: number;
+    profile: IProfilePersonal;
   };
 }
 
