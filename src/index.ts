@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.routes';
 import swaggerUi from 'swagger-ui-express';
 import cors from './config/cors';
 import { specs } from './config/swagger';
+import profileRoutes from './routes/profile.routes';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/api/account', accountRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Swagger documentation setup
 // In your index.ts file

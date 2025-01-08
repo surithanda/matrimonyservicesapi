@@ -159,7 +159,30 @@
           "host": ["localhost"],
           "port": "3000",
           "path": ["api", "auth", "verify-otp"]
-        }
+        },
+        "response": [
+          {
+            "name": "Success Response",
+            "originalRequest": {
+              "method": "POST",
+              "header": [],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"history_id\": 123,\n  \"otp\": \"123456\"\n}"
+              }
+            },
+            "status": "OK",
+            "code": 200,
+            "_postman_previewlanguage": "json",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": "{\n  \"success\": true,\n  \"message\": \"OTP verified successfully\",\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"full_name\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"1234567890\",\n    \"date_of_birth\": \"1990-01-01\",\n    \"age\": 33,\n    \"address\": \"123 Main St\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"country\": \"US\",\n    \"zip_code\": \"10001\",\n    \"account_code\": \"ACC123\",\n    \"account_id\": 1\n  }\n}"
+          }
+        ]
       }
     },
     {

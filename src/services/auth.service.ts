@@ -99,6 +99,7 @@ export class AuthService {
         user: {
           login_id: result.login_id,
           account_code: result.account_code,
+          account_id: result.account_id,
           email: result.email,
           password: result.password,
           first_name: result.first_name,
