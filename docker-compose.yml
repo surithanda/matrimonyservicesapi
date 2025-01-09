@@ -2,26 +2,37 @@ version: '3.8'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.9
+    image: elasticsearch:7.17.9
     environment:
-      - discovery.type=single-node
+      - node.name=elasticsearch
+      - cluster.name=es-docker-cluster
+      - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
       - xpack.security.enabled=false
-    ports:
-      - "9200:9200"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
     networks:
       - elk
+    deploy:
+      resources:
+        limits:
+          memory: 1g
 
   logstash:
-    image: docker.elastic.co/logstash/logstash:7.17.9
+    image: logstash:7.17.9
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
       - ./logs:/logs
     ports:
-      - "5000:5000/tcp"
-      - "5000:5000/udp"
+      - "5044:5044/tcp"
+      - "5044:5044/udp"
       - "9600:9600"
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
@@ -29,9 +40,13 @@ services:
       - elk
     depends_on:
       - elasticsearch
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.17.9
+    image: kibana:7.17.9
     ports:
       - "5601:5601"
     environment:
@@ -40,6 +55,10 @@ services:
       - elk
     depends_on:
       - elasticsearch
+    deploy:
+      resources:
+        limits:
+          memory: 512m
 
 networks:
   elk:
