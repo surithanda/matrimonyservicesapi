@@ -2,11 +2,13 @@ import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import jwt from 'jsonwebtoken';
 import { OTPVerificationResponse } from '../interfaces/auth.interface';
+import logger from '../config/logger';
+import { AppError } from '../middleware/error.middleware';
 
 // Add custom interface for Request with user
 interface AuthenticatedRequest extends Request {
   user?: {
-    account_code: string;
+    email: string;
   };
 }
 
@@ -21,6 +23,13 @@ export class AuthController {
     try {
       const { email, password } = req.body;
 
+      logger.info('Login attempt', {
+        email,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        timestamp: new Date().toISOString()
+      });
+
       if (!email || !password) {
         return res.status(400).json({
           success: false,
@@ -28,7 +37,19 @@ export class AuthController {
         });
       }
 
-      const result = await this.authService.login({ email, password });
+      // Get client information from request
+      const clientInfo = {
+        ipAddress: req.ip || req.socket.remoteAddress || '127.0.0.1',
+        userAgent: req.get('user-agent') || 'unknown',
+        systemName: req.get('sec-ch-ua-platform') || 'web', // Gets OS platform
+        location: req.get('accept-language') || 'unknown'    // Gets user's locale
+      };
+
+      const result = await this.authService.login({ 
+        email, 
+        password,
+        clientInfo  // Pass client info to service
+      });
 
       if (!result.success) {
         return res.status(401).json(result);
@@ -36,10 +57,24 @@ export class AuthController {
 
       return res.status(200).json(result);
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login error:', {
+        error: {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : 'No stack trace'
+        },
+        request: {
+          body: req.body,
+          headers: req.headers,
+          ip: req.ip
+        },
+        timestamp: new Date().toISOString()
+      });
+
       return res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: 'Internal server error',
+        errorCode: 'AUTH_LOGIN_ERROR',
+        timestamp: new Date().toISOString()
       });
     }
   };
@@ -56,7 +91,6 @@ export class AuthController {
       }
 
       const result = await this.authService.verifyOTP(history_id, otp);
-      
       if (!result || !result.user) {
         return res.status(401).json({
           success: false,
@@ -64,14 +98,16 @@ export class AuthController {
         });
       }
 
+      console.log('100',result);
+      
       // Generate JWT token after successful verification
       const token = jwt.sign(
         { 
-          user_id: result.user.login_id,
-          account_code: result.user.account_code 
+          email: result.user.email,
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours from now
         },
-        process.env.JWT_SECRET || 'Abhishek@123',  // Fallback secret
-        { expiresIn: '24h' }
+        process.env.JWT_SECRET || 'Abhishek@123'
       );
 
       return res.status(200).json({
@@ -89,7 +125,8 @@ export class AuthController {
           state: result.user.state,
           country: result.user.country,
           zip_code: result.user.zip_code,
-          account_code: result.user.account_code
+          account_code: result.user.account_code,
+          account_id: result.user?.account_id
         }
       });
     } catch (error) {
@@ -104,8 +141,32 @@ export class AuthController {
   public changePassword = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
     try {
       const { current_password, new_password, confirm_new_password } = req.body;
-      const accountCode = req.user?.account_code; // This will come from JWT middleware
-      console.log(accountCode, req.user);
+      
+      // Get token from Authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authorization header missing'
+        });
+      }
+
+      const token = authHeader.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({
+          success: false,
+          message: 'Token missing'
+        });
+      }
+
+      // Decrypt JWT token to get email
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'Abhishek@123') as {
+        email: string;  // Using account_code as it contains email
+        iat: number;
+        exp: number;
+      };
+
+      const email = decoded.email; // Get email from account_code
 
       // Validate request
       if (!current_password || !new_password || !confirm_new_password) {
@@ -123,7 +184,7 @@ export class AuthController {
         });
       }
 
-      // Validate password strength
+      // Add password strength validation
       const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
       if (!passwordRegex.test(new_password)) {
         return res.status(400).json({
@@ -132,14 +193,18 @@ export class AuthController {
         });
       }
 
-      if (!accountCode) {
+      if (!email) {
         return res.status(401).json({
           success: false,
           message: 'Unauthorized'
         });
       }
 
-      const result = await this.authService.changePassword(accountCode, current_password, new_password);
+      const result = await this.authService.changePassword(
+        email,
+        current_password,
+        new_password
+      );
       
       if (!result.success) {
         return res.status(400).json(result);
@@ -147,6 +212,12 @@ export class AuthController {
 
       return res.status(200).json(result);
     } catch (error) {
+      if (error instanceof jwt.JsonWebTokenError) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token'
+        });
+      }
       console.error('Password change error:', error);
       return res.status(500).json({
         success: false,
@@ -177,7 +248,7 @@ export class AuthController {
       console.error('Forgot password error:', error);
       return res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: `Internal server error: ${error}`
       });
     }
   };
@@ -222,7 +293,7 @@ export class AuthController {
       console.error('Reset password error:', error);
       return res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: `Internal server error: ${error}`
       });
     }
   };

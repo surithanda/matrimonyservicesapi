@@ -138,6 +138,76 @@ const options = {
               description: 'Profile photo (max 5MB, image files only)'
             }
           }
+        },
+        OTPVerificationResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true
+            },
+            message: {
+              type: 'string',
+              example: 'OTP verified successfully'
+            },
+            token: {
+              type: 'string',
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+            },
+            user: {
+              type: 'object',
+              properties: {
+                full_name: {
+                  type: 'string',
+                  example: 'John Doe'
+                },
+                email: {
+                  type: 'string',
+                  example: 'john.doe@example.com'
+                },
+                phone: {
+                  type: 'string',
+                  example: '1234567890'
+                },
+                date_of_birth: {
+                  type: 'string',
+                  example: '1990-01-01'
+                },
+                age: {
+                  type: 'number',
+                  example: 33
+                },
+                address: {
+                  type: 'string',
+                  example: '123 Main St'
+                },
+                city: {
+                  type: 'string',
+                  example: 'New York'
+                },
+                state: {
+                  type: 'string',
+                  example: 'NY'
+                },
+                country: {
+                  type: 'string',
+                  example: 'US'
+                },
+                zip_code: {
+                  type: 'string',
+                  example: '10001'
+                },
+                account_code: {
+                  type: 'string',
+                  example: 'ACC123'
+                },
+                account_id: {
+                  type: 'number',
+                  example: 1
+                }
+              }
+            }
+          }
         }
       }
     },

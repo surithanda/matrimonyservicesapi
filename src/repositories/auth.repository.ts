@@ -2,80 +2,84 @@ import pool from '../config/database';
 
 export class AuthRepository {
   async findUserByEmail(email: string): Promise<any> {
-    const [results] = await pool.query(
-      'SELECT account_code, email, password, first_name, last_name FROM account WHERE email = ?',
+    const [results] = await pool.execute(
+      'CALL usp_api_find_user_for_auth(?)',
       [email]
     );
-    return (results as any[])[0];
+    
+    // The SP returns a result set with all login table fields
+    // First array element is the result set, second element is the first row
+    return (results as any[])[0][0];
   }
 
   async findUserByAccountCode(accountCode: string): Promise<any> {
-    const [results] = await pool.query(
-      'SELECT account_code, email, password, first_name, last_name FROM account WHERE account_code = ?',
+    const [results] = await pool.execute(
+      'CALL usp_api_find_account_by_code(?)',
       [accountCode]
     );
-    return (results as any[])[0];
+    
+    // The SP returns a result set with all account fields
+    // First array element is the result set, second element is the first row
+    return (results as any[])[0][0];
   }
 
-  async createLoginHistory(email: string, otp: string): Promise<number> {
-    const [results] = await pool.query(
-      `INSERT INTO login_history (
-        login_name, 
-        login_date, 
-        login_status, 
-        email_otp,
-        email_otp_valid_start,
-        email_otp_valid_end,
-        ip_address,
-        user_agent
-      ) VALUES (?, NOW(), ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 5 MINUTE), ?, ?)`,
+  async createLoginHistory(
+    email: string, 
+    otp: string, 
+    ipAddress: string = '127.0.0.1',
+    systemName: string = 'web',
+    userAgent: string = 'web',
+    location: string = 'unknown'
+  ): Promise<number> {
+    const [results] = await pool.execute(
+      'CALL usp_api_create_login_history(?, ?, ?, ?, ?, ?)',
       [
-        email,
-        0, // 0 for pending
-        otp,
-        '127.0.0.1', // You might want to pass this from the request
-        'web' // You might want to pass this from the request
+        email,           // p_login_name
+        parseInt(otp),   // p_email_otp
+        ipAddress,       // p_ip_address
+        systemName,      // p_system_name
+        userAgent,       // p_user_agent
+        location         // p_location
       ]
     );
-    return (results as any).insertId;
+    
+    // The SP returns a result set with the history_id
+    return (results as any[])[0][0].history_id;
   }
 
   async verifyOTP(historyId: number, otp: string): Promise<any> {
-    const [results] = await pool.query(
-      `SELECT h.*, a.* 
-       FROM login_history h
-       JOIN account a ON h.login_name = a.email
-       WHERE h.history_id = ? 
-       AND h.email_otp = ? 
-       AND h.email_otp_valid_end > NOW()
-       AND h.login_status = 0`,
-      [historyId, otp]
-    );
-
-    if ((results as any[]).length > 0) {
-      // Update login status to success (1)
-      await pool.query(
-        'UPDATE login_history SET login_status = 1 WHERE history_id = ?',
-        [historyId]
+    try {
+      
+      // If status checks pass, proceed with OTP verification
+      const [results] = await pool.execute(
+        'CALL usp_api_verify_otp(?, ?)',
+        [historyId, otp]
       );
-      return (results as any[])[0];
-    }
+      
+      const userDetails = (results as any[])[0];
+      if (!userDetails || userDetails.length === 0) {
+        return { error: 'Invalid OTP' };
+      }
 
-    // Update login status to failed (2) if OTP is invalid
-    await pool.query(
-      'UPDATE login_history SET login_status = 2, login_failure_reason = ? WHERE history_id = ?',
-      ['Invalid OTP', historyId]
-    );
-    return null;
+      return userDetails[0];
+    } catch (error) {
+      console.error('Error in verifyOTP:', error);
+      throw error;
+    }
   }
 
   // No need for separate saveOTP and clearOTP methods as we're using the login_history table
 
-  async updatePassword(accountCode: string, hashedPassword: string): Promise<boolean> {
-    const [result] = await pool.execute(
-      'UPDATE account SET password = ? WHERE account_code = ?',
-      [hashedPassword, accountCode]
-    );
-    return (result as any).affectedRows > 0;
+  async updatePassword(email: string, currentPassword: string | null, newPassword: string): Promise<any> {
+    try {
+      const [results] = await pool.execute(
+        'CALL usp_api_update_password(?, ?, ?)',
+        [email, currentPassword, newPassword]
+      );
+      return results;
+    } catch (error) {
+      console.error('Update password error:', error);
+      throw error;
+    }
   }
 } 

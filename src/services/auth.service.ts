@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { LoginCredentials, LoginResponse, VerifyOTPResult } from '../interfaces/auth.interface';
 import { AuthRepository } from '../repositories/auth.repository';
 import { generateOTP, sendOTP } from '../utils/email.util';
+import { AppError } from '../middleware/error.middleware';
 
 export class AuthService {
   private authRepository: AuthRepository;
@@ -10,112 +11,129 @@ export class AuthService {
     this.authRepository = new AuthRepository();
   }
 
-  async login(credentials: LoginCredentials): Promise<LoginResponse> {
-    const user = await this.authRepository.findUserByEmail(credentials.email);
-
-    if (!user) {
-      return {
-        success: false,
-        message: 'Invalid email or password'
-      };
+  async login(credentials: { 
+    email: string; 
+    password: string; 
+    clientInfo: {
+      ipAddress: string;
+      userAgent: string;
+      systemName: string;
+      location: string;
     }
-
-    const validPassword = await bcrypt.compare(credentials.password, user.password);
-
-    if (!validPassword) {
-      return {
-        success: false,
-        message: 'Invalid email or password'
-      };
-    }
-
-    // Generate OTP
-    const otp = generateOTP();
-    
-    // Create login history entry with OTP
-    const historyId = await this.authRepository.createLoginHistory(user.email, otp);
-
-    // Send OTP via email
-    const otpSent = await sendOTP(user.email, otp);
-
-    if (!otpSent) {
-      return {
-        success: false,
-        message: 'Failed to send OTP'
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Login successful. Please verify OTP sent to your email.',
-      user: {
-        history_id: historyId,
-        account_code: user.account_code,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name
-      }
-    };
-  }
-
-  async verifyOTP(historyId: number, otp: string): Promise<VerifyOTPResult> {
-    const result = await this.authRepository.verifyOTP(historyId, otp);
-
-    if (!result) {
-      return {
-        success: false,
-        message: 'Invalid or expired OTP'
-      };
-    }
-
-    return {
-      success: true,
-      user: {
-        login_id: result.login_id,
-        account_code: result.account_code,
-        email: result.email,
-        password: result.password,
-        first_name: result.first_name,
-        last_name: result.last_name,
-        phone: result.primary_phone,
-        date_of_birth: result.birth_date,
-        age: result.age,
-        address: result.address_line1,
-        city: result.city,
-        state: result.state,
-        country: result.country,
-        zip_code: result.zip
-      }
-    };
-  }
-
-  async changePassword(accountCode: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+  }): Promise<LoginResponse> {
     try {
-      // Get user details
-      const user = await this.authRepository.findUserByAccountCode(accountCode);
+      const user = await this.authRepository.findUserByEmail(credentials.email);
+
       if (!user) {
         return {
           success: false,
-          message: 'User not found'
+          message: 'Invalid email or password'
         };
       }
 
-      // Verify current password
-      const validPassword = await bcrypt.compare(currentPassword, user.password);
+      // const validPassword = await bcrypt.compare(credentials.password, user.password);
+      const validPassword = credentials.password === user.password;
       if (!validPassword) {
         return {
           success: false,
-          message: 'Current password is incorrect'
+          message: 'Invalid email or password'
         };
       }
 
-      // Hash new password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+      // Generate OTP
+      const otp = generateOTP();
+      
+      // Create login history entry with OTP and client info
+      const historyId = await this.authRepository.createLoginHistory(
+        credentials.email, 
+        otp,
+        credentials.clientInfo.ipAddress,
+        credentials.clientInfo.systemName,
+        credentials.clientInfo.userAgent,
+        credentials.clientInfo.location
+      );
 
-      // Update password
-      const updated = await this.authRepository.updatePassword(user.account_code, hashedPassword);
-      if (!updated) {
+      // Send OTP via email
+      const otpSent = await sendOTP(credentials.email, otp);
+
+      if (!otpSent) {
+        return {
+          success: false,
+          message: 'Failed to send OTP'
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Login successful. Please verify OTP sent to your email.',
+        user: {
+          history_id: historyId,
+          account_code: user.account_code,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name
+        }
+      };
+    } catch (error) {
+      console.error('Login error:', error);
+      return {
+        success: false,
+        message: 'Internal server error'
+      };
+    }
+  }
+
+  async verifyOTP(historyId: number, otp: string): Promise<VerifyOTPResult> {
+    try {
+      const result = await this.authRepository.verifyOTP(historyId, otp);
+
+      if (result.error) {
+        return {
+          success: false,
+          message: result.error
+        };
+      }
+
+      return {
+        success: true,
+        user: {
+          login_id: result.login_id,
+          account_code: result.account_code,
+          account_id: result.account_id,
+          email: result.email,
+          password: result.password,
+          first_name: result.first_name,
+          last_name: result.last_name,
+          phone: result.primary_phone,
+          date_of_birth: result.birth_date,
+          age: result.age,
+          address: result.address_line1,
+          city: result.city,
+          state: result.state,
+          country: result.country,
+          zip_code: result.zip
+        }
+      };
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      return {
+        success: false,
+        message: 'Internal server error'
+      };
+    }
+  }
+
+  async changePassword(email: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Call the stored procedure directly
+      const [updateResult] = await this.authRepository.updatePassword(
+        email,
+        currentPassword,
+        newPassword
+      );
+
+      // Check if we have a result and it has the expected message
+      if (!updateResult || !updateResult[0] || !updateResult[0].message) {
         return {
           success: false,
           message: 'Failed to update password'
@@ -124,13 +142,22 @@ export class AuthService {
 
       return {
         success: true,
-        message: 'Password updated successfully'
+        message: updateResult[0].message
       };
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('Password change error:', error);
+      // Handle specific SQL error states
+      if (error.sqlState === '45000') {
+        return {
+          success: false,
+          message: error.message
+        };
+      }
+
       return {
         success: false,
-        message: 'Internal server error'
+        message: 'Failed to update password. Please try again.'
       };
     }
   }
@@ -183,21 +210,18 @@ export class AuthService {
       // Verify OTP
       const result = await this.authRepository.verifyOTP(historyId, otp);
       
-      if (!result) {
+      if (!result || !result.email) {
         return {
           success: false,
           message: 'Invalid or expired OTP'
         };
       }
 
-      // Hash new password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-      // Update password
-      const updated = await this.authRepository.updatePassword(result.account_code, hashedPassword);
+      // Update password with null as currentPassword for reset flow
+      const [updateResult] = await this.authRepository.updatePassword(result.email, null, newPassword);
       
-      if (!updated) {
+      // Check if we have a result and it has the expected message
+      if (!updateResult || !updateResult[0] || !updateResult[0].message) {
         return {
           success: false,
           message: 'Failed to update password'
@@ -206,10 +230,16 @@ export class AuthService {
 
       return {
         success: true,
-        message: 'Password has been reset successfully'
+        message: updateResult[0].message
       };
     } catch (error) {
       console.error('Reset password error:', error);
+      if (error instanceof Error && error.message.includes('45000')) {
+        return {
+          success: false,
+          message: error.message
+        };
+      }
       return {
         success: false,
         message: 'Internal server error'

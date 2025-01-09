@@ -3,11 +3,18 @@ import { Request } from 'express';
 export interface LoginCredentials {
   email: string;
   password: string;
+  clientInfo: {
+    ipAddress: string;
+    userAgent: string;
+    systemName: string;
+    location: string;
+  };
 }
 
 export interface User {
   login_id: number;
   account_code: string;
+  account_id: number;
   email: string;
   password: string;
   first_name: string;
@@ -51,6 +58,7 @@ export interface OTPVerificationResponse {
     country: string;
     zip_code: string;
     account_code: string;
+    account_id: number;
   };
 }
 
@@ -58,6 +66,7 @@ export interface VerifyOTPResult {
   success: boolean;
   message?: string;
   user?: {
+    account_id: any;
     login_id: number;
     account_code: string;
     email: string;

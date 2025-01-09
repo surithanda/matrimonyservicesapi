@@ -28,12 +28,10 @@ export class AccountService {
         };
       }
 
-      // Generate unique account code
-      accountData.account_code = await generateAccountCode();
-      
       // Hash password
       const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(accountData.password, saltRounds);
+      // const hashedPassword = await bcrypt.hash(accountData.password, saltRounds);
+      const hashedPassword = accountData.password
       
       await connection.beginTransaction();
       
@@ -43,11 +41,22 @@ export class AccountService {
       
       return {
         success: true,
-        message: 'Account registered successfully',
-        data: { account_code: accountData.account_code }
+        message: 'Account registered successfully'
       };
-    } catch (error) {
+    } catch (error: any) {
       await connection.rollback();
+      // Check for specific stored procedure error messages
+      if (error.message.includes('Email already exists')) {
+        return {
+          success: false,
+          message: 'Email already exists'
+        };
+      } else if (error.message.includes('Primary phone number already exists')) {
+        return {
+          success: false,
+          message: 'Phone number already exists'
+        };
+      }
       throw error;
     } finally {
       connection.release();
