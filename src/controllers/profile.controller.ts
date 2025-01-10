@@ -77,4 +77,29 @@ export const createProfileEducation = async (req: AuthenticatedRequest, res: Res
       error: error.message
     });
   }
+};
+
+export const createProfileEmployment = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    const employmentData = {
+      ...req.body,
+      account_id: parseInt(req.user?.account_code || '0')
+    };
+
+    const result = await profileService.createProfileEmployment(employmentData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(201).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create profile employment',
+      error: error.message
+    });
+  }
 }; 

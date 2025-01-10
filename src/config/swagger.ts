@@ -265,6 +265,68 @@ const options = {
               example: 1
             }
           }
+        },
+        ProfileEmployment: {
+          type: 'object',
+          required: [
+            'profile_id',
+            'institution_name',
+            'address_line1',
+            'city',
+            'state',
+            'country',
+            'zip',
+            'start_year',
+            'end_year',
+            'job_title',
+            'last_salary_drawn'
+          ],
+          properties: {
+            profile_id: {
+              type: 'integer',
+              example: 1
+            },
+            institution_name: {
+              type: 'string',
+              example: 'Tech Corp Inc'
+            },
+            address_line1: {
+              type: 'string',
+              example: '456 Business Ave'
+            },
+            city: {
+              type: 'string',
+              example: 'Tech City'
+            },
+            state: {
+              type: 'string',
+              example: 'TC'
+            },
+            country: {
+              type: 'string',
+              example: 'US'
+            },
+            zip: {
+              type: 'string',
+              example: '54321'
+            },
+            start_year: {
+              type: 'integer',
+              example: 2018
+            },
+            end_year: {
+              type: 'integer',
+              example: 2022
+            },
+            job_title: {
+              type: 'string',
+              example: 'Senior Developer'
+            },
+            last_salary_drawn: {
+              type: 'string',
+              example: '100000'
+            }
+          }
         }
       }
     },

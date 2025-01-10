@@ -1,4 +1,4 @@
-import { IProfilePersonal, IProfileAddress, IProfileEducation } from '../interfaces/profile.interface';
+import { IProfilePersonal, IProfileAddress, IProfileEducation, IProfileEmployment } from '../interfaces/profile.interface';
 import pool from '../config/database';
 
 export class ProfileRepository {
@@ -103,6 +103,33 @@ export class ProfileRepository {
         );
       } catch (error) {
         console.error('Error in createProfileEducation:', error);
+        throw error;
+      }
+    }
+
+    async createProfileEmployment(employmentData: IProfileEmployment): Promise<void> {
+      try {
+        const params = [
+          employmentData.profile_id,
+          employmentData.institution_name,
+          employmentData.address_line1,
+          employmentData.city,
+          employmentData.state,
+          employmentData.country,
+          employmentData.zip,
+          employmentData.start_year,
+          employmentData.end_year,
+          employmentData.job_title,
+          employmentData.last_salary_drawn,
+          employmentData.account_id
+        ];
+
+        await pool.execute(
+          'CALL usp_profile_employment_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+      } catch (error) {
+        console.error('Error in createProfileEmployment:', error);
         throw error;
       }
     }
