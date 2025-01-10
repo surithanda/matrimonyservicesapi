@@ -52,4 +52,29 @@ export const createProfileAddress = async (req: AuthenticatedRequest, res: Respo
       error: error.message
     });
   }
+};
+
+export const createProfileEducation = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    const educationData = {
+      ...req.body,
+      user_created: req.user?.email
+    };
+
+    const result = await profileService.createProfileEducation(educationData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(201).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create profile education',
+      error: error.message
+    });
+  }
 }; 

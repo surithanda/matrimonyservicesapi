@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createPersonalProfile, createProfileAddress } from '../controllers/profile.controller';
+import { createPersonalProfile, createProfileAddress, createProfileEducation } from '../controllers/profile.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 
@@ -17,6 +17,13 @@ router.post(
   validateApiKey,
   authenticateJWT,
   createProfileAddress
+);
+
+router.post(
+  '/education',
+  validateApiKey,
+  authenticateJWT,
+  createProfileEducation
 );
 
 export default router; 

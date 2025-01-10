@@ -208,6 +208,63 @@ const options = {
               }
             }
           }
+        },
+        ProfileEducation: {
+          type: 'object',
+          required: [
+            'profile_id',
+            'education_level',
+            'year_completed',
+            'institution_name',
+            'address_line1',
+            'city',
+            'state',
+            'country',
+            'zip',
+            'field_of_study'
+          ],
+          properties: {
+            profile_id: {
+              type: 'integer',
+              example: 1
+            },
+            education_level: {
+              type: 'integer',
+              example: 1
+            },
+            year_completed: {
+              type: 'integer',
+              example: 2020
+            },
+            institution_name: {
+              type: 'string',
+              example: 'University of Example'
+            },
+            address_line1: {
+              type: 'string',
+              example: '123 Education St'
+            },
+            city: {
+              type: 'string',
+              example: 'College Town'
+            },
+            state: {
+              type: 'string',
+              example: 'ST'
+            },
+            country: {
+              type: 'string',
+              example: 'US'
+            },
+            zip: {
+              type: 'string',
+              example: '12345'
+            },
+            field_of_study: {
+              type: 'integer',
+              example: 1
+            }
+          }
         }
       }
     },

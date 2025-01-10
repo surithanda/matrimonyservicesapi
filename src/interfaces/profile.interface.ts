@@ -51,4 +51,18 @@ export interface IProfileAddress {
   landmark1?: string;
   landmark2?: string;
   account_id: number;
+}
+
+export interface IProfileEducation {
+  profile_id: number;
+  education_level: number;
+  year_completed: number;
+  institution_name: string;
+  address_line1: string;
+  city: string;
+  state: string;
+  country: string;
+  zip: string;
+  field_of_study: number;
+  user_created: string;
 } 

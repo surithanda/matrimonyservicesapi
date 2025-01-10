@@ -1,4 +1,4 @@
-import { IProfilePersonal, IProfileResponse, IProfileAddress } from '../interfaces/profile.interface';
+import { IProfilePersonal, IProfileResponse, IProfileAddress, IProfileEducation } from '../interfaces/profile.interface';
 import { ProfileRepository } from '../repositories/profile.repository';
 
 export class ProfileService {
@@ -38,6 +38,25 @@ export class ProfileService {
       return {
         success: true,
         message: 'Profile address created successfully'
+      };
+    } catch (error: any) {
+      if (error.message.includes('Profile doesnot exist')) {
+        return {
+          success: false,
+          message: 'Profile does not exist'
+        };
+      }
+      throw error;
+    }
+  }
+
+  async createProfileEducation(educationData: IProfileEducation): Promise<IProfileResponse> {
+    try {
+      await this.profileRepository.createProfileEducation(educationData);
+
+      return {
+        success: true,
+        message: 'Profile education created successfully'
       };
     } catch (error: any) {
       if (error.message.includes('Profile doesnot exist')) {
