@@ -97,9 +97,7 @@ export class AuthController {
           message: 'Invalid OTP verification result'
         });
       }
-
-      console.log('100',result);
-      
+    
       // Generate JWT token after successful verification
       const token = jwt.sign(
         { 
