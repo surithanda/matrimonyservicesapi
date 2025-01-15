@@ -97,15 +97,15 @@ export class AuthController {
           message: 'Invalid OTP verification result'
         });
       }
-
-      console.log('100',result);
-      
+    
       // Generate JWT token after successful verification
       const token = jwt.sign(
         { 
+          account_code: result.user.account_code,
+          account_id: result.user.account_id,
           email: result.user.email,
           iat: Math.floor(Date.now() / 1000),
-          exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours from now
+          exp: Math.floor(Date.now() / 1000) + (72 * 60 * 60) // 24 hours from now
         },
         process.env.JWT_SECRET || 'Abhishek@123'
       );

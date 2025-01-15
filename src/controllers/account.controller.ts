@@ -61,7 +61,7 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
 
     const accountService = new AccountService();
     const accountCode = req.user?.account_code;
-
+    console.log('accountCode',req.user);
     if (!accountCode) {
       // Delete uploaded file if unauthorized
       fs.unlinkSync(req.file.path);
