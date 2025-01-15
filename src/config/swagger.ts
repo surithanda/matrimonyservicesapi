@@ -24,6 +24,10 @@ const options = {
       {
         name: 'Account',
         description: 'Account management endpoints including profile updates and photo management'
+      },
+      {
+        name: 'Profile',
+        description: 'Profile management endpoints including personal, address, education and employment details'
       }
     ],
     components: {
@@ -325,6 +329,59 @@ const options = {
             last_salary_drawn: {
               type: 'string',
               example: '100000'
+            }
+          }
+        },
+        ProfilePersonal: {
+          type: 'object',
+          required: [
+            'profile_id'
+          ],
+          properties: {
+            profile_id: {
+              type: 'integer',
+              example: 1
+            }
+          }
+        },
+        ProfileAddress: {
+          type: 'object',
+          required: [
+            'profile_id',
+            'address_line1',
+            'city',
+            'state',
+            'country',
+            'zip'
+          ],
+          properties: {
+            profile_id: {
+              type: 'integer',
+              example: 1
+            },
+            address_line1: {
+              type: 'string',
+              example: '123 Main St'
+            },
+            address_line2: {
+              type: 'string',
+              example: 'Apt 4B'
+            },
+            city: {
+              type: 'string',
+              example: 'New York'
+            },
+            state: {
+              type: 'string',
+              example: 'NY'
+            },
+            country: {
+              type: 'string',
+              example: 'US'
+            },
+            zip: {
+              type: 'string',
+              example: '10001'
             }
           }
         }
