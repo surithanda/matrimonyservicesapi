@@ -11,7 +11,7 @@ const options = {
     servers: [
       {
         url: process.env.NODE_ENV === 'production'
-          ? 'https://matrimoney-backend.vercel.app/api'
+          ? 'https://charming-hoover.65-254-80-213.plesk.page/api'
           : 'http://localhost:3000/api',
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       }
