@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import { ProfileService } from '../services/profile.service';
 import { AuthenticatedRequest } from '../interfaces/auth.interface';
+import { IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
+import multer from 'multer';
+import path from 'path';
 
 export const createPersonalProfile = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -99,6 +102,133 @@ export const createProfileEmployment = async (req: AuthenticatedRequest, res: Re
     res.status(500).json({
       success: false,
       message: 'Failed to create profile employment',
+      error: error.message
+    });
+  }
+};
+
+export const createProfileProperty = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    const propertyData = {
+      ...req.body,
+      created_by: req.user?.email,
+      ip_address: req.ip,
+      browser_profile: req.headers['user-agent']
+    };
+
+    const result = await profileService.createProfileProperty(propertyData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(201).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create profile property',
+      error: error.message
+    });
+  }
+};
+
+export const createFamilyReference = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    const referenceData: IProfileFamilyReference = {
+      ...req.body,
+      account_id: parseInt(req.user?.account_code || '0')
+    };
+
+    const result = await profileService.createFamilyReference(referenceData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(201).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create family reference',
+      error: error.message
+    });
+  }
+};
+
+export const createProfileLifestyle = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    const lifestyleData: IProfileLifestyle = {
+      ...req.body,
+      created_user: req.user?.email,
+      is_active: req.body.is_active === 'true', // Convert string to boolean
+      profile_id: parseInt(req.body.profile_id)
+    };
+
+    const result = await profileService.createProfileLifestyle(lifestyleData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(201).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create profile lifestyle',
+      error: error.message
+    });
+  }
+};
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const partnerApiKey = req.headers['x-api-key'];
+    const accountId = req.body.account_id; // Assuming account_id is sent in the request body
+    const uploadPath = path.join(__dirname, `../uploads/photos/${partnerApiKey}/account-${accountId}/profile-profile-${req.body.profile_id}/`);
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({ storage });
+
+export const uploadProfilePhoto = upload.single('photo');
+
+export const createProfilePhoto = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    const photoData: IProfilePhoto = {
+      profile_id: parseInt(req.body.profile_id),
+      photo_type: parseInt(req.body.photo_type),
+      description: req.body.description,
+      caption: req.body.caption,
+      url: req.file.path, // Assuming the file path is stored in the URL field
+      user_created: req.user?.email,
+      ip_address: req.ip,
+      browser_profile: req.headers['user-agent']
+    };
+
+    const result = await profileService.createProfilePhoto(photoData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(201).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload profile photo',
       error: error.message
     });
   }
