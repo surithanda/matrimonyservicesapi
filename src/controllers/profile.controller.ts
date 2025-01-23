@@ -194,24 +194,41 @@ const ensureDirectoryExists = (dirPath: string) => {
   }
 };
 
-// Modify the storage configuration
+const sanitizeFilename = (filename: string): string => {
+  return filename.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+};
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const partnerApiKey = req.headers['x-api-key'];
     const accountId = req.user?.account_id;
-    const uploadPath = path.join(__dirname, `../uploads/photos/${partnerApiKey}/account-${accountId}/profile-profile-${req.body.profile_id}/`);
+    const profileId = req.body.profile_id;
+    const uploadPath = path.join(__dirname, `../uploads/${accountId}/${profileId}/Photos/`);
     
-    // Create directory if it doesn't exist
     ensureDirectoryExists(uploadPath);
-    
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const caption = req.body.caption;
+    if (!caption) {
+      cb(new Error('Caption is required'), '');
+      return;
+    }
+    
+    const sanitizedCaption = sanitizeFilename(caption);
+    cb(null, `${sanitizedCaption}.jpg`);
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (!req.body.caption) {
+      cb(new Error('Caption is required'));
+      return;
+    }
+    cb(null, true);
+  }
+});
 
 export const uploadProfilePhoto = upload.single('photo');
 
