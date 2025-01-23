@@ -4,6 +4,7 @@ import { AuthenticatedRequest } from '../interfaces/auth.interface';
 import { IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 
 export const createPersonalProfile = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -186,12 +187,23 @@ export const createProfileLifestyle = async (req: AuthenticatedRequest, res: Res
   }
 };
 
-// Configure multer for file uploads
+// Add this helper function
+const ensureDirectoryExists = (dirPath: string) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+};
+
+// Modify the storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const partnerApiKey = req.headers['x-api-key'];
-    const accountId = req.body.account_id; // Assuming account_id is sent in the request body
+    const accountId = req.user?.account_id;
     const uploadPath = path.join(__dirname, `../uploads/photos/${partnerApiKey}/account-${accountId}/profile-profile-${req.body.profile_id}/`);
+    
+    // Create directory if it doesn't exist
+    ensureDirectoryExists(uploadPath);
+    
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
@@ -232,4 +244,4 @@ export const createProfilePhoto = async (req: AuthenticatedRequest, res: Respons
       error: error.message
     });
   }
-}; 
+};
