@@ -6,17 +6,31 @@ import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import express from 'express';
+import fs from 'fs';
 
 const router = Router();
+
+const ensureDirectoryExists = (dirPath: string) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+};
 
 // Configure multer for photo uploads
 const storage = multer.diskStorage({
   destination: (req: express.Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-    cb(null, 'uploads/photos/');
+    const accountId = req.params.accountId || req.body.accountId;
+    const uploadPath = path.join(__dirname, `../uploads/photos/${accountId}`);
+    
+    try {
+      ensureDirectoryExists(uploadPath);
+      cb(null, uploadPath);
+    } catch (error) {
+      cb(error as Error, '');
+    }
   },
   filename: (req: express.Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
-    const uniqueFilename = `${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, uniqueFilename);
+    cb(null, 'account-photo.jpg');
   }
 });
 
@@ -277,4 +291,4 @@ router.put('/update', validateApiKey, authenticateJWT, updateAccount);
  */
 router.post('/photo', validateApiKey, authenticateJWT, upload.single('photo'), uploadPhoto);
 
-export default router; 
+export default router;
