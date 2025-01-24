@@ -126,7 +126,8 @@ export class AuthController {
           country: result.user.country,
           zip_code: result.user.zip_code,
           account_code: result.user.account_code,
-          account_id: result.user?.account_id
+          account_id: result.user?.account_id,
+          profile_summary: result.user.profile_summary
         }
       });
     } catch (error) {
