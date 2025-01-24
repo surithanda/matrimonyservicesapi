@@ -202,7 +202,7 @@ export class ProfileRepository {
         ];
 
         const [result] = await pool.execute(
-          'CALL usp_profile_family_reference_create_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL usp_profile_family_reference_create_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
 
@@ -262,6 +262,16 @@ export class ProfileRepository {
         return photoId;
       } catch (error) {
         console.error('Error in createProfilePhoto:', error);
+        throw error;
+      }
+    }
+
+    async getProfileSummary(accountId: number): Promise<any> {
+      try {
+        const [result]:any = await pool.execute('CALL usp_get_profile_summary(?)', [accountId]);
+        return result[0]; // Assuming the stored procedure returns the profile summary in the first row
+      } catch (error) {
+        console.error('Error fetching profile summary:', error);
         throw error;
       }
     }

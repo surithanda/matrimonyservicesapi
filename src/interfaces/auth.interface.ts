@@ -81,6 +81,7 @@ export interface VerifyOTPResult {
     state: string;
     country: string;
     zip_code: string;
+    profile_summary?: any;
   };
 }
 
