@@ -61,10 +61,14 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
 
     const accountService = new AccountService();
     const accountCode = req.user?.account_code;
-    console.log('accountCode',req.user);
+    console.log('accountCode', req.user);
     if (!accountCode) {
       // Delete uploaded file if unauthorized
-      fs.unlinkSync(req.file.path);
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error deleting file:', unlinkError);
+      }
       return res.status(401).json({
         success: false,
         message: 'Unauthorized'
@@ -75,7 +79,11 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
     const existingAccount = await accountService.getAccount(accountCode);
     if (!existingAccount.success) {
       // Delete uploaded file if account not found
-      fs.unlinkSync(req.file.path);
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error deleting file:', unlinkError);
+      }
       return res.status(404).json(existingAccount);
     }
 
@@ -83,7 +91,11 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
     if (existingAccount.data?.photo) {
       const oldPhotoPath = existingAccount.data.photo;
       if (fs.existsSync(oldPhotoPath)) {
-        fs.unlinkSync(oldPhotoPath);
+        try {
+          fs.unlinkSync(oldPhotoPath);
+        } catch (unlinkError) {
+          console.error('Error deleting old photo:', unlinkError);
+        }
       }
     }
 
@@ -94,7 +106,11 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
 
     if (!result.success) {
       // Delete uploaded file if update fails
-      fs.unlinkSync(req.file.path);
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error deleting uploaded file:', unlinkError);
+      }
       return res.status(400).json(result);
     }
 
@@ -108,7 +124,11 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
   } catch (error: any) {
     // Delete uploaded file if any error occurs
     if (req.file) {
-      fs.unlinkSync(req.file.path);
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Error deleting uploaded file on error:', unlinkError);
+      }
     }
     res.status(500).json({
       success: false,
