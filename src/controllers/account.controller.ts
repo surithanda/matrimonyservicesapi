@@ -101,7 +101,7 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     // Store relative path in database
-    const relativePhotoPath = `${accountCode}/${req.file.filename}`;
+    const relativePhotoPath = `account/${req.file.filename}`;
     const result = await accountService.updateAccount(accountCode, {
       photo: relativePhotoPath
     });
@@ -120,7 +120,7 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
       success: true,
       message: 'Photo uploaded successfully',
       data: {
-        photo_url: `/account/photos/${relativePhotoPath}`
+        photo_url: `/uploads/photos/${relativePhotoPath}`
       }
     });
   } catch (error: any) {
@@ -162,7 +162,7 @@ export const getProfilePhoto = async (req: AuthenticatedRequest, res: Response) 
       success: true,
       message: 'Photo retrieved successfully',
       data: {
-        photo_url: result.photoUrl ? `/account/photos/${result.photoUrl}` : null
+        photo_url: result.photoUrl ? `/uploads/${result.photoUrl}` : null
       }
     });
   } catch (error: any) {

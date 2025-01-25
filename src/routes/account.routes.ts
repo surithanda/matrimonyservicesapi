@@ -19,8 +19,7 @@ const ensureDirectoryExists = (dirPath: string) => {
 // Configure multer for photo uploads
 const storage = multer.diskStorage({
   destination: (req: express.Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-    const accountCode = (req as AuthenticatedRequest).user?.account_code;
-    const uploadPath = path.join(__dirname, `../../uploads/photos/${accountCode}`);
+    const uploadPath = path.join(__dirname, '../../uploads/photos/account');
     
     try {
       ensureDirectoryExists(uploadPath);
