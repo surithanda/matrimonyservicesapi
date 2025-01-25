@@ -133,4 +133,25 @@ export class AccountService {
       connection.release();
     }
   }
+
+  async getProfilePhoto(accountCode: string): Promise<{ success: boolean; message: string; photoUrl?: string }> {
+    try {
+      const account = await this.accountRepository.findByAccountCode(accountCode);
+      
+      if (!account) {
+        return {
+          success: false,
+          message: 'Account not found'
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Photo retrieved successfully',
+        photoUrl: account.photo // Assuming the photo field contains the URL or path
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 } 

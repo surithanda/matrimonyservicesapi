@@ -136,4 +136,35 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
       error: error.message
     });
   }
+};
+
+export const getProfilePhoto = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const accountService = new AccountService();
+    const accountCode = req.user?.account_code;
+
+    if (!accountCode) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    const result = await accountService.getProfilePhoto(accountCode);
+
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+
+    // Serve the photo file
+    const photoPath = result.photoUrl;
+    res.sendFile(photoPath, { root: '.' }); // Adjust the root path as necessary
+  } catch (error) {
+    console.error('Error fetching profile photo:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch profile photo',
+      error: error.message
+    });
+  }
 };                 

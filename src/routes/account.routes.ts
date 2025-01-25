@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerAccount, updateAccount, uploadPhoto } from '../controllers/account.controller';
+import { registerAccount, updateAccount, uploadPhoto, getProfilePhoto } from '../controllers/account.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 import multer from 'multer';
@@ -290,5 +290,24 @@ router.put('/update', validateApiKey, authenticateJWT, updateAccount);
  *         description: Server error
  */
 router.post('/photo', validateApiKey, authenticateJWT, upload.single('photo'), uploadPhoto);
+
+/**
+ * @swagger
+ * /account/photo:
+ *   get:
+ *     summary: Get account photo
+ *     tags: [Account]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Photo retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/photo', validateApiKey, authenticateJWT, getProfilePhoto);
 
 export default router;
