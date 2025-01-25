@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AccountService } from '../services/account.service';
 import { AuthenticatedRequest } from '../interfaces/auth.interface';
 import fs from 'fs';
+import path from 'path';
 
 export const registerAccount = async (req: Request, res: Response) => {
   try {
@@ -61,7 +62,7 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
 
     const accountService = new AccountService();
     const accountCode = req.user?.account_code;
-    console.log('accountCode', req.user);
+    
     if (!accountCode) {
       // Delete uploaded file if unauthorized
       try {
@@ -89,7 +90,7 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
 
     // If there's an existing photo, delete it
     if (existingAccount.data?.photo) {
-      const oldPhotoPath = existingAccount.data.photo;
+      const oldPhotoPath = path.join(__dirname, '../../uploads/photos', existingAccount.data.photo);
       if (fs.existsSync(oldPhotoPath)) {
         try {
           fs.unlinkSync(oldPhotoPath);
@@ -99,9 +100,10 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
       }
     }
 
-    // Update account with new photo path
+    // Store relative path in database
+    const relativePhotoPath = `${accountCode}/${req.file.filename}`;
     const result = await accountService.updateAccount(accountCode, {
-      photo: req.file.path
+      photo: relativePhotoPath
     });
 
     if (!result.success) {
@@ -118,7 +120,7 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
       success: true,
       message: 'Photo uploaded successfully',
       data: {
-        photo_url: `/photos/${req.file.filename}` // Return relative URL
+        photo_url: `/account/photos/${relativePhotoPath}`
       }
     });
   } catch (error: any) {
@@ -151,19 +153,22 @@ export const getProfilePhoto = async (req: AuthenticatedRequest, res: Response) 
     }
 
     const result = await accountService.getProfilePhoto(accountCode);
-
     if (!result.success) {
       return res.status(404).json(result);
     }
 
-    // Serve the photo file
-    const photoPath = result.photoUrl;
-    res.sendFile(photoPath, { root: '.' }); // Adjust the root path as necessary
-  } catch (error) {
-    console.error('Error fetching profile photo:', error);
+    // Return the URL for the photo
+    res.status(200).json({
+      success: true,
+      message: 'Photo retrieved successfully',
+      data: {
+        photo_url: result.photoUrl ? `/account/photos/${result.photoUrl}` : null
+      }
+    });
+  } catch (error: any) {
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch profile photo',
+      message: 'Failed to retrieve photo',
       error: error.message
     });
   }

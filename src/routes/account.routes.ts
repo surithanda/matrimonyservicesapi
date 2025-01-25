@@ -19,8 +19,8 @@ const ensureDirectoryExists = (dirPath: string) => {
 // Configure multer for photo uploads
 const storage = multer.diskStorage({
   destination: (req: express.Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-    const accountId = req.params.accountId || req.body.accountId;
-    const uploadPath = path.join(__dirname, `../uploads/photos/${accountId}`);
+    const accountCode = (req as AuthenticatedRequest).user?.account_code;
+    const uploadPath = path.join(__dirname, `../../uploads/photos/${accountCode}`);
     
     try {
       ensureDirectoryExists(uploadPath);
@@ -30,7 +30,8 @@ const storage = multer.diskStorage({
     }
   },
   filename: (req: express.Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
-    cb(null, 'account-photo.jpg');
+    const uniqueFilename = `${uuidv4()}${path.extname(file.originalname)}`;
+    cb(null, uniqueFilename);
   }
 });
 
@@ -53,7 +54,7 @@ const upload = multer({
 });
 
 // Serve uploaded photos
-router.use('/photos', express.static('uploads/photos'));
+router.use('/photos', express.static(path.join(__dirname, '../../uploads/photos')));
 
 /**
  * @swagger
