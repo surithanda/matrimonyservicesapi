@@ -7,6 +7,30 @@ import cors from './config/cors';
 import { specs } from './config/swagger';
 import profileRoutes from './routes/profile.routes';
 import logger from './config/logger';
+import path from 'path';
+import fs from 'fs';
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+const photoUploadsDir = path.join(uploadsDir, 'photos');
+const accountPhotoDir = path.join(photoUploadsDir, 'account');
+
+try {
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    logger.info('Created uploads directory');
+  }
+  if (!fs.existsSync(photoUploadsDir)) {
+    fs.mkdirSync(photoUploadsDir, { recursive: true });
+    logger.info('Created photos upload directory');
+  }
+  if (!fs.existsSync(accountPhotoDir)) {
+    fs.mkdirSync(accountPhotoDir, { recursive: true });
+    logger.info('Created account photos directory');
+  }
+} catch (error) {
+  logger.error('Error creating upload directories:', error);
+}
 
 dotenv.config();
 
@@ -17,6 +41,9 @@ const port = process.env.PORT || 3000;
 app.use(cors);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploads directory statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Request logging middleware
 app.use((req, res, next) => {

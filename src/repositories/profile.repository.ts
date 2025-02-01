@@ -1,4 +1,4 @@
-import { IProfilePersonal, IProfileAddress, IProfileEducation, IProfileEmployment } from '../interfaces/profile.interface';
+import { IProfilePersonal, IProfileAddress, IProfileEducation, IProfileEmployment, IProfileProperty, IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
 import pool from '../config/database';
 
 export class ProfileRepository {
@@ -130,6 +130,148 @@ export class ProfileRepository {
         );
       } catch (error) {
         console.error('Error in createProfileEmployment:', error);
+        throw error;
+      }
+    }
+
+    async createProfileProperty(propertyData: IProfileProperty): Promise<number> {
+      try {
+        const params = [
+          propertyData.profile_id,
+          propertyData.property_type,
+          propertyData.ownership_type,
+          propertyData.property_address,
+          propertyData.property_value,
+          propertyData.property_description,
+          propertyData.isoktodisclose,
+          propertyData.created_by,
+          propertyData.ip_address,
+          propertyData.browser_profile
+        ];
+
+        const [result] = await pool.execute(
+          'CALL usp_profile_property_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        const propertyId = (result as any[])[0][0].property_id;
+        return propertyId;
+      } catch (error) {
+        console.error('Error in createProfileProperty:', error);
+        throw error;
+      }
+    }
+
+    async createFamilyReference(referenceData: IProfileFamilyReference): Promise<number> {
+      try {
+        const params = [
+          referenceData.profile_id,
+          referenceData.reference_type,
+          referenceData.first_name,
+          referenceData.last_name,
+          referenceData.middle_name,
+          referenceData.alias,
+          referenceData.gender,
+          referenceData.date_of_birth,
+          referenceData.religion,
+          referenceData.nationality,
+          referenceData.caste,
+          referenceData.marital_status,
+          referenceData.highest_education,
+          referenceData.disability,
+          referenceData.address_line1,
+          referenceData.city,
+          referenceData.state,
+          referenceData.country,
+          referenceData.zip,
+          referenceData.primary_phone,
+          referenceData.secondary_phone,
+          referenceData.can_communicate,
+          referenceData.email,
+          referenceData.linkedin,
+          referenceData.instagram,
+          referenceData.facebook,
+          referenceData.whatsapp,
+          referenceData.employment_status,
+          referenceData.emp_company_name,
+          referenceData.emp_city,
+          referenceData.emp_state,
+          referenceData.emp_country,
+          referenceData.emp_zip,
+          referenceData.account_id
+        ];
+
+        const [result] = await pool.execute(
+          'CALL usp_profile_family_reference_create_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        const referenceId = (result as any[])[0][0].reference_id;
+        return referenceId;
+      } catch (error) {
+        console.error('Error in createFamilyReference:', error);
+        throw error;
+      }
+    }
+
+    async createProfileLifestyle(lifestyleData: IProfileLifestyle): Promise<void> {
+      try {
+        const params = [
+          lifestyleData.profile_lifestyle_id,
+          lifestyleData.eating_habit,
+          lifestyleData.diet_habit,
+          lifestyleData.cigarettes_per_day,
+          lifestyleData.drink_frequency,
+          lifestyleData.gambling_engage,
+          lifestyleData.physical_activity_level,
+          lifestyleData.relaxation_methods,
+          lifestyleData.created_user,
+          Number(lifestyleData.is_active),
+          lifestyleData.profile_id
+        ];
+
+        await pool.execute(
+          'CALL usp_profile_lifestyle_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+      } catch (error) {
+        console.error('Error in createProfileLifestyle:', error);
+        throw error;
+      }
+    }
+
+    async createProfilePhoto(photoData: IProfilePhoto): Promise<number> {
+      try {
+        const params = [
+          photoData.profile_id,
+          photoData.photo_type,
+          photoData.description,
+          photoData.caption,
+          photoData.url,
+          photoData.user_created,
+          photoData.ip_address,
+          photoData.browser_profile
+        ];
+
+        const [result] = await pool.execute(
+          'CALL usp_profile_photo_create(?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        const photoId = (result as any[])[0][0].photo_id;
+        return photoId;
+      } catch (error) {
+        console.error('Error in createProfilePhoto:', error);
+        throw error;
+      }
+    }
+
+    async getProfileSummary(accountId: number): Promise<any> {
+      try {
+        const [result]:any = await pool.execute('CALL usp_get_profile_summary(?)', [accountId]);
+        return result[0]; // Assuming the stored procedure returns the profile summary in the first row
+      } catch (error) {
+        console.error('Error fetching profile summary:', error);
         throw error;
       }
     }

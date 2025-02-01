@@ -1,18 +1,32 @@
 import { Router } from 'express';
-import { registerAccount, updateAccount, uploadPhoto } from '../controllers/account.controller';
+import { registerAccount, updateAccount, uploadPhoto, getProfilePhoto } from '../controllers/account.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 import multer from 'multer';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import express from 'express';
+import fs from 'fs';
 
 const router = Router();
+
+const ensureDirectoryExists = (dirPath: string) => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+};
 
 // Configure multer for photo uploads
 const storage = multer.diskStorage({
   destination: (req: express.Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-    cb(null, 'uploads/photos/');
+    const uploadPath = path.join(__dirname, '../../uploads/photos/account');
+    
+    try {
+      ensureDirectoryExists(uploadPath);
+      cb(null, uploadPath);
+    } catch (error) {
+      cb(error as Error, '');
+    }
   },
   filename: (req: express.Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
     const uniqueFilename = `${uuidv4()}${path.extname(file.originalname)}`;
@@ -39,7 +53,7 @@ const upload = multer({
 });
 
 // Serve uploaded photos
-router.use('/photos', express.static('uploads/photos'));
+router.use('/photos', express.static(path.join(__dirname, '../../uploads/photos')));
 
 /**
  * @swagger
@@ -277,4 +291,23 @@ router.put('/update', validateApiKey, authenticateJWT, updateAccount);
  */
 router.post('/photo', validateApiKey, authenticateJWT, upload.single('photo'), uploadPhoto);
 
-export default router; 
+/**
+ * @swagger
+ * /account/photo:
+ *   get:
+ *     summary: Get account photo
+ *     tags: [Account]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Photo retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/photo', validateApiKey, authenticateJWT, getProfilePhoto);
+
+export default router;

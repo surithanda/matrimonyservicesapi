@@ -1,14 +1,17 @@
 import bcrypt from 'bcrypt';
 import { LoginCredentials, LoginResponse, VerifyOTPResult } from '../interfaces/auth.interface';
 import { AuthRepository } from '../repositories/auth.repository';
+import { ProfileRepository } from '../repositories/profile.repository';
 import { generateOTP, sendOTP } from '../utils/email.util';
 import { AppError } from '../middleware/error.middleware';
 
 export class AuthService {
   private authRepository: AuthRepository;
+  private profileRepository: ProfileRepository;
 
   constructor() {
     this.authRepository = new AuthRepository();
+    this.profileRepository = new ProfileRepository();
   }
 
   async login(credentials: { 
@@ -94,6 +97,9 @@ export class AuthService {
         };
       }
 
+      // Call the stored procedure to get the profile summary
+      const profileSummary = await this.profileRepository.getProfileSummary(result.account_id);
+
       return {
         success: true,
         user: {
@@ -107,11 +113,12 @@ export class AuthService {
           phone: result.primary_phone,
           date_of_birth: result.birth_date,
           age: result.age,
-          address: result.address_line1,
+          address: result.address,
           city: result.city,
           state: result.state,
           country: result.country,
-          zip_code: result.zip
+          zip_code: result.zip,
+          profile_summary: profileSummary || []
         }
       };
     } catch (error) {
