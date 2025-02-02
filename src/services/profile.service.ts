@@ -172,4 +172,82 @@ export class ProfileService {
       throw error;
     }
   }
-} 
+
+  async updateProfileEducation(
+    profile_education_id: number,
+    educationData: IProfileEducation,
+    ip_address: string,
+    browser_profile: string
+  ): Promise<IProfileResponse> {
+    try {
+      const updatedId = await this.profileRepository.updateProfileEducation(
+        profile_education_id,
+        educationData,
+        ip_address,
+        browser_profile
+      );
+
+      return {
+        success: true,
+        message: 'Profile education updated successfully',
+        data: {
+          profile_education_id: updatedId
+        }
+      };
+    } catch (error: any) {
+      if (error.message.includes('Profile does not exist')) {
+        return {
+          success: false,
+          message: 'Profile does not exist for the given profile_id'
+        };
+      }
+      if (error.message.includes('Profile education record does not exist')) {
+        return {
+          success: false,
+          message: 'Profile education record does not exist for the given profile_education_id'
+        };
+      }
+      throw error;
+    }
+  }
+
+  async deleteProfileEducation(
+    profile_education_id: number,
+    profile_id: number,
+    user_deleted: string,
+    ip_address: string,
+    browser_profile: string
+  ): Promise<IProfileResponse> {
+    try {
+      const deletedId = await this.profileRepository.deleteProfileEducation(
+        profile_education_id,
+        profile_id,
+        user_deleted,
+        ip_address,
+        browser_profile
+      );
+
+      return {
+        success: true,
+        message: 'Profile education deleted successfully',
+        data: {
+          profile_education_id: deletedId
+        }
+      };
+    } catch (error: any) {
+      if (error.message.includes('Profile does not exist')) {
+        return {
+          success: false,
+          message: 'Profile does not exist for the given profile_id'
+        };
+      }
+      if (error.message.includes('Profile education record does not exist')) {
+        return {
+          success: false,
+          message: 'Profile education record does not exist for the given profile_education_id'
+        };
+      }
+      throw error;
+    }
+  }
+}

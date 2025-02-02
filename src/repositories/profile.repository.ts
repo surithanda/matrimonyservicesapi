@@ -266,6 +266,72 @@ export class ProfileRepository {
       }
     }
 
+    async updateProfileEducation(
+      profile_education_id: number,
+      educationData: IProfileEducation,
+      ip_address: string,
+      browser_profile: string
+    ): Promise<number> {
+      try {
+        const params = [
+          profile_education_id,
+          educationData.profile_id,
+          educationData.education_level,
+          educationData.year_completed,
+          educationData.institution_name,
+          educationData.address_line1,
+          educationData.city,
+          educationData.state,
+          educationData.country,
+          educationData.zip,
+          educationData.field_of_study,
+          educationData.user_created, // Using as user_modified
+          ip_address,
+          browser_profile
+        ];
+
+        const [result] = await pool.execute(
+          'CALL usp_profile_education_update_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        const updatedId = (result as any[])[0][0].updated_profile_education_id;
+        return updatedId;
+      } catch (error) {
+        console.error('Error in updateProfileEducation:', error);
+        throw error;
+      }
+    }
+
+    async deleteProfileEducation(
+      profile_education_id: number,
+      profile_id: number,
+      user_deleted: string,
+      ip_address: string,
+      browser_profile: string
+    ): Promise<number> {
+      try {
+        const params = [
+          profile_education_id,
+          profile_id,
+          user_deleted,
+          ip_address,
+          browser_profile
+        ];
+
+        const [result] = await pool.execute(
+          'CALL usp_profile_education_delete_v2(?, ?, ?, ?, ?)',
+          params
+        );
+
+        const deletedId = (result as any[])[0][0].deleted_profile_education_id;
+        return deletedId;
+      } catch (error) {
+        console.error('Error in deleteProfileEducation:', error);
+        throw error;
+      }
+    }
+
     async getProfileSummary(accountId: number): Promise<any> {
       try {
         const [result]:any = await pool.execute('CALL usp_get_profile_summary(?)', [accountId]);

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ProfileService } from '../services/profile.service';
 import { AuthenticatedRequest } from '../interfaces/auth.interface';
-import { IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
+import { IProfileFamilyReference, IProfileLifestyle, IProfilePhoto, IProfileEducation } from '../interfaces/profile.interface';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -200,7 +200,7 @@ const sanitizeFilename = (filename: string): string => {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const accountId = req.user?.account_id;
+    const accountId = req?.user?.account_id || '';
     const profileId = req.body.profile_id;
     const uploadPath = path.join(__dirname, `../uploads/${accountId}/${profileId}/Photos/`);
     
@@ -241,10 +241,10 @@ export const createProfilePhoto = async (req: AuthenticatedRequest, res: Respons
       photo_type: parseInt(req.body.photo_type),
       description: req.body.description,
       caption: req.body.caption,
-      url: req.file.path, // Assuming the file path is stored in the URL field
-      user_created: req.user?.email,
-      ip_address: req.ip,
-      browser_profile: req.headers['user-agent']
+      url: req.file?.path || '',
+      user_created: req.user?.email || '',
+      ip_address: req.ip || '',
+      browser_profile: req.headers['user-agent'] || ''
     };
 
     const result = await profileService.createProfilePhoto(photoData);
@@ -258,6 +258,65 @@ export const createProfilePhoto = async (req: AuthenticatedRequest, res: Respons
     res.status(500).json({
       success: false,
       message: 'Failed to upload profile photo',
+      error: error.message
+    });
+  }
+};
+
+export const updateProfileEducation = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const profile_education_id = parseInt(req.params.id);
+    
+    const educationData: IProfileEducation = {
+      ...req.body,
+      user_created: req.user?.email // Using as user_modified
+    };
+
+    const result = await profileService.updateProfileEducation(
+      profile_education_id,
+      educationData,
+      req?.ip || '',
+      req.headers['user-agent'] || ''
+    );
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile education',
+      error: error.message
+    });
+  }
+};
+
+export const deleteProfileEducation = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const profile_education_id = parseInt(req.params.id);
+    const profile_id = parseInt(req.body.profile_id);
+
+    const result = await profileService.deleteProfileEducation(
+      profile_education_id,
+      profile_id,
+      req.user?.email || '',
+      req?.ip || '',
+      req.headers['user-agent'] || ''
+    );
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete profile education',
       error: error.message
     });
   }

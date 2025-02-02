@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto } from '../controllers/profile.controller';
+import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto, updateProfileEducation, deleteProfileEducation } from '../controllers/profile.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 
@@ -272,6 +272,90 @@ router.post(
   authenticateJWT,
   uploadProfilePhoto,
   createProfilePhoto
+);
+
+/**
+ * @swagger
+ * /profile/education/{id}:
+ *   put:
+ *     summary: Update profile education
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Profile education ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProfileEducation'
+ *     responses:
+ *       200:
+ *         description: Profile education updated successfully
+ *       400:
+ *         description: Invalid request data or profile/education record not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  '/education/:id',
+  validateApiKey,
+  authenticateJWT,
+  updateProfileEducation
+);
+
+/**
+ * @swagger
+ * /profile/education/{id}:
+ *   delete:
+ *     summary: Delete profile education
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Profile education ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *                 description: Profile ID
+ *             required:
+ *               - profile_id
+ *     responses:
+ *       200:
+ *         description: Profile education deleted successfully
+ *       400:
+ *         description: Invalid request data or profile/education record not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/education/:id',
+  validateApiKey,
+  authenticateJWT,
+  deleteProfileEducation
 );
 
 export default router; 
