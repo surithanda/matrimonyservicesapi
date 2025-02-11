@@ -32,10 +32,8 @@ export interface IProfilePersonal {
 export interface IProfileResponse {
   success: boolean;
   message: string;
-  data?: {
-    profile_id: number;
-    profile: IProfilePersonal;
-  };
+  data?: any; // Changed from specific type to any to allow different response structures
+  error?: string;
 }
 
 export interface IProfileAddress {
@@ -155,4 +153,4 @@ export interface IProfilePhoto {
   user_created: string;
   ip_address: string;
   browser_profile: string;
-} 
+}

@@ -199,7 +199,7 @@ const sanitizeFilename = (filename: string): string => {
 };
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req: any, file, cb) => {
     const accountId = req?.user?.account_id || '';
     const profileId = req.body.profile_id;
     const uploadPath = path.join(__dirname, `../uploads/${accountId}/${profileId}/Photos/`);
