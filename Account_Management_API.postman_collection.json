@@ -391,6 +391,141 @@
           "path": ["api", "profile", "employment"]
         }
       }
+    },
+    {
+      "name": "Create Profile Property",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"profile_id\": 1,\n  \"property_type\": \"Real Estate\",\n  \"property_value\": 500000,\n  \"ownership_status\": \"Owned\",\n  \"property_details\": \"3 bedroom house with garden\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/profile/property",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profile", "property"]
+        }
+      }
+    },
+    {
+      "name": "Create Family Reference",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"profile_id\": 1,\n  \"name\": \"Jane Doe\",\n  \"relation\": \"Sister\",\n  \"address_line1\": \"789 Family St\",\n  \"address_line2\": \"Unit 2\",\n  \"city\": \"Family Town\",\n  \"state\": \"FT\",\n  \"country\": \"US\",\n  \"zip\": \"67890\",\n  \"contact_number\": \"5551234567\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/profile/family-reference",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profile", "family-reference"]
+        }
+      }
+    },
+    {
+      "name": "Create Profile Lifestyle",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"profile_id\": 1,\n  \"hobbies\": [\"Reading\", \"Traveling\"],\n  \"interests\": [\"Technology\", \"Photography\"],\n  \"habits\": [\"Early riser\", \"Regular exercise\"]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/profile/lifestyle",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profile", "lifestyle"]
+        }
+      }
+    },
+    {
+      "name": "Update Profile Education",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"profile_id\": 1,\n  \"education_level\": 2,\n  \"year_completed\": 2021,\n  \"institution_name\": \"Updated University\",\n  \"address_line1\": \"456 Education Ave\",\n  \"city\": \"Academic City\",\n  \"state\": \"AC\",\n  \"country\": \"US\",\n  \"zip\": \"54321\",\n  \"field_of_study\": 2\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/profile/education/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profile", "education", "1"]
+        }
+      }
+    },
+    {
+      "name": "Delete Profile Education",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}",
+            "type": "text"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"profile_id\": 1\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/profile/education/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "profile", "education", "1"]
+        }
+      }
     }
   ]
-} 
+}

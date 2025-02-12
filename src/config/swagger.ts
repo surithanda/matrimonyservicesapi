@@ -384,6 +384,129 @@ const options = {
               example: '10001'
             }
           }
+        },
+        ProfileFamilyReference: {
+          type: 'object',
+          required: [
+            'profile_id',
+            'name',
+            'relation',
+            'address_line1',
+            'city',
+            'state',
+            'country',
+            'zip',
+            'contact_number'
+          ],
+          properties: {
+            profile_id: {
+              type: 'integer',
+              example: 1
+            },
+            name: {
+              type: 'string',
+              example: 'Jane Doe'
+            },
+            relation: {
+              type: 'string',
+              example: 'Sister'
+            },
+            address_line1: {
+              type: 'string',
+              example: '789 Family St'
+            },
+            address_line2: {
+              type: 'string',
+              example: 'Unit 2'
+            },
+            city: {
+              type: 'string',
+              example: 'Family Town'
+            },
+            state: {
+              type: 'string',
+              example: 'FT'
+            },
+            country: {
+              type: 'string',
+              example: 'US'
+            },
+            zip: {
+              type: 'string',
+              example: '67890'
+            },
+            contact_number: {
+              type: 'string',
+              example: '5551234567'
+            }
+          }
+        },
+        ProfileLifestyle: {
+          type: 'object',
+          required: [
+            'profile_id',
+            'hobbies',
+            'interests',
+            'habits'
+          ],
+          properties: {
+            profile_id: {
+              type: 'integer',
+              example: 1
+            },
+            hobbies: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              example: ['Reading', 'Traveling']
+            },
+            interests: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              example: ['Technology', 'Photography']
+            },
+            habits: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              example: ['Early riser', 'Regular exercise']
+            }
+          }
+        },
+        ProfileProperty: {
+          type: 'object',
+          required: [
+            'profile_id',
+            'property_type',
+            'property_value',
+            'ownership_status'
+          ],
+          properties: {
+            profile_id: {
+              type: 'integer',
+              example: 1
+            },
+            property_type: {
+              type: 'string',
+              example: 'Real Estate'
+            },
+            property_value: {
+              type: 'number',
+              example: 500000
+            },
+            ownership_status: {
+              type: 'string',
+              example: 'Owned'
+            },
+            property_details: {
+              type: 'string',
+              example: '3 bedroom house with garden'
+            }
+          }
         }
       }
     },
@@ -396,4 +519,4 @@ const options = {
   apis: ['./src/routes/*.ts', './dist/routes/*.js'], // Include both TS and JS paths
 };
 
-export const specs = swaggerJsdoc(options); 
+export const specs = swaggerJsdoc(options);
