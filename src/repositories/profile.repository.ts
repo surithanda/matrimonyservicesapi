@@ -341,4 +341,26 @@ export class ProfileRepository {
         throw error;
       }
     }
+
+    async getProfileDetails(profileId: number): Promise<any> {
+      try {
+        const [rows] = await pool.execute(
+          'CALL usp_get_profile_details(?)',
+          [profileId]
+        );
+    
+        // Stored procedures return array of results where first element is the result set
+        // And first element of that array is our data row
+        if (Array.isArray(rows) && rows.length > 0 && Array.isArray(rows[0]) && rows[0].length > 0) {
+          return rows[0][0];
+        }
+    
+        throw new Error('Profile not found');
+      } catch (error: any) {
+        if (error.message === 'Profile not found') {
+          throw error;
+        }
+        throw new Error(`Database error: ${error.message}`);
+      }
+    }
   }

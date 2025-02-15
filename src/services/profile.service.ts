@@ -250,4 +250,24 @@ export class ProfileService {
       throw error;
     }
   }
+
+  async getProfileDetails(profileId: number): Promise<IProfileResponse> {
+    try {
+      const profileDetails = await this.profileRepository.getProfileDetails(profileId);
+      
+      return {
+        success: true,
+        message: 'Profile details retrieved successfully',
+        data: profileDetails
+      };
+    } catch (error: any) {
+      if (error.message === 'Profile not found') {
+        return {
+          success: false,
+          message: 'Profile not found'
+        };
+      }
+      throw error;
+    }
+  }
 }

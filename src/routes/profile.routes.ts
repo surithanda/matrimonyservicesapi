@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto, updateProfileEducation, deleteProfileEducation } from '../controllers/profile.controller';
+import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto, updateProfileEducation, deleteProfileEducation, getProfileDetails } from '../controllers/profile.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 
@@ -358,4 +358,31 @@ router.delete(
   deleteProfileEducation
 );
 
-export default router; 
+/**
+ * @swagger
+ * /profile/details/{profileId}:
+ *   get:
+ *     summary: Get profile details
+ *     tags: [Profile]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Profile ID
+ *     responses:
+ *       200:
+ *         description: Profile details retrieved successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get('/details/:profileId', validateApiKey, authenticateJWT, getProfileDetails);
+
+export default router;

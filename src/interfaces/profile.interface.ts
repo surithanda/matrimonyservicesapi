@@ -154,3 +154,31 @@ export interface IProfilePhoto {
   ip_address: string;
   browser_profile: string;
 }
+
+export interface IProfileDetails {
+  profile_id: number;
+  account_id: number;
+  first_name: string;
+  last_name: string;
+  middle_name: string;
+  prefix: string;
+  suffix: string;
+  gender: string;
+  birth_date: Date;
+  phone_mobile: string;
+  phone_home: string;
+  phone_emergency: string;
+  email_id: string;
+  marital_status: string;
+  religion: string;
+  nationality: string;
+  profession: string;
+  disability: string;
+  height_cms: number;
+  height_inches: number;
+  complexion: string;
+  linkedin: string;
+  facebook: string;
+  instagram: string;
+  whatsapp_number: string;
+}

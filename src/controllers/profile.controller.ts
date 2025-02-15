@@ -321,3 +321,31 @@ export const deleteProfileEducation = async (req: AuthenticatedRequest, res: Res
     });
   }
 };
+
+export const getProfileDetails = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const profileId = parseInt(req.params.profileId);
+
+    if (isNaN(profileId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid profile ID'
+      });
+    }
+
+    const result = await profileService.getProfileDetails(profileId);
+    
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch profile details',
+      error: error.message
+    });
+  }
+};
