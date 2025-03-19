@@ -12,7 +12,7 @@ const options = {
       {
         url: process.env.NODE_ENV === 'production'
           ? 'https://charming-hoover.65-254-80-213.plesk.page/api'
-          : 'http://localhost:3000/api',
+          : 'http://localhost:8080/api',
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       }
     ],
