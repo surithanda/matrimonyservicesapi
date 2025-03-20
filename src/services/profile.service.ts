@@ -88,9 +88,9 @@ export class ProfileService {
     }
   }
 
-  async createProfileProperty(propertyData: IProfileProperty): Promise<IProfileResponse> {
+  async createProfileProperty(propertyData: IProfileProperty): Promise<any> {
     try {
-      const propertyId = await this.profileRepository.createProfileProperty(propertyData);
+      const propertyId:any = await this.profileRepository.createProfileProperty(propertyData);
 
       return {
         success: true,
@@ -110,7 +110,7 @@ export class ProfileService {
     }
   }
 
-  async createFamilyReference(referenceData: IProfileFamilyReference): Promise<IProfileResponse> {
+  async createFamilyReference(referenceData: IProfileFamilyReference): Promise<any> {
     try {
       const referenceId = await this.profileRepository.createFamilyReference(referenceData);
 
@@ -151,7 +151,7 @@ export class ProfileService {
     }
   }
 
-  async createProfilePhoto(photoData: IProfilePhoto): Promise<IProfileResponse> {
+  async createProfilePhoto(photoData: IProfilePhoto): Promise<any> {
     try {
       const photoId = await this.profileRepository.createProfilePhoto(photoData);
 

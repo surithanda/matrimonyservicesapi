@@ -200,7 +200,7 @@ const sanitizeFilename = (filename: string): string => {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const accountId = req.user?.account_id;
+    const accountId: any = (req as AuthenticatedRequest)?.user?.account_code;
     const profileId = req.body.profile_id;
     const uploadPath = path.join(__dirname, `../uploads/${accountId}/${profileId}/Photos/`);
     
@@ -241,10 +241,10 @@ export const createProfilePhoto = async (req: AuthenticatedRequest, res: Respons
       photo_type: parseInt(req.body.photo_type),
       description: req.body.description,
       caption: req.body.caption,
-      url: req.file.path, // Assuming the file path is stored in the URL field
-      user_created: req.user?.email,
-      ip_address: req.ip,
-      browser_profile: req.headers['user-agent']
+      url: req.file?.path || '', // Ensure req.file is defined before accessing path
+      user_created: req.user?.email || '',
+      ip_address: req.ip || '',
+      browser_profile: req.headers['user-agent'] || ''
     };
 
     const result = await profileService.createProfilePhoto(photoData);
