@@ -119,10 +119,13 @@ export interface ResetPasswordResponse {
 }
 
 export interface AuthenticatedRequest extends Request {
-  user?: {
-    account_code: string;
+  user: {
+    id: string;
     email: string;
-    first_name: string;
-    last_name: string;
+    role: string;
+    subscription?: {
+      planId: string;
+      status: string;
+    };
   };
 } 

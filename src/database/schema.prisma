@@ -1,0 +1,649 @@
+// =================================
+// MATRIMONY SERVICES API - PRISMA SCHEMA
+// Modern database schema with best practices
+// =================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =================================
+// CORE USER MODELS
+// =================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String?  @unique
+  password  String
+  role      UserRole @default(USER)
+  
+  // Authentication & Security
+  emailVerified    Boolean   @default(false)
+  phoneVerified    Boolean   @default(false)
+  emailVerifyToken String?
+  phoneVerifyToken String?
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  lastLogin        DateTime?
+  loginAttempts    Int       @default(0)
+  lockUntil        DateTime?
+  
+  // Profile relationship
+  profile   Profile?
+  
+  // Activity tracking
+  sessions      Session[]
+  activities    Activity[]
+  notifications Notification[]
+  
+  // Subscription & Payments
+  subscription Subscription?
+  payments     Payment[]
+  
+  // Privacy & Preferences
+  privacySettings PrivacySettings?
+  preferences     UserPreferences?
+  
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  
+  @@map("users")
+}
+
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Basic Information
+  firstName    String
+  lastName     String
+  displayName  String?
+  dateOfBirth  DateTime
+  gender       Gender
+  
+  // Contact Information
+  alternateEmail String?
+  whatsappNumber String?
+  
+  // Physical Attributes
+  height       Int? // in centimeters
+  weight       Int? // in kilograms
+  bodyType     BodyType?
+  complexion   Complexion?
+  
+  // Background Information
+  religion     Religion?
+  caste        String?
+  subCaste     String?
+  motherTongue String?
+  nationality  String?
+  
+  // Professional Information
+  education       EducationLevel?
+  occupation      String?
+  company         String?
+  designation     String?
+  workLocation    String?
+  annualIncome    Int? // in local currency
+  
+  // Family Information
+  fatherName           String?
+  motherName           String?
+  fatherOccupation     String?
+  motherOccupation     String?
+  siblings             Int       @default(0)
+  familyType          FamilyType?
+  familyValues        FamilyValues?
+  familyAffluence     FamilyAffluence?
+  
+  // Location Information
+  currentCity     String?
+  currentState    String?
+  currentCountry  String?
+  permanentCity   String?
+  permanentState  String?
+  permanentCountry String?
+  
+  // Lifestyle Information
+  diet            Diet?
+  smoking         SmokingHabits?
+  drinking        DrinkingHabits?
+  hobbies         String?
+  interests       String?
+  
+  // About & Bio
+  bio             String?  @db.Text
+  aboutFamily     String?  @db.Text
+  
+  // Profile Status
+  profileStatus   ProfileStatus @default(INCOMPLETE)
+  verificationStatus VerificationStatus @default(PENDING)
+  profileViews    Int       @default(0)
+  
+  // Media
+  photos          Photo[]
+  
+  // Partner Preferences
+  partnerPreferences PartnerPreferences?
+  
+  // Interactions
+  sentInterests     Interest[] @relation("SentInterests")
+  receivedInterests Interest[] @relation("ReceivedInterests")
+  
+  // Matches
+  primaryMatches   Match[] @relation("PrimaryMatches")
+  secondaryMatches Match[] @relation("SecondaryMatches")
+  
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("profiles")
+}
+
+model PartnerPreferences {
+  id        String @id @default(cuid())
+  profileId String @unique
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  // Age preferences
+  minAge Int?
+  maxAge Int?
+  
+  // Physical preferences
+  minHeight Int?
+  maxHeight Int?
+  bodyTypes Json? // Array of BodyType enums
+  complexions Json? // Array of Complexion enums
+  
+  // Background preferences
+  religions Json? // Array of Religion enums
+  castes    String?
+  motherTongues String?
+  
+  // Professional preferences
+  educationLevels Json? // Array of EducationLevel enums
+  occupations     String?
+  minIncome       Int?
+  maxIncome       Int?
+  
+  // Location preferences
+  preferredCities    String?
+  preferredStates    String?
+  preferredCountries String?
+  
+  // Lifestyle preferences
+  diets          Json? // Array of Diet enums
+  smokingHabits  Json? // Array of SmokingHabits enums
+  drinkingHabits Json? // Array of DrinkingHabits enums
+  
+  // Family preferences
+  familyTypes    Json? // Array of FamilyType enums
+  familyValues   Json? // Array of FamilyValues enums
+  
+  // Other preferences
+  description String? @db.Text
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("partner_preferences")
+}
+
+// =================================
+// MEDIA MODELS
+// =================================
+
+model Photo {
+  id        String @id @default(cuid())
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  thumbnailUrl String?
+  
+  isPrimary   Boolean @default(false)
+  isVerified  Boolean @default(false)
+  orderIndex  Int     @default(0)
+  
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("photos")
+}
+
+// =================================
+// INTERACTION MODELS
+// =================================
+
+model Interest {
+  id         String        @id @default(cuid())
+  senderId   String
+  receiverId String
+  sender     Profile       @relation("SentInterests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   Profile       @relation("ReceivedInterests", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  status     InterestStatus @default(PENDING)
+  message    String?        @db.Text
+  
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([senderId, receiverId])
+  @@map("interests")
+}
+
+model Match {
+  id           String      @id @default(cuid())
+  profile1Id   String
+  profile2Id   String
+  profile1     Profile     @relation("PrimaryMatches", fields: [profile1Id], references: [id], onDelete: Cascade)
+  profile2     Profile     @relation("SecondaryMatches", fields: [profile2Id], references: [id], onDelete: Cascade)
+  
+  matchScore   Float       @default(0.0)
+  matchType    MatchType   @default(ALGORITHM)
+  status       MatchStatus @default(ACTIVE)
+  
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([profile1Id, profile2Id])
+  @@map("matches")
+}
+
+// =================================
+// SUBSCRIPTION & PAYMENT MODELS
+// =================================
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  planId        String
+  plan          SubscriptionPlan @relation(fields: [planId], references: [id])
+  
+  status        SubscriptionStatus @default(ACTIVE)
+  startDate     DateTime           @default(now())
+  endDate       DateTime
+  autoRenew     Boolean            @default(true)
+  
+  // Features
+  profileViews         Int @default(0)
+  contactViews         Int @default(0)
+  interestsPerMonth    Int @default(0)
+  
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("subscriptions")
+}
+
+model SubscriptionPlan {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String? @db.Text
+  
+  // Pricing
+  price       Float
+  currency    String @default("USD")
+  duration    Int    // in days
+  
+  // Features
+  profileViews      Int @default(0)
+  contactViews      Int @default(0)
+  interestsPerMonth Int @default(0)
+  prioritySupport   Boolean @default(false)
+  
+  // Status
+  isActive Boolean @default(true)
+  
+  // Relations
+  subscriptions Subscription[]
+  
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("subscription_plans")
+}
+
+model Payment {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Payment details
+  amount          Float
+  currency        String  @default("USD")
+  paymentMethod   PaymentMethod
+  paymentGateway  String // stripe, razorpay, etc.
+  transactionId   String  @unique
+  gatewayOrderId  String?
+  
+  // Status
+  status          PaymentStatus @default(PENDING)
+  failureReason   String?
+  
+  // Metadata
+  metadata        Json?
+  
+  // Audit fields
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("payments")
+}
+
+// =================================
+// SYSTEM MODELS
+// =================================
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  token     String   @unique
+  userAgent String?
+  ipAddress String?
+  
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@map("sessions")
+}
+
+model Activity {
+  id     String       @id @default(cuid())
+  userId String
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type        ActivityType
+  description String
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt DateTime @default(now())
+  
+  @@map("activities")
+}
+
+model Notification {
+  id     String           @id @default(cuid())
+  userId String
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type     NotificationType
+  title    String
+  message  String           @db.Text
+  isRead   Boolean          @default(false)
+  metadata Json?
+  
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+  
+  @@map("notifications")
+}
+
+model PrivacySettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  profileVisibility    ProfileVisibility @default(MEMBERS_ONLY)
+  photoVisibility      PhotoVisibility   @default(MEMBERS_ONLY)
+  contactInfoVisibility ContactVisibility @default(PREMIUM_MEMBERS)
+  
+  allowInterests       Boolean @default(true)
+  allowMessages        Boolean @default(true)
+  allowPhoneContact    Boolean @default(false)
+  allowEmailContact    Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("privacy_settings")
+}
+
+model UserPreferences {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Communication preferences
+  emailNotifications     Boolean @default(true)
+  smsNotifications       Boolean @default(false)
+  pushNotifications      Boolean @default(true)
+  marketingEmails        Boolean @default(false)
+  
+  // App preferences
+  language               String  @default("en")
+  timezone               String  @default("UTC")
+  dateFormat             String  @default("DD/MM/YYYY")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("user_preferences")
+}
+
+// =================================
+// ENUMS
+// =================================
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+  SUPPORT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum BodyType {
+  SLIM
+  AVERAGE
+  ATHLETIC
+  HEAVY_SET
+  CURVY
+}
+
+enum Complexion {
+  VERY_FAIR
+  FAIR
+  WHEATISH
+  DARK
+  VERY_DARK
+}
+
+enum Religion {
+  HINDU
+  MUSLIM
+  CHRISTIAN
+  SIKH
+  BUDDHIST
+  JAIN
+  PARSI
+  JEWISH
+  OTHER
+  NO_RELIGION
+}
+
+enum EducationLevel {
+  HIGH_SCHOOL
+  DIPLOMA
+  BACHELORS
+  MASTERS
+  DOCTORATE
+  PROFESSIONAL
+}
+
+enum FamilyType {
+  NUCLEAR
+  JOINT
+  EXTENDED
+}
+
+enum FamilyValues {
+  TRADITIONAL
+  MODERATE
+  LIBERAL
+}
+
+enum FamilyAffluence {
+  LOWER_MIDDLE_CLASS
+  MIDDLE_CLASS
+  UPPER_MIDDLE_CLASS
+  RICH
+  AFFLUENT
+}
+
+enum Diet {
+  VEGETARIAN
+  NON_VEGETARIAN
+  VEGAN
+  JAIN_VEGETARIAN
+  OCCASIONALLY_NON_VEG
+}
+
+enum SmokingHabits {
+  NEVER
+  OCCASIONALLY
+  REGULARLY
+  TRYING_TO_QUIT
+}
+
+enum DrinkingHabits {
+  NEVER
+  OCCASIONALLY
+  SOCIALLY
+  REGULARLY
+}
+
+enum ProfileStatus {
+  INCOMPLETE
+  COMPLETE
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+  EXPIRED
+}
+
+enum MatchType {
+  ALGORITHM
+  MANUAL
+  PREMIUM
+}
+
+enum MatchStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  NET_BANKING
+  UPI
+  WALLET
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum ActivityType {
+  LOGIN
+  LOGOUT
+  PROFILE_UPDATE
+  PHOTO_UPLOAD
+  INTEREST_SENT
+  INTEREST_RECEIVED
+  MATCH_FOUND
+  SUBSCRIPTION_PURCHASE
+  PAYMENT_MADE
+}
+
+enum NotificationType {
+  INTEREST_RECEIVED
+  INTEREST_ACCEPTED
+  PROFILE_VIEWED
+  NEW_MATCH
+  MESSAGE_RECEIVED
+  SUBSCRIPTION_EXPIRY
+  PAYMENT_SUCCESS
+  SYSTEM_ANNOUNCEMENT
+}
+
+enum ProfileVisibility {
+  PUBLIC
+  MEMBERS_ONLY
+  PREMIUM_MEMBERS
+  PRIVATE
+}
+
+enum PhotoVisibility {
+  PUBLIC
+  MEMBERS_ONLY
+  PREMIUM_MEMBERS
+  PRIVATE
+}
+
+enum ContactVisibility {
+  PUBLIC
+  MEMBERS_ONLY
+  PREMIUM_MEMBERS
+  PRIVATE
+} 
