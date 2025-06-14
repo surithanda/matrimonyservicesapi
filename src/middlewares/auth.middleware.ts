@@ -2,12 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 interface AuthenticatedRequest extends Request {
-  user?: {
+  user: {
+    id: string;
     email: string;
-    account_code: string;
-    account_id: number;
-    iat?: number;
-    exp?: number;
+    role: string;
+    subscription?: {
+      planId: string;
+      status: string;
+    };
   };
 }
 

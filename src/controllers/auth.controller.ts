@@ -7,8 +7,14 @@ import logger from '../config/logger';
 
 // Add custom interface for Request with user
 interface AuthenticatedRequest extends Request {
-  user?: {
+  user: {
+    id: string;
     email: string;
+    role: string;
+    subscription?: {
+      planId: string;
+      status: string;
+    };
   };
 }
 

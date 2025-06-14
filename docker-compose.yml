@@ -1,44 +1,177 @@
 version: '3.8'
 
 services:
-  loki:
-    image: grafana/loki:2.9.2
+  # =================================
+  # APPLICATION SERVICE
+  # =================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: matrimony-api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mysql://matrimony_user:matrimony_password@mysql:3306/matrimony_db
+      - REDIS_URL=redis://redis:6379
     ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - monitoring
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
-      - ./local-config.yaml:/etc/loki/local-config.yaml
-      - loki-data:/loki
-    deploy:
-      resources:
-        limits:
-          memory: 512m
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    networks:
+      - matrimony-network
 
+  # =================================
+  # DATABASE SERVICES
+  # =================================
+  mysql:
+    image: mysql:8.0
+    container_name: matrimony-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: matrimony_db
+      MYSQL_USER: matrimony_user
+      MYSQL_PASSWORD: matrimony_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - matrimony-network
+
+  # =================================
+  # CACHE SERVICE
+  # =================================
+  redis:
+    image: redis:7-alpine
+    container_name: matrimony-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - matrimony-network
+
+  # =================================
+  # DEVELOPMENT SERVICES
+  # =================================
+  
+  # Database Admin UI
+  adminer:
+    image: adminer:latest
+    container_name: matrimony-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+    depends_on:
+      - mysql
+    networks:
+      - matrimony-network
+    profiles:
+      - dev
+
+  # Redis Admin UI
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: matrimony-redis-commander
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - matrimony-network
+    profiles:
+      - dev
+
+  # =================================
+  # MONITORING SERVICES
+  # =================================
+  
+  # Application Monitoring
   grafana:
-    image: grafana/grafana:10.2.0
+    image: grafana/grafana:latest
+    container_name: matrimony-grafana
+    restart: unless-stopped
     ports:
       - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
+      GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
-      - grafana-data:/var/lib/grafana
+      - grafana_data:/var/lib/grafana
     networks:
+      - matrimony-network
+    profiles:
       - monitoring
+
+  # Log Management
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: matrimony-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - matrimony-network
+    profiles:
+      - logging
+
+  kibana:
+    image: kibana:8.11.0
+    container_name: matrimony-kibana
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     depends_on:
-      - loki
-    deploy:
-      resources:
-        limits:
-          memory: 512m
+      - elasticsearch
+    networks:
+      - matrimony-network
+    profiles:
+      - logging
 
-networks:
-  monitoring:
-    driver: bridge
-
+# =================================
+# VOLUMES
+# =================================
 volumes:
-  loki-data:
-  grafana-data: 
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+
+# =================================
+# NETWORKS
+# =================================
+networks:
+  matrimony-network:
+    driver: bridge 
