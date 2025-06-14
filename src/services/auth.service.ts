@@ -3,7 +3,7 @@ import { LoginCredentials, LoginResponse, VerifyOTPResult } from '../interfaces/
 import { AuthRepository } from '../repositories/auth.repository';
 import { ProfileRepository } from '../repositories/profile.repository';
 import { generateOTP, sendOTP } from '../utils/email.util';
-import { AppError } from '../middleware/error.middleware';
+// import { AppError } from '../middleware/error.middleware';
 
 export class AuthService {
   private authRepository: AuthRepository;
