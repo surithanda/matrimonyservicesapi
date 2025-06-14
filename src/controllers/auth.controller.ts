@@ -3,7 +3,7 @@ import { AuthService } from '../services/auth.service';
 import jwt from 'jsonwebtoken';
 import { OTPVerificationResponse } from '../interfaces/auth.interface';
 import logger from '../config/logger';
-import { AppError } from '../middleware/error.middleware';
+//import { AppError } from '../middleware/error.middleware';
 
 // Add custom interface for Request with user
 interface AuthenticatedRequest extends Request {
