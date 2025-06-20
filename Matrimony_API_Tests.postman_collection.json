@@ -1,0 +1,644 @@
+{
+  "info": {
+    "_postman_id": "39fb6563-df4e-4a38-a761-fb6a79653e09",
+    "name": "Matrimony API Tests Copy 4",
+    "description": "Collection for testing Matrimony Backend APIs with MySQL. This collection includes tests for authentication (register/login with OTP), user management (get all users), and comprehensive profile management APIs (create/update profiles by email, get profile by email, get all profiles with filtering). The backend uses OTP-based authentication for enhanced security and supports complete matrimony profile management with email-based operations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "20546223"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User - Complete Form",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('auth_token', jsonData.token);",
+                  "    pm.environment.set('user_id', jsonData.user.id);",
+                  "    pm.test('Registration successful', function () {",
+                  "        pm.expect(jsonData.message).to.eql('User registered successfully');",
+                  "        pm.expect(jsonData.user.first_name).to.not.be.undefined;",
+                  "        pm.expect(jsonData.user.last_name).to.not.be.undefined;",
+                  "        pm.expect(jsonData.user.gender).to.not.be.undefined;",
+                  "        pm.expect(jsonData.user.full_name).to.not.be.undefined;",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Registration failed', function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\",\n    \"confirmPassword\": \"password123\",\n    \"first_name\": \"John\",\n    \"middle_name\": \"Michael\",\n    \"last_name\": \"Doe\",\n    \"birth_date\": \"1995-08-15\",\n    \"gender\": \"Male\",\n    \"complete_address\": \"123 Main Street, Apartment 4B\",\n    \"city\": \"New York\",\n    \"state\": \"NY\",\n    \"country\": \"United States\",\n    \"zip_code\": \"10001\",\n    \"contact_email\": \"john.doe@example.com\",\n    \"primary_phone\": \"9876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Another User - Female",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"jane.smith@example.com\",\n    \"password\": \"password456\",\n    \"confirmPassword\": \"password456\",\n    \"first_name\": \"Jane\",\n    \"middle_name\": \"Elizabeth\",\n    \"last_name\": \"Smith\",\n    \"birth_date\": \"1992-12-03\",\n    \"gender\": \"Female\",\n    \"complete_address\": \"456 Oak Avenue, Suite 2A\",\n    \"city\": \"Los Angeles\",\n    \"state\": \"CA\",\n    \"country\": \"United States\",\n    \"zip_code\": \"90210\",\n    \"contact_email\": \"jane.smith@example.com\",\n    \"primary_phone\": \"9876543211\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register User - Minimal Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"minimal.user@example.com\",\n    \"password\": \"password789\",\n    \"confirmPassword\": \"password789\",\n    \"first_name\": \"Minimal\",\n    \"last_name\": \"User\",\n    \"gender\": \"Other\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('OTP sent successfully', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(jsonData.message).to.eql('OTP sent successfully to your email');",
+                  "    pm.expect(jsonData.email).to.not.be.undefined;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"nikhil.punse5@gmail.com\",\n    \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/send-otp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "send-otp"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login with OTP",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('auth_token', jsonData.token);",
+                  "    pm.environment.set('user_id', jsonData.user.id);",
+                  "    pm.test('Login successful', function () {",
+                  "        pm.expect(jsonData.message).to.eql('Login successful');",
+                  "        pm.expect(jsonData.token).to.not.be.undefined;",
+                  "        pm.expect(jsonData.user.full_name).to.not.be.undefined;",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Login failed', function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"nikhil.punse5@gmail.com\",\n    \"otp\": \"3294\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login with Password (Legacy)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('auth_token', jsonData.token);",
+                  "    pm.environment.set('user_id', jsonData.user.id);",
+                  "    pm.test('Login successful', function () {",
+                  "        pm.expect(jsonData.message).to.eql('Login successful');",
+                  "        pm.expect(jsonData.token).to.not.be.undefined;",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Login failed', function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 500]);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"john.doe@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login-password"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Profile Management",
+      "item": [
+        {
+          "name": "Create Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.test('Profile created successfully', function () {",
+                  "        pm.expect(jsonData.message).to.eql('Profile created successfully');",
+                  "        pm.expect(jsonData.profile_id).to.not.be.undefined;",
+                  "        pm.expect(jsonData.user_id).to.not.be.undefined;",
+                  "        pm.expect(jsonData.email).to.not.be.undefined;",
+                  "    });",
+                  "} else if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.test('Profile updated successfully', function () {",
+                  "        pm.expect(jsonData.message).to.eql('Profile updated successfully');",
+                  "        pm.expect(jsonData.user_id).to.not.be.undefined;",
+                  "        pm.expect(jsonData.email).to.not.be.undefined;",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Profile operation failed', function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 404, 500]);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"john.doe@example.com\",\n    \"first_name\": \"John\",\n    \"middle_name\": \"Michael\",\n    \"last_name\": \"Doe\",\n    \"prefix\": \"Mr.\",\n    \"suffix\": \"Jr.\",\n    \"gender\": \"Male\",\n    \"birth_date\": \"1995-08-15\",\n    \"primary_phone\": \"9876543210\",\n    \"home_phone\": \"9876543211\",\n    \"emergency_phone\": \"9876543212\",\n    \"nationality\": \"Indian\",\n    \"religion\": \"Hindu\",\n    \"marital_status\": \"Single\",\n    \"caste\": \"General\",\n    \"height_inches\": 70,\n    \"weight\": 75.5,\n    \"weight_unit\": \"Kilograms\",\n    \"complexion\": \"Fair\",\n    \"disability\": \"None\",\n    \"profession\": \"Software Engineer\",\n    \"whatsapp_number\": \"9876543210\",\n    \"linkedin_url\": \"https://linkedin.com/in/johndoe\",\n    \"facebook_url\": \"https://facebook.com/johndoe\",\n    \"instagram_url\": \"https://instagram.com/johndoe\",\n    \"summary\": \"Looking for a life partner who shares similar values and interests. I am a software engineer passionate about technology and family.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.test('Profile updated successfully', function () {",
+                  "        pm.expect(jsonData.message).to.eql('Profile updated successfully');",
+                  "        pm.expect(jsonData.user_id).to.not.be.undefined;",
+                  "        pm.expect(jsonData.email).to.not.be.undefined;",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Profile update failed', function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 404, 500]);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"john.doe@example.com\",\n    \"first_name\": \"John\",\n    \"middle_name\": \"Michael\",\n    \"last_name\": \"Doe\",\n    \"prefix\": \"Mr.\",\n    \"suffix\": \"Jr.\",\n    \"gender\": \"Male\",\n    \"birth_date\": \"1995-08-15\",\n    \"primary_phone\": \"9876543210\",\n    \"home_phone\": \"9876543211\",\n    \"emergency_phone\": \"9876543212\",\n    \"nationality\": \"Indian\",\n    \"religion\": \"Hindu\",\n    \"marital_status\": \"Single\",\n    \"caste\": \"General\",\n    \"height_inches\": 72,\n    \"weight\": 78.0,\n    \"weight_unit\": \"Kilograms\",\n    \"complexion\": \"Medium\",\n    \"disability\": \"None\",\n    \"profession\": \"Senior Software Engineer\",\n    \"whatsapp_number\": \"9876543210\",\n    \"linkedin_url\": \"https://linkedin.com/in/johndoe\",\n    \"facebook_url\": \"https://facebook.com/johndoe\",\n    \"instagram_url\": \"https://instagram.com/johndoe\",\n    \"summary\": \"Updated profile: Looking for a life partner who shares similar values and interests. I am a senior software engineer passionate about technology, travel, and family values.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profile by Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.test('Profile retrieved successfully', function () {",
+                  "        pm.expect(jsonData.message).to.eql('Profile retrieved successfully');",
+                  "        pm.expect(jsonData.user).to.not.be.undefined;",
+                  "        pm.expect(jsonData.user.user_id).to.not.be.undefined;",
+                  "        pm.expect(jsonData.user.email).to.not.be.undefined;",
+                  "        pm.expect(jsonData.user.has_profile).to.be.a('boolean');",
+                  "    });",
+                  "    if (jsonData.user.has_profile) {",
+                  "        pm.test('Profile data exists', function () {",
+                  "            pm.expect(jsonData.profile).to.not.be.undefined;",
+                  "            pm.expect(jsonData.profile.profile_id).to.not.be.undefined;",
+                  "        });",
+                  "    }",
+                  "} else {",
+                  "    pm.test('Profile retrieval failed', function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 404, 500]);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/profile/john.doe@example.com",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile",
+                "john.doe@example.com"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Profiles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.test('Profiles retrieved successfully', function () {",
+                  "        pm.expect(jsonData.message).to.eql('Profiles retrieved successfully');",
+                  "        pm.expect(jsonData.profiles).to.be.an('array');",
+                  "        pm.expect(jsonData.total).to.be.a('number');",
+                  "        pm.expect(jsonData.filters_applied).to.not.be.undefined;",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Profiles retrieval failed', function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([401, 403, 500]);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/profiles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profiles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Profiles with Filters",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.test('Filtered profiles retrieved successfully', function () {",
+                  "        pm.expect(jsonData.message).to.eql('Profiles retrieved successfully');",
+                  "        pm.expect(jsonData.profiles).to.be.an('array');",
+                  "        pm.expect(jsonData.total).to.be.a('number');",
+                  "        pm.expect(jsonData.filters_applied).to.not.be.undefined;",
+                  "        pm.expect(jsonData.filters_applied.gender).to.not.be.null;",
+                  "        pm.expect(jsonData.filters_applied.marital_status).to.not.be.null;",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Filtered profiles retrieval failed', function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([401, 403, 500]);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/profiles?gender=Female&marital_status=Single&religion=Hindu&min_age=25&max_age=35&limit=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profiles"
+              ],
+              "query": [
+                {
+                  "key": "gender",
+                  "value": "Female"
+                },
+                {
+                  "key": "marital_status",
+                  "value": "Single"
+                },
+                {
+                  "key": "religion",
+                  "value": "Hindu"
+                },
+                {
+                  "key": "min_age",
+                  "value": "25"
+                },
+                {
+                  "key": "max_age",
+                  "value": "35"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Female Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.test('Female profile created successfully', function () {",
+                  "        pm.expect(jsonData.message).to.eql('Profile created successfully');",
+                  "        pm.expect(jsonData.profile_id).to.not.be.undefined;",
+                  "        pm.expect(jsonData.user_id).to.not.be.undefined;",
+                  "        pm.expect(jsonData.email).to.eql('jane.smith@example.com');",
+                  "    });",
+                  "} else {",
+                  "    pm.test('Female profile creation failed', function () {",
+                  "        pm.expect(pm.response.code).to.be.oneOf([400, 404, 500]);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"jane.smith@example.com\",\n    \"first_name\": \"Jane\",\n    \"middle_name\": \"Elizabeth\",\n    \"last_name\": \"Smith\",\n    \"prefix\": \"Ms.\",\n    \"gender\": \"Female\",\n    \"birth_date\": \"1992-12-03\",\n    \"primary_phone\": \"9876543211\",\n    \"home_phone\": \"9876543213\",\n    \"emergency_phone\": \"9876543214\",\n    \"nationality\": \"Indian\",\n    \"religion\": \"Hindu\",\n    \"marital_status\": \"Single\",\n    \"caste\": \"General\",\n    \"height_inches\": 64,\n    \"weight\": 55.0,\n    \"weight_unit\": \"Kilograms\",\n    \"complexion\": \"Fair\",\n    \"disability\": \"None\",\n    \"profession\": \"Doctor\",\n    \"whatsapp_number\": \"9876543211\",\n    \"linkedin_url\": \"https://linkedin.com/in/janesmith\",\n    \"facebook_url\": \"https://facebook.com/janesmith\",\n    \"instagram_url\": \"https://instagram.com/janesmith\",\n    \"summary\": \"I am a doctor looking for a caring and understanding life partner. I value family, education, and personal growth.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    }
+  ]
+}
