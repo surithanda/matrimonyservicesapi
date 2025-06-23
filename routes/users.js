@@ -420,7 +420,6 @@ router.get('/profiles', authenticateToken, (req, res) => {
   }
 });
 
-
 // primarycontact route to check database connection
 router.post('/primarycontact', authenticateToken, (req, res) => {
   try {
@@ -487,12 +486,6 @@ router.post('/primarycontact', authenticateToken, (req, res) => {
       });
       }
     })
-
-
-
-
-
-    
   } catch (error) { 
     console.error('primarycontact route error:', error);
     res.status(500).json({ error: 'Internal server error' });
