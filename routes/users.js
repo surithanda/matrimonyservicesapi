@@ -420,4 +420,84 @@ router.get('/profiles', authenticateToken, (req, res) => {
   }
 });
 
+
+// primarycontact route to check database connection
+router.post('/primarycontact', authenticateToken, (req, res) => {
+  try {
+    const {email,city,state,country,zip_code,complete_address} = req.body;
+    
+    if (!email || !city || !state || !country || !zip_code || !complete_address) {
+      return res.status(400).json({ error: 'Email and all others fields are required' });
+    } 
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: 'Please provide a valid email address' 
+      });
+    }
+
+    // First, check if record exists with this email
+    const checkRecordQuery = 'SELECT id FROM primary_contact WHERE email = ?';
+    
+    db.query(checkRecordQuery, [email], (err, recordResults) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+      // If no record found, return 404
+      // This is to ensure that we only insert new records if the email does not already exist
+      if (recordResults.length === 0) {
+        const primaryContactValues = [email, city, state, country, zip_code, complete_address];
+        const primaryContactInsertQuery = `
+          INSERT INTO primary_contact (email,city,state,country,zip_code,complete_address) 
+          VALUES (?, ?, ?, ?, ?, ?)
+        `; 
+        db.query(primaryContactInsertQuery, [...primaryContactValues], (err, result) => {
+          if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+          }
+          res.json({
+            message: 'primary contact data inserted successfully',
+            test_id: result.insertId,
+            email: email
+          });
+        });
+      }else{
+        // update primary contact record if it exists
+        const updateQuery = `
+          UPDATE primary_contact 
+          SET city = ?, state = ?, country = ?, zip_code = ?, complete_address = ?
+          WHERE email = ?
+        `;
+        const updateValues = [city, state, country, zip_code, complete_address, email];
+
+        db.query(updateQuery, updateValues, (err, updateResult) => {
+        if (err) {
+          console.error('Database update error:', err);
+            return res.status(500).json({ error: 'Database update error' });
+        }
+
+        res.json({
+          message: 'Primary contact updated successfully',
+          email: email
+        });
+      });
+      }
+    })
+
+
+
+
+
+    
+  } catch (error) { 
+    console.error('primarycontact route error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+    
+  }
+});
+
 module.exports = router; 

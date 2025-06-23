@@ -115,6 +115,27 @@ db.connect((err) => {
       console.log('User profiles table ready');
     }
   });
+
+  // primary contact table
+  const createPrimaryContactTable = `
+    CREATE TABLE IF NOT EXISTS primary_contact (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      city VARCHAR(100),
+      state VARCHAR(100),
+      country VARCHAR(100),
+      zip_code VARCHAR(20),
+      complete_address TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+  db.query(createPrimaryContactTable, (err) => {
+    if (err) {
+      console.error('Error creating primary_contact table:', err);
+    } else {
+      console.log('Primary Contact table ready');
+    }
+  });
 });
 
 module.exports = db; 
