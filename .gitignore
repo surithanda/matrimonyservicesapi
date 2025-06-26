@@ -14,10 +14,16 @@ dist/
 build/
 
 # upload files
-uploads/cover-photos/
-uploads/individual-pictures/
-uploads/profile-pictures/
-uploads/temp/
+!upload/
+!uploads/cover-photos/
+!uploads/individual-pictures/
+!uploads/profile-pictures/
+!uploads/temp/
+
+uploads/cover-photos/*
+uploads/individual-pictures/*
+uploads/profile-pictures/*
+uploads/temp/*
 
 # TypeScript
 *.tsbuildinfo
