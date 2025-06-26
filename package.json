@@ -1,6 +1,6 @@
 {
   "name": "matrimony-backend",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Matrimony backend with Express and MySQL",
   "main": "server.js",
   "scripts": {
