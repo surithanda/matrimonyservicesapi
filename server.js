@@ -8,6 +8,7 @@ require('./config/database');
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const imageRoutes = require('./routes/images');
 
 const app = express();
 
@@ -15,6 +16,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
 
 // Routes
 
@@ -26,6 +30,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/api', authRoutes);
 app.use('/api', userRoutes);
+app.use('/api/images', imageRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
