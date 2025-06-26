@@ -2,12 +2,9 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
-<<<<<<< feat/nikhil3
 const { generateOTP, sendOTPEmail, sendPasswordResetOTPEmail } = require('../utils/emailService');
 const { authenticateToken } = require('../middleware/auth');
-=======
-const { generateOTP, sendOTPEmail } = require('../utils/emailService');
->>>>>>> main
+
 require('dotenv').config();
 
 const router = express.Router();
@@ -383,7 +380,6 @@ router.post('/login-password', (req, res) => {
   }
 });
 
-<<<<<<< feat/nikhil3
 // Forgot Password API - Send OTP for password reset
 router.post('/forgot-password', async (req, res) => {
   try {
@@ -643,6 +639,4 @@ router.post('/change-password', authenticateToken, async (req, res) => {
   }
 });
 
-=======
->>>>>>> main
 module.exports = router; 

@@ -160,6 +160,33 @@ db.connect((err) => {
       console.log('education table ready');
     }
   });
+
+  // User images table
+  const createUserImagesTable = `
+    CREATE TABLE IF NOT EXISTS user_images (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      image_type ENUM('profile_picture', 'cover_photo', 'individual_picture') NOT NULL,
+      filename VARCHAR(255) NOT NULL,
+      original_name VARCHAR(255) NOT NULL,
+      file_path VARCHAR(500) NOT NULL,
+      file_size INT,
+      mime_type VARCHAR(100),
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX idx_email (email),
+      INDEX idx_image_type (image_type),
+      INDEX idx_email_type (email, image_type)
+    )
+  `;
+  db.query(createUserImagesTable, (err) => {
+    if (err) {
+      console.error('Error creating user_images table:', err);
+    } else {
+      console.log('User images table ready');
+    }
+  });
 });
 
 module.exports = db; 
