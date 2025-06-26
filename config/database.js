@@ -115,6 +115,51 @@ db.connect((err) => {
       console.log('User profiles table ready');
     }
   });
+
+  // primary contact table
+  const createPrimaryContactTable = `
+    CREATE TABLE IF NOT EXISTS primary_contact (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      city VARCHAR(100),
+      state VARCHAR(100),
+      country VARCHAR(100),
+      zip_code VARCHAR(20),
+      complete_address TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+  db.query(createPrimaryContactTable, (err) => {
+    if (err) {
+      console.error('Error creating primary_contact table:', err);
+    } else {
+      console.log('Primary Contact table ready');
+    }
+  });
+
+  // primary contact table
+  const createEducationTable = `
+    CREATE TABLE IF NOT EXISTS education (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      degree VARCHAR(255) NOT NULL,
+      institution_name VARCHAR(255) NOT NULL,
+      year_of_passing VARCHAR(100) NOT NULL,
+      complete_address TEXT,
+      city VARCHAR(100),
+      state VARCHAR(100),
+      country VARCHAR(100),
+      zip_code VARCHAR(20),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+  db.query(createEducationTable, (err) => {
+    if (err) {
+      console.error('Error creating education table:', err);
+    } else {
+      console.log('education table ready');
+    }
+  });
 });
 
 module.exports = db; 

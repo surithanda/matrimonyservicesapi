@@ -2,7 +2,12 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
+<<<<<<< feat/nikhil3
+const { generateOTP, sendOTPEmail, sendPasswordResetOTPEmail } = require('../utils/emailService');
+const { authenticateToken } = require('../middleware/auth');
+=======
 const { generateOTP, sendOTPEmail } = require('../utils/emailService');
+>>>>>>> main
 require('dotenv').config();
 
 const router = express.Router();
@@ -378,4 +383,266 @@ router.post('/login-password', (req, res) => {
   }
 });
 
+<<<<<<< feat/nikhil3
+// Forgot Password API - Send OTP for password reset
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Validation
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: 'Please provide a valid email address' 
+      });
+    }
+
+    // Check if user exists
+    const checkUserQuery = 'SELECT id, first_name FROM users WHERE email = ?';
+    
+    db.query(checkUserQuery, [email], async (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'No account found with this email address' });
+      }
+
+      const user = results[0];
+
+      // Generate OTP for password reset
+      const otp = generateOTP();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
+
+      // Delete any existing unused OTPs for this email
+      const deleteOldOtpQuery = 'DELETE FROM otp_verification WHERE email = ? AND used = FALSE';
+      
+      db.query(deleteOldOtpQuery, [email], async (err) => {
+        if (err) {
+          console.error('Error deleting old OTPs:', err);
+        }
+
+        // Insert new OTP for password reset
+        const insertOtpQuery = `
+          INSERT INTO otp_verification (email, otp, expires_at) 
+          VALUES (?, ?, ?)
+        `;
+
+        db.query(insertOtpQuery, [email, otp, expiresAt], async (err, result) => {
+          if (err) {
+            console.error('Error inserting OTP:', err);
+            return res.status(500).json({ error: 'Failed to generate OTP' });
+          }
+
+          // Send password reset OTP email
+          const emailResult = await sendPasswordResetOTPEmail(email, otp, user.first_name);
+          
+          if (!emailResult.success) {
+            return res.status(500).json({ error: 'Failed to send password reset email' });
+          }
+
+          res.json({
+            message: 'Password reset OTP has been sent to your email address',
+            email: email
+          });
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reset Password API - Verify OTP and update password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword, confirmNewPassword } = req.body;
+
+    // Validation
+    if (!email || !otp || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({ 
+        error: 'Email, OTP, new password, and confirm password are required' 
+      });
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: 'Please provide a valid email address' 
+      });
+    }
+
+    // Password confirmation validation
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({ 
+        error: 'New passwords do not match' 
+      });
+    }
+
+    // Password strength validation
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        error: 'Password must be at least 6 characters long' 
+      });
+    }
+
+    // Check if user exists
+    const findUserQuery = 'SELECT id, first_name FROM users WHERE email = ?';
+
+    db.query(findUserQuery, [email], async (err, userResults) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      if (userResults.length === 0) {
+        return res.status(404).json({ error: 'No account found with this email address' });
+      }
+
+      const user = userResults[0];
+
+      // Verify OTP
+      const verifyOtpQuery = `
+        SELECT * FROM otp_verification 
+        WHERE email = ? AND otp = ? AND used = FALSE AND expires_at > NOW()
+        ORDER BY created_at DESC 
+        LIMIT 1
+      `;
+
+      db.query(verifyOtpQuery, [email, otp], async (err, otpResults) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({ error: 'Database error' });
+        }
+
+        if (otpResults.length === 0) {
+          return res.status(400).json({ error: 'Invalid or expired OTP' });
+        }
+
+        // Hash new password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        // Update user password
+        const updatePasswordQuery = 'UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+        
+        db.query(updatePasswordQuery, [hashedPassword, user.id], async (err, updateResult) => {
+          if (err) {
+            console.error('Error updating password:', err);
+            return res.status(500).json({ error: 'Failed to update password' });
+          }
+
+          // Mark OTP as used
+          const markOtpUsedQuery = 'UPDATE otp_verification SET used = TRUE WHERE id = ?';
+          db.query(markOtpUsedQuery, [otpResults[0].id]);
+
+          res.json({
+            message: 'Password reset successfully. You can now login with your new password.',
+            email: email
+          });
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Change Password API (for authenticated users)
+router.post('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+    const userEmail = req.user.email; // Get email from JWT token
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({ 
+        error: 'Current password, new password, and confirm new password are required' 
+      });
+    }
+
+    // Password confirmation validation
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({ 
+        error: 'New passwords do not match' 
+      });
+    }
+
+    // Password strength validation
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        error: 'New password must be at least 6 characters long' 
+      });
+    }
+
+    // Check if new password is same as current password
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ 
+        error: 'New password must be different from current password' 
+      });
+    }
+
+    // Find user by email from token
+    const findUserQuery = 'SELECT id, first_name, password FROM users WHERE email = ?';
+
+    db.query(findUserQuery, [userEmail], async (err, userResults) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      if (userResults.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = userResults[0];
+
+      // Verify current password
+      const isValidCurrentPassword = await bcrypt.compare(currentPassword, user.password);
+
+      if (!isValidCurrentPassword) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+
+      // Hash new password
+      const saltRounds = 10;
+      const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update user password
+      const updatePasswordQuery = 'UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+      
+      db.query(updatePasswordQuery, [hashedNewPassword, user.id], async (err, updateResult) => {
+        if (err) {
+          console.error('Error updating password:', err);
+          return res.status(500).json({ error: 'Failed to update password' });
+        }
+
+        res.json({
+          message: 'Password changed successfully',
+          user: {
+            id: user.id,
+            email: userEmail,
+            first_name: user.first_name
+          }
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+=======
+>>>>>>> main
 module.exports = router; 
