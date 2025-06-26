@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 const { generateOTP, sendOTPEmail, sendPasswordResetOTPEmail } = require('../utils/emailService');
+const { authenticateToken } = require('../middleware/auth');
 require('dotenv').config();
 
 const router = express.Router();
@@ -548,6 +549,91 @@ router.post('/reset-password', async (req, res) => {
     });
   } catch (error) {
     console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Change Password API (for authenticated users)
+router.post('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+    const userEmail = req.user.email; // Get email from JWT token
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({ 
+        error: 'Current password, new password, and confirm new password are required' 
+      });
+    }
+
+    // Password confirmation validation
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({ 
+        error: 'New passwords do not match' 
+      });
+    }
+
+    // Password strength validation
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        error: 'New password must be at least 6 characters long' 
+      });
+    }
+
+    // Check if new password is same as current password
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ 
+        error: 'New password must be different from current password' 
+      });
+    }
+
+    // Find user by email from token
+    const findUserQuery = 'SELECT id, first_name, password FROM users WHERE email = ?';
+
+    db.query(findUserQuery, [userEmail], async (err, userResults) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      if (userResults.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = userResults[0];
+
+      // Verify current password
+      const isValidCurrentPassword = await bcrypt.compare(currentPassword, user.password);
+
+      if (!isValidCurrentPassword) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+
+      // Hash new password
+      const saltRounds = 10;
+      const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+      // Update user password
+      const updatePasswordQuery = 'UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+      
+      db.query(updatePasswordQuery, [hashedNewPassword, user.id], async (err, updateResult) => {
+        if (err) {
+          console.error('Error updating password:', err);
+          return res.status(500).json({ error: 'Failed to update password' });
+        }
+
+        res.json({
+          message: 'Password changed successfully',
+          user: {
+            id: user.id,
+            email: userEmail,
+            first_name: user.first_name
+          }
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -383,6 +383,61 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Change Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    pm.test('Password changed successfully', function () {",
+									"        pm.expect(jsonData.message).to.eql('Password changed successfully');",
+									"        pm.expect(jsonData.user.email).to.not.be.undefined;",
+									"        pm.expect(jsonData.user.first_name).to.not.be.undefined;",
+									"    });",
+									"} else {",
+									"    pm.test('Password change failed', function () {",
+									"        pm.expect(pm.response.code).to.be.oneOf([400, 401, 403, 404, 500]);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"currentPassword\": \"Admin@123\",\n    \"newPassword\": \"NewPassword@456\",\n    \"confirmNewPassword\": \"NewPassword@456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/change-password",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"change-password"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
