@@ -420,7 +420,6 @@ router.get('/profiles', authenticateToken, (req, res) => {
   }
 });
 
-<<<<<<< feat/nikhil3
 
 // primarycontact route to check database connection
 router.post('/primarycontact', authenticateToken, (req, res) => {
@@ -568,6 +567,4 @@ router.post('/education', authenticateToken, (req, res) => {
   }
 });
 
-=======
->>>>>>> main
 module.exports = router; 
