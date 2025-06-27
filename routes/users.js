@@ -1,8 +1,48 @@
 const express = require('express');
 const db = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
+
+// Configure multer for profile photo uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const profileUploadPath = './uploads/profile-pictures/';
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(profileUploadPath)) {
+      fs.mkdirSync(profileUploadPath, { recursive: true });
+    }
+    
+    cb(null, profileUploadPath);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + uuidv4();
+    const extension = path.extname(file.originalname);
+    cb(null, 'profile-' + uniqueSuffix + extension);
+  }
+});
+
+// File filter to allow only images
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // Get all users (protected route) - for admin/testing purposes
 router.get('/users', authenticateToken, (req, res) => {
@@ -420,7 +460,6 @@ router.get('/profiles', authenticateToken, (req, res) => {
   }
 });
 
-<<<<<<< feat/nikhil3
 
 // primarycontact route to check database connection
 router.post('/primarycontact', authenticateToken, (req, res) => {
@@ -568,6 +607,732 @@ router.post('/education', authenticateToken, (req, res) => {
   }
 });
 
-=======
->>>>>>> main
+// Create or Update Account Details with Profile Photo Upload
+router.post('/account-details-with-photo', authenticateToken, upload.single('profile_photo'), (req, res) => {
+  try {
+    const {
+      email,
+      first_name,
+      middle_name,
+      last_name,
+      birth_date,
+      gender,
+      primary_phone,
+      secondary_phone,
+      complete_address,
+      city,
+      state,
+      zip_code,
+      country
+    } = req.body;
+
+    // Validate required fields
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    if (!first_name || !last_name) {
+      return res.status(400).json({ error: 'First name and last name are required' });
+    }
+
+    if (!gender || !['Male', 'Female', 'Other'].includes(gender)) {
+      return res.status(400).json({ error: 'Valid gender is required (Male, Female, or Other)' });
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: 'Please provide a valid email address' 
+      });
+    }
+
+    // Date validation if birth_date is provided
+    if (birth_date) {
+      const birthDateObj = new Date(birth_date);
+      const today = new Date();
+      const age = today.getFullYear() - birthDateObj.getFullYear();
+      
+      if (isNaN(birthDateObj.getTime()) || age < 18 || age > 100) {
+        return res.status(400).json({ 
+          error: 'Please provide a valid birth date (age must be between 18-100)' 
+        });
+      }
+    }
+
+    // Handle profile photo upload if provided
+    let profilePhotoInfo = null;
+    if (req.file) {
+      // First, get existing active profile pictures to delete their files
+      const getExistingPhotosQuery = `
+        SELECT file_path, filename 
+        FROM user_images 
+        WHERE email = ? AND image_type = 'profile_picture' AND is_active = TRUE
+      `;
+      
+      db.query(getExistingPhotosQuery, [email], (err, existingPhotos) => {
+        if (err) {
+          console.error('Error fetching existing profile pictures:', err);
+          // Continue with saving new photo even if we can't fetch existing ones
+          saveNewProfilePhoto();
+        } else {
+          // Delete physical files first
+          if (existingPhotos.length > 0) {
+            existingPhotos.forEach(photo => {
+              if (fs.existsSync(photo.file_path)) {
+                try {
+                  fs.unlinkSync(photo.file_path);
+                  console.log(`Deleted old profile photo: ${photo.filename}`);
+                } catch (deleteErr) {
+                  console.error(`Error deleting file ${photo.file_path}:`, deleteErr);
+                }
+              }
+            });
+          }
+          
+          // Deactivate existing profile pictures in database
+          const deactivateQuery = `
+            UPDATE user_images 
+            SET is_active = FALSE 
+            WHERE email = ? AND image_type = 'profile_picture'
+          `;
+          
+          db.query(deactivateQuery, [email], (err) => {
+            if (err) {
+              console.error('Error deactivating existing profile pictures:', err);
+            }
+            // After deactivating old records, save the new photo
+            saveNewProfilePhoto();
+          });
+        }
+      });
+
+      function saveNewProfilePhoto() {
+        // Save new profile photo info
+        const insertImageQuery = `
+          INSERT INTO user_images (
+            email, image_type, filename, original_name, 
+            file_path, file_size, mime_type
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        const imageValues = [
+          email,
+          'profile_picture',
+          req.file.filename,
+          req.file.originalname,
+          req.file.path,
+          req.file.size,
+          req.file.mimetype
+        ];
+        
+        db.query(insertImageQuery, imageValues, (err, result) => {
+          if (err) {
+            console.error('Error saving profile photo:', err);
+          } else {
+            profilePhotoInfo = {
+              id: result.insertId,
+              filename: req.file.filename,
+              original_name: req.file.originalname,
+              file_path: req.file.path,
+              file_size: req.file.size
+            };
+            console.log(`New profile photo saved: ${req.file.filename}`);
+          }
+        });
+      }
+    }
+
+    // Update account details (same logic as before)
+    updateAccountDetails();
+
+    function updateAccountDetails() {
+      // Check if user exists, if not create new user
+      const checkUserQuery = 'SELECT id FROM users WHERE email = ?';
+      
+      db.query(checkUserQuery, [email], (err, userResults) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({ error: 'Database error' });
+        }
+
+        let userId;
+        
+        if (userResults.length === 0) {
+          // Create new user entry if doesn't exist
+          const createUserQuery = `
+            INSERT INTO users (
+              email, first_name, middle_name, last_name, birth_date, 
+              gender, complete_address, city, state, country, zip_code, primary_phone
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `;
+          
+          const userValues = [
+            email,
+            first_name,
+            middle_name || null,
+            last_name,
+            birth_date || null,
+            gender,
+            complete_address || null,
+            city || null,
+            state || null,
+            country || null,
+            zip_code || null,
+            primary_phone || null
+          ];
+
+          db.query(createUserQuery, userValues, (err, result) => {
+            if (err) {
+              console.error('Error creating user:', err);
+              return res.status(500).json({ error: 'Failed to create user account' });
+            }
+            
+            userId = result.insertId;
+            createOrUpdateProfile(userId);
+          });
+        } else {
+          // Update existing user
+          userId = userResults[0].id;
+          
+          const updateUserQuery = `
+            UPDATE users SET
+              first_name = ?, middle_name = ?, last_name = ?, birth_date = ?,
+              gender = ?, complete_address = ?, city = ?, state = ?, country = ?,
+              zip_code = ?, primary_phone = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `;
+          
+          const updateUserValues = [
+            first_name,
+            middle_name || null,
+            last_name,
+            birth_date || null,
+            gender,
+            complete_address || null,
+            city || null,
+            state || null,
+            country || null,
+            zip_code || null,
+            primary_phone || null,
+            userId
+          ];
+
+          db.query(updateUserQuery, updateUserValues, (err) => {
+            if (err) {
+              console.error('Error updating user:', err);
+              return res.status(500).json({ error: 'Failed to update user account' });
+            }
+            
+            createOrUpdateProfile(userId);
+          });
+        }
+
+        function createOrUpdateProfile(userId) {
+          // Check if profile exists
+          const checkProfileQuery = 'SELECT id FROM user_profiles WHERE user_id = ?';
+          
+          db.query(checkProfileQuery, [userId], (err, profileResults) => {
+            if (err) {
+              console.error('Database error:', err);
+              return res.status(500).json({ error: 'Database error' });
+            }
+
+            const profileValues = [
+              userId,
+              first_name,
+              middle_name || null,
+              last_name,
+              gender,
+              birth_date || null,
+              primary_phone || null,
+              secondary_phone || null, // Using home_phone field for secondary phone
+              email
+            ];
+
+            if (profileResults.length === 0) {
+              // Create new profile
+              const insertProfileQuery = `
+                INSERT INTO user_profiles (
+                  user_id, first_name, middle_name, last_name, gender,
+                  birth_date, primary_phone, home_phone, email
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `;
+
+              db.query(insertProfileQuery, profileValues, (err, result) => {
+                if (err) {
+                  console.error('Error creating profile:', err);
+                  return res.status(500).json({ error: 'Failed to create profile' });
+                }
+
+                // Fetch the complete account details
+                fetchAccountDetailsWithPhoto(email, res, 'Account details created successfully', profilePhotoInfo);
+              });
+            } else {
+              // Update existing profile
+              const updateProfileQuery = `
+                UPDATE user_profiles SET
+                  first_name = ?, middle_name = ?, last_name = ?, gender = ?,
+                  birth_date = ?, primary_phone = ?, home_phone = ?, email = ?,
+                  updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = ?
+              `;
+
+              const updateValues = [...profileValues.slice(1), userId]; // Remove user_id from values and add it at the end
+
+              db.query(updateProfileQuery, updateValues, (err) => {
+                if (err) {
+                  console.error('Error updating profile:', err);
+                  return res.status(500).json({ error: 'Failed to update profile' });
+                }
+
+                // Fetch the complete account details
+                fetchAccountDetailsWithPhoto(email, res, 'Account details updated successfully', profilePhotoInfo);
+              });
+            }
+          });
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Account details with photo operation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create or Update Account Details (comprehensive endpoint with optional photo upload)
+router.post('/account-details', authenticateToken, (req, res) => {
+  try {
+    const {
+      email,
+      first_name,
+      middle_name,
+      last_name,
+      birth_date,
+      gender,
+      primary_phone,
+      secondary_phone,
+      complete_address,
+      city,
+      state,
+      zip_code,
+      country
+    } = req.body;
+
+    // Validate required fields
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    if (!first_name || !last_name) {
+      return res.status(400).json({ error: 'First name and last name are required' });
+    }
+
+    if (!gender || !['Male', 'Female', 'Other'].includes(gender)) {
+      return res.status(400).json({ error: 'Valid gender is required (Male, Female, or Other)' });
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: 'Please provide a valid email address' 
+      });
+    }
+
+    // Date validation if birth_date is provided
+    if (birth_date) {
+      const birthDateObj = new Date(birth_date);
+      const today = new Date();
+      const age = today.getFullYear() - birthDateObj.getFullYear();
+      
+      if (isNaN(birthDateObj.getTime()) || age < 18 || age > 100) {
+        return res.status(400).json({ 
+          error: 'Please provide a valid birth date (age must be between 18-100)' 
+        });
+      }
+    }
+
+    // Check if user exists, if not create new user
+    const checkUserQuery = 'SELECT id FROM users WHERE email = ?';
+    
+    db.query(checkUserQuery, [email], (err, userResults) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      let userId;
+      
+      if (userResults.length === 0) {
+        // Create new user entry if doesn't exist
+        const createUserQuery = `
+          INSERT INTO users (
+            email, first_name, middle_name, last_name, birth_date, 
+            gender, complete_address, city, state, country, zip_code, primary_phone
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        const userValues = [
+          email,
+          first_name,
+          middle_name || null,
+          last_name,
+          birth_date || null,
+          gender,
+          complete_address || null,
+          city || null,
+          state || null,
+          country || null,
+          zip_code || null,
+          primary_phone || null
+        ];
+
+        db.query(createUserQuery, userValues, (err, result) => {
+          if (err) {
+            console.error('Error creating user:', err);
+            return res.status(500).json({ error: 'Failed to create user account' });
+          }
+          
+          userId = result.insertId;
+          createOrUpdateProfile(userId);
+        });
+      } else {
+        // Update existing user
+        userId = userResults[0].id;
+        
+        const updateUserQuery = `
+          UPDATE users SET
+            first_name = ?, middle_name = ?, last_name = ?, birth_date = ?,
+            gender = ?, complete_address = ?, city = ?, state = ?, country = ?,
+            zip_code = ?, primary_phone = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `;
+        
+        const updateUserValues = [
+          first_name,
+          middle_name || null,
+          last_name,
+          birth_date || null,
+          gender,
+          complete_address || null,
+          city || null,
+          state || null,
+          country || null,
+          zip_code || null,
+          primary_phone || null,
+          userId
+        ];
+
+        db.query(updateUserQuery, updateUserValues, (err) => {
+          if (err) {
+            console.error('Error updating user:', err);
+            return res.status(500).json({ error: 'Failed to update user account' });
+          }
+          
+          createOrUpdateProfile(userId);
+        });
+      }
+
+      function createOrUpdateProfile(userId) {
+        // Check if profile exists
+        const checkProfileQuery = 'SELECT id FROM user_profiles WHERE user_id = ?';
+        
+        db.query(checkProfileQuery, [userId], (err, profileResults) => {
+          if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+          }
+
+          const profileValues = [
+            userId,
+            first_name,
+            middle_name || null,
+            last_name,
+            gender,
+            birth_date || null,
+            primary_phone || null,
+            secondary_phone || null, // Using home_phone field for secondary phone
+            email
+          ];
+
+          if (profileResults.length === 0) {
+            // Create new profile
+            const insertProfileQuery = `
+              INSERT INTO user_profiles (
+                user_id, first_name, middle_name, last_name, gender,
+                birth_date, primary_phone, home_phone, email
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+
+            db.query(insertProfileQuery, profileValues, (err, result) => {
+              if (err) {
+                console.error('Error creating profile:', err);
+                return res.status(500).json({ error: 'Failed to create profile' });
+              }
+
+              // Fetch the complete account details
+              fetchAccountDetails(email, res, 'Account details created successfully');
+            });
+          } else {
+            // Update existing profile
+            const updateProfileQuery = `
+              UPDATE user_profiles SET
+                first_name = ?, middle_name = ?, last_name = ?, gender = ?,
+                birth_date = ?, primary_phone = ?, home_phone = ?, email = ?,
+                updated_at = CURRENT_TIMESTAMP
+              WHERE user_id = ?
+            `;
+
+            const updateValues = [...profileValues.slice(1), userId]; // Remove user_id from values and add it at the end
+
+            db.query(updateProfileQuery, updateValues, (err) => {
+              if (err) {
+                console.error('Error updating profile:', err);
+                return res.status(500).json({ error: 'Failed to update profile' });
+              }
+
+              // Fetch the complete account details
+              fetchAccountDetails(email, res, 'Account details updated successfully');
+            });
+          }
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Account details operation error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Account Details by Email
+router.get('/account-details/:email', authenticateToken, (req, res) => {
+  try {
+    const { email } = req.params;
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: 'Please provide a valid email address' 
+      });
+    }
+
+    fetchAccountDetails(email, res, 'Account details retrieved successfully');
+  } catch (error) {
+    console.error('Get account details error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Helper function to fetch complete account details with photo info
+function fetchAccountDetailsWithPhoto(email, res, successMessage, uploadedPhotoInfo = null) {
+  const getAccountQuery = `
+    SELECT 
+      u.id as user_id,
+      u.email,
+      u.first_name,
+      u.middle_name,
+      u.last_name,
+      u.birth_date,
+      u.gender,
+      u.complete_address,
+      u.city,
+      u.state,
+      u.country,
+      u.zip_code,
+      u.primary_phone,
+      up.home_phone as secondary_phone,
+      u.created_at,
+      u.updated_at,
+      CONCAT(u.first_name, 
+             CASE WHEN u.middle_name IS NOT NULL THEN CONCAT(' ', u.middle_name) ELSE '' END,
+             ' ', u.last_name) as full_name
+    FROM users u
+    LEFT JOIN user_profiles up ON u.id = up.user_id
+    WHERE u.email = ?
+  `;
+  
+  db.query(getAccountQuery, [email], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    const accountDetails = results[0];
+
+    // Get profile picture
+    const getProfilePictureQuery = `
+      SELECT filename, file_path, original_name, created_at
+      FROM user_images 
+      WHERE email = ? AND image_type = 'profile_picture' AND is_active = TRUE
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
+
+    db.query(getProfilePictureQuery, [email], (err, imageResults) => {
+      if (err) {
+        console.error('Error fetching profile picture:', err);
+        // Continue without image
+      }
+
+      // Add profile picture info to account details
+      if (uploadedPhotoInfo) {
+        // Use the newly uploaded photo info
+        accountDetails.profile_picture = uploadedPhotoInfo;
+      } else if (imageResults && imageResults.length > 0) {
+        accountDetails.profile_picture = {
+          filename: imageResults[0].filename,
+          file_path: imageResults[0].file_path,
+          original_name: imageResults[0].original_name,
+          uploaded_at: imageResults[0].created_at
+        };
+      } else {
+        accountDetails.profile_picture = null;
+      }
+
+      res.json({
+        message: successMessage,
+        account_details: accountDetails
+      });
+    });
+  });
+}
+
+// Helper function to fetch complete account details
+function fetchAccountDetails(email, res, successMessage) {
+  const getAccountQuery = `
+    SELECT 
+      u.id as user_id,
+      u.email,
+      u.first_name,
+      u.middle_name,
+      u.last_name,
+      u.birth_date,
+      u.gender,
+      u.complete_address,
+      u.city,
+      u.state,
+      u.country,
+      u.zip_code,
+      u.primary_phone,
+      up.home_phone as secondary_phone,
+      u.created_at,
+      u.updated_at,
+      CONCAT(u.first_name, 
+             CASE WHEN u.middle_name IS NOT NULL THEN CONCAT(' ', u.middle_name) ELSE '' END,
+             ' ', u.last_name) as full_name
+    FROM users u
+    LEFT JOIN user_profiles up ON u.id = up.user_id
+    WHERE u.email = ?
+  `;
+  
+  db.query(getAccountQuery, [email], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+
+    const accountDetails = results[0];
+
+    // Get profile picture
+    const getProfilePictureQuery = `
+      SELECT filename, file_path, original_name, created_at
+      FROM user_images 
+      WHERE email = ? AND image_type = 'profile_picture' AND is_active = TRUE
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `;
+
+    db.query(getProfilePictureQuery, [email], (err, imageResults) => {
+      if (err) {
+        console.error('Error fetching profile picture:', err);
+        // Continue without image
+      }
+
+      // Add profile picture info to account details
+      if (imageResults && imageResults.length > 0) {
+        accountDetails.profile_picture = {
+          filename: imageResults[0].filename,
+          file_path: imageResults[0].file_path,
+          original_name: imageResults[0].original_name,
+          uploaded_at: imageResults[0].created_at
+        };
+      } else {
+        accountDetails.profile_picture = null;
+      }
+
+      res.json({
+        message: successMessage,
+        account_details: accountDetails
+      });
+    });
+  });
+}
+
+// Deactivate Account
+router.post('/deactivate-account', authenticateToken, (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        error: 'Please provide a valid email address' 
+      });
+    }
+
+    // Check if user exists
+    const checkUserQuery = 'SELECT id FROM users WHERE email = ?';
+    
+    db.query(checkUserQuery, [email], (err, userResults) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ error: 'Database error' });
+      }
+
+      if (userResults.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Note: Instead of deleting, we could add an 'is_active' field to users table
+      // For now, we'll just deactivate all images and keep user data
+      const deactivateImagesQuery = `
+        UPDATE user_images 
+        SET is_active = FALSE 
+        WHERE email = ?
+      `;
+
+      db.query(deactivateImagesQuery, [email], (err) => {
+        if (err) {
+          console.error('Error deactivating images:', err);
+          return res.status(500).json({ error: 'Failed to deactivate account images' });
+        }
+
+        res.json({
+          message: 'Account images deactivated successfully. Contact support for complete account deletion.',
+          email: email,
+          deactivated_at: new Date().toISOString()
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Deactivate account error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router; 
