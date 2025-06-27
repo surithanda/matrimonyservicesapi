@@ -172,7 +172,7 @@ db.connect((err) => {
       file_path VARCHAR(500) NOT NULL,
       file_size INT,
       mime_type VARCHAR(100),
-      is_active BOOLEAN DEFAULT TRUE,
+      is_active BOOLEAN DEFAULT TRUE, 
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       INDEX idx_email (email),
