@@ -13,6 +13,18 @@ yarn-error.log
 dist/
 build/
 
+# upload files
+!upload/
+!uploads/cover-photos/
+!uploads/individual-pictures/
+!uploads/profile-pictures/
+!uploads/temp/
+
+uploads/cover-photos/*
+uploads/individual-pictures/*
+uploads/profile-pictures/*
+uploads/temp/*
+
 # TypeScript
 *.tsbuildinfo
 
