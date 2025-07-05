@@ -6,9 +6,12 @@ import path from 'path';
 
 export const registerAccount = async (req: Request, res: Response) => {
   try {
+    console.log(req.body);
     const accountService = new AccountService();
     const result = await accountService.registerAccount(req.body);
-    
+
+    console.log("Controller result", result);
+    console.log("-----------------------------------------------------------------------------");
     if (!result.success) {
       return res.status(409).json(result);
     }

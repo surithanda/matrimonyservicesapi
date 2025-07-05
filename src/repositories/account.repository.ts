@@ -20,35 +20,50 @@ export class AccountRepository {
     return (accounts as any[])[0];
   }
 
-  async create(accountData: IAccount, hashedPassword: string, connection: PoolConnection): Promise<void> {
-    await connection.execute(
-      `CALL usp_account_login_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  async getAccountByEmail(email: string): Promise<any> {
+    const [accounts] = await pool.execute(
+      `CALL get_accountDetails(?)`,
+      [email]
+    );
+    return (accounts as any[])[0];
+  }
+
+
+
+  async create(accountData: IAccount, hashedPassword: string, connection: PoolConnection): Promise<any> {
+
+    
+    const result = await connection.execute(
+      // `CALL usp_account_login_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `CALL eb_account_login_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         accountData.email, // email
-        accountData.email, // user_name (same as email)
+        // accountData.email, // user_name (same as email)
         hashedPassword, // user_pwd
         accountData.first_name,
         accountData.middle_name || null,
         accountData.last_name,
+        accountData.birth_date,
+        accountData.gender,
         accountData.primary_phone,
         accountData.primary_phone_country,
         accountData.primary_phone_type,
-        accountData.birth_date,
-        accountData.gender,
+        accountData.secondary_phone || null,
+        accountData.secondary_phone_country || null,
+        accountData.secondary_phone_type || null,
         accountData.address_line1,
+        accountData.address_line2 || null,
         accountData.city,
         accountData.state,
         accountData.zip,
         accountData.country,
         accountData.photo || null,
         accountData.secret_question || null,
-        accountData.secret_answer || null,
-        accountData.secondary_phone || null,
-        accountData.secondary_phone_country || null,
-        accountData.secondary_phone_type || null,
-        accountData.address_line2 || null
+        accountData.secret_answer || null
       ]
     );
+    const data = result[0];
+    return data;
   }
 
   async update(accountCode: string, accountData: Partial<IAccount>, connection: PoolConnection): Promise<void> {

@@ -15,34 +15,40 @@ export class AccountService {
     const connection = await pool.getConnection();
     
     try {
-      // Check existing account
-      const existingAccounts = await this.accountRepository.findByEmailOrPhone(
-        accountData.email,
-        accountData.primary_phone
-      );
-
-      if (Array.isArray(existingAccounts) && existingAccounts.length > 0) {
-        return {
-          success: false,
-          message: 'An account with this email or phone number already exists'
-        };
-      }
-
       // Hash password
       const saltRounds = 10;
-      // const hashedPassword = await bcrypt.hash(accountData.password, saltRounds);
-      const hashedPassword = accountData.password
-      
-      await connection.beginTransaction();
-      
-      await this.accountRepository.create(accountData, hashedPassword, connection);
-      
-      await connection.commit();
-      
-      return {
-        success: true,
-        message: 'Account registered successfully'
-      };
+      const hashedPassword = await bcrypt.hash(accountData.password, saltRounds);
+      // const hashedPassword = accountData.password
+//      await connection.beginTransaction();
+      console.log(accountData);
+      // console.log(hashedPassword);
+      const result = await this.accountRepository.create(accountData, hashedPassword, connection);
+      let response = null;
+      if(result.status=="success"){
+        response = {
+          success: true,
+          message: 'Account registered successfully',
+          data: result[0]
+        }
+      }
+      else{
+        if  (result.error_type == "SQL Exception"){
+          response = {
+            success: false,
+            message: result.message,
+            data: "Something went wrong. Contact Admin."
+          }
+        }
+        else{
+          response = {
+            success: false,
+            message: result.message,
+            data: result[0]
+          }
+        }
+      }
+
+      return response;
     } catch (error: any) {
       await connection.rollback();
       // Check for specific stored procedure error messages
