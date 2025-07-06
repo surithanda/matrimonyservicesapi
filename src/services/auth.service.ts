@@ -134,32 +134,31 @@ export class AuthService {
   }
 
   async forgotPassword(
-    email: string
-  ): Promise<{ success: boolean; message: string; history_id?: number }> {
+    email: string,
+    clientInfo: {
+      ipAddress: string;
+      userAgent: string;
+      systemName: string;
+      location: string;
+    }
+  ): Promise<{ success: boolean; message: string; OTP?: number }> {
     try {
       // Find user by email
-      const user = await this.authRepository.findUserByEmail(email);
+      // const user = await this.authRepository.findUserByEmail(email);
 
+      const result = await this.authRepository.validateEmailAndGenerateOTP(email, clientInfo.ipAddress, clientInfo.userAgent, clientInfo.systemName, clientInfo.location);
       // For security, don't reveal if email exists or not
-      if (!user) {
+      console.log("result--->", result);
+      if (!result) {
         return {
-          success: true,
+          success: result.success,
           message:
             "If your email is registered, you will receive a password reset OTP",
         };
       }
 
-      // Generate OTP
-      const otp = generateOTP();
-
-      // Create password reset history entry with OTP
-      const historyId = await this.authRepository.createLoginHistory(
-        email,
-        otp
-      );
-
       // Send OTP via email
-      const otpSent = await sendOTP(email, otp);
+      const otpSent = await sendOTP(email, result.otp);
 
       if (!otpSent) {
         return {
@@ -171,7 +170,7 @@ export class AuthService {
       return {
         success: true,
         message: "Password reset OTP has been sent to your email",
-        history_id: historyId,
+        // OTP: result.otp,
       };
     } catch (error) {
       console.error("Forgot password error:", error);

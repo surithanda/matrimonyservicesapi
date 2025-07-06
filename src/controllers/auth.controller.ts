@@ -220,7 +220,14 @@ export class AuthController {
 
   public forgotPassword = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const { email } = req.body;
+
+      const clientInfo = {
+        ipAddress: req.ip || req.socket.remoteAddress || '127.0.0.1',
+        userAgent: req.get('user-agent') || 'unknown',
+        systemName: req.get('sec-ch-ua-platform') || 'web', // Gets OS platform
+        location: req.get('accept-language') || 'unknown'    // Gets user's locale
+      };
+      const { email} = req.body;
 
       if (!email) {
         return res.status(400).json({
@@ -229,7 +236,7 @@ export class AuthController {
         });
       }
 
-      const result = await this.authService.forgotPassword(email);
+      const result = await this.authService.forgotPassword(email, clientInfo);
       
       if (!result.success) {
         return res.status(400).json(result);
