@@ -30,7 +30,9 @@ export class AuthService {
     };
   }): Promise<LoginResponse> {
     try {
+
       const hashedPassword = await bcrypt.hash(credentials.password, this.fixedSalt);
+
 
       const loginresult = await this.authRepository.validateLogin(
         credentials.email,
@@ -44,13 +46,13 @@ export class AuthService {
       if (loginresult.status == "success") {
         // Send OTP via email
         const otpSent = await sendOTP(credentials.email, loginresult.otp);
-
         if (!otpSent) {
           return {
             success: false,
             message: "Failed to send OTP",
           };
         }
+
 
         return {
           success: true,
@@ -86,6 +88,7 @@ export class AuthService {
       return {
         success: false,
         message: "Internal server error",
+
         user: {
           account_id: "",
           account_code: "",
@@ -94,6 +97,7 @@ export class AuthService {
       };
     }
   } 
+
 
 
   async changePassword(
@@ -139,6 +143,7 @@ export class AuthService {
   }
 
   async forgotPassword(
+
     email: string,
     clientInfo: {
       ipAddress: string;
@@ -152,6 +157,7 @@ export class AuthService {
       // const user = await this.authRepository.findUserByEmail(email);
 
       const result = await this.authRepository.validateEmailAndGenerateOTP(email, clientInfo.ipAddress, clientInfo.userAgent, clientInfo.systemName, clientInfo.location);
+
       // For security, don't reveal if email exists or not
       console.log("result--->", result);
       if (!result) {
@@ -176,6 +182,7 @@ export class AuthService {
         success: true,
         message: "Password reset OTP has been sent to your email",
         // OTP: result.otp,
+
       };
     } catch (error) {
       console.error("Forgot password error:", error);
@@ -187,7 +194,6 @@ export class AuthService {
   }
 
 
-  
   async resetPassword(
     email: string,
     otp: string,
@@ -218,6 +224,21 @@ export class AuthService {
             message: updateResult.message
         };
       }
+
+      // // Update password with null as currentPassword for reset flow
+      // const [updateResult] = await this.authRepository.updatePassword(
+      //   result.email,
+      //   null,
+      //   newPassword
+      // );
+
+      // // Check if we have a result and it has the expected message
+      // if (!updateResult || !updateResult[0] || !updateResult[0].message) {
+      //   return {
+      //     success: false,
+      //     message: "Failed to update password",
+      //   };
+      // }
 
       return {
         success: true,

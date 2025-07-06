@@ -119,6 +119,7 @@ export class AuthRepository {
     }
   }
 
+
 async   validateEmailAndGenerateOTP(email: string, ipAddress: string, userAgent: string, systemName: string, location: string): Promise<any> {
     try {
       const results = await pool.execute(
@@ -154,4 +155,5 @@ async updateNewPassword(
 }
 
 }
+
 

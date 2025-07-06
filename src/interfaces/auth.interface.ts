@@ -65,7 +65,9 @@ export interface OTPVerificationResponse {
 export interface VerifyOTPResult {
   success: boolean;
   message?: string;
+
   user: {
+
     account_id: string;
     account_code: string;
     email: string;
