@@ -64,24 +64,6 @@ export class AuthRepository {
       let response = (results[0] as any)[0][0];
 
       return response;
-      // if(response.status == 'success') {
-      //     console.log(response);
-      //     const OTP = response.otp;
-      //     console.log("OTP--------------->: ", OTP);
-      //     // const userDetails = (results as any[])[0];
-      //     // if (!userDetails || userDetails.length === 0) {
-      //     //   return { error: 'Invalid OTP' };
-      //     // }
-
-      //     // return userDetails[0];
-      // }
-      // else {
-      //     // console.log(response);
-      //     const error = response.error_message;
-      //     // console.log("Error--------------->: ", error);
-      //     return { error: error };
-
-      // }
     } catch (error) {
       console.error("Error in verifyOTP:", error);
       throw error;
@@ -136,4 +118,42 @@ export class AuthRepository {
       throw error;
     }
   }
+
+
+async   validateEmailAndGenerateOTP(email: string, ipAddress: string, userAgent: string, systemName: string, location: string): Promise<any> {
+    try {
+      const results = await pool.execute(
+        "CALL eb_validate_mail_and_generate_OTP(?, ?, ?, ?, ?)",
+        [email, ipAddress,  systemName, userAgent, location]
+      );
+
+      let response = (results[0] as any)[0][0];
+      console.log("response", response);
+      return response;
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      throw error;
+    }
+  } 
+
+
+  
+async updateNewPassword(
+  email: string,
+  newPassword: string
+): Promise<any> {
+  try {
+    const [results] = await pool.execute(
+      "CALL eb_update_new_password(?, ?)",
+      [email, newPassword]
+    );
+    return (results as any)[0][0];
+  } catch (error) {
+    console.error("Update password error:", error);
+    throw error;
+  }
 }
+
+}
+
+

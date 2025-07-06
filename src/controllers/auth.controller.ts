@@ -220,7 +220,14 @@ export class AuthController {
 
   public forgotPassword = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const { email } = req.body;
+
+      const clientInfo = {
+        ipAddress: req.ip || req.socket.remoteAddress || '127.0.0.1',
+        userAgent: req.get('user-agent') || 'unknown',
+        systemName: req.get('sec-ch-ua-platform') || 'web', // Gets OS platform
+        location: req.get('accept-language') || 'unknown'    // Gets user's locale
+      };
+      const { email} = req.body;
 
       if (!email) {
         return res.status(400).json({
@@ -229,7 +236,7 @@ export class AuthController {
         });
       }
 
-      const result = await this.authService.forgotPassword(email);
+      const result = await this.authService.forgotPassword(email, clientInfo);
       
       if (!result.success) {
         return res.status(400).json(result);
@@ -247,10 +254,10 @@ export class AuthController {
 
   public resetPassword = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const { history_id, otp, new_password, confirm_new_password } = req.body;
+      const { email, otp, new_password} = req.body;
 
       // Validate request
-      if (!history_id || !otp || !new_password || !confirm_new_password) {
+      if (!email || !otp || !new_password) {
         return res.status(400).json({
           success: false,
           message: 'All fields are required'
@@ -258,12 +265,7 @@ export class AuthController {
       }
 
       // Check if new passwords match
-      if (new_password !== confirm_new_password) {
-        return res.status(400).json({
-          success: false,
-          message: 'New passwords do not match'
-        });
-      }
+      
 
       // Validate password strength
       const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -274,7 +276,7 @@ export class AuthController {
         });
       }
 
-      const result = await this.authService.resetPassword(history_id, otp, new_password);
+      const result = await this.authService.resetPassword(email, otp, new_password);
       
       if (!result.success) {
         return res.status(400).json(result);
@@ -289,4 +291,57 @@ export class AuthController {
       });
     }
   };
+
+
+  // public resetPassword = async (req: Request, res: Response): Promise<Response> => {
+  //   try {
+  //     const { history_id, otp, new_password, confirm_new_password } = req.body;
+
+  //     // Validate request
+  //     if (!history_id || !otp || !new_password || !confirm_new_password) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         message: 'All fields are required'
+  //       });
+  //     }
+
+  //     // Check if new passwords match
+  //     if (new_password !== confirm_new_password) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         message: 'New passwords do not match'
+  //       });
+  //     }
+
+  //     // Validate password strength
+  //     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  //     if (!passwordRegex.test(new_password)) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+  //       });
+  //     }
+
+  //     const result = await this.authService.resetPassword(history_id, otp, new_password);
+      
+  //     if (!result.success) {
+  //       return res.status(400).json(result);
+  //     }
+
+  //     return res.status(200).json(result);
+  //   } catch (error) {
+  //     console.error('Reset password error:', error);
+  //     return res.status(500).json({
+  //       success: false,
+  //       message: `Internal server error: ${error}`
+  //     });
+  //   }
+  // };
+
+
+
+
 } 
+
+
+
