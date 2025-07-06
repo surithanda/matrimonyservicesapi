@@ -66,22 +66,21 @@ export interface VerifyOTPResult {
   success: boolean;
   message?: string;
   user?: {
-    account_id: any;
-    login_id: number;
+    account_id: string;
     account_code: string;
     email: string;
-    password: string;
-    first_name: string;
-    last_name: string;
-    phone: string;
-    date_of_birth: string;
-    age: number;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    zip_code: string;
-    profile_summary?: any;
+    login_id?: number;
+    password?: string;
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    date_of_birth?: string;
+    age?: number;
+    address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    zip_code?: string;
   };
 }
 

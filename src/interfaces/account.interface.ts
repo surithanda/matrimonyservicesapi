@@ -22,6 +22,6 @@ export interface IAccount {
   photo?: string;
   secret_question?: string;
   secret_answer?: string;
-  driving_license?: string;
+  // driving_license?: string;
   is_active?: boolean;
 } 
