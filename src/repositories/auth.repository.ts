@@ -135,4 +135,23 @@ async   validateEmailAndGenerateOTP(email: string, ipAddress: string, userAgent:
     }
   } 
 
+
+  
+async updateNewPassword(
+  email: string,
+  newPassword: string
+): Promise<any> {
+  try {
+    const [results] = await pool.execute(
+      "CALL eb_update_new_password(?, ?)",
+      [email, newPassword]
+    );
+    return (results as any)[0][0];
+  } catch (error) {
+    console.error("Update password error:", error);
+    throw error;
+  }
 }
+
+}
+

@@ -12,6 +12,7 @@ import { generateOTP, sendOTP } from "../utils/email.util";
 export class AuthService {
   private authRepository: AuthRepository;
   private profileRepository: ProfileRepository;
+  private fixedSalt = "$2b$10$YourFixedSaltHere12345678";
 
   constructor() {
     this.authRepository = new AuthRepository();
@@ -29,8 +30,7 @@ export class AuthService {
     };
   }): Promise<LoginResponse> {
     try {
-      const fixedSalt = "$2b$10$YourFixedSaltHere12345678";
-      const hashedPassword = await bcrypt.hash(credentials.password, fixedSalt);
+      const hashedPassword = await bcrypt.hash(credentials.password, this.fixedSalt);
 
       const loginresult = await this.authRepository.validateLogin(
         credentials.email,
@@ -86,6 +86,11 @@ export class AuthService {
       return {
         success: false,
         message: "Internal server error",
+        user: {
+          account_id: "",
+          account_code: "",
+          email: "",
+        }
       };
     }
   } 
@@ -181,12 +186,15 @@ export class AuthService {
     }
   }
 
+
+  
   async resetPassword(
     email: string,
     otp: string,
     newPassword: string
   ): Promise<{ success: boolean; message: string }> {
     try {
+      const hashedPassword = await bcrypt.hash(newPassword, this.fixedSalt);
       // Verify OTP
       const result = await this.authRepository.verifyOTP(email,otp);
 
@@ -197,20 +205,19 @@ export class AuthService {
         };
       }
 
-      // // Update password with null as currentPassword for reset flow
-      // const [updateResult] = await this.authRepository.updatePassword(
-      //   result.email,
-      //   null,
-      //   newPassword
-      // );
-
-      // // Check if we have a result and it has the expected message
-      // if (!updateResult || !updateResult[0] || !updateResult[0].message) {
-      //   return {
-      //     success: false,
-      //     message: "Failed to update password",
-      //   };
-      // }
+      // Update password with null as currentPassword for reset flow
+      const updateResult = await this.authRepository.updateNewPassword(
+        result.user.email,  
+        hashedPassword
+      );
+      console.log("updateResult",updateResult);
+      // Check if we have a result and it has the expected message
+      if (!updateResult || !updateResult.message) {
+        return {
+            success: false,
+            message: updateResult.message
+        };
+      }
 
       return {
         success: true,
