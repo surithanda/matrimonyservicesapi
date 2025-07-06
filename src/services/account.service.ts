@@ -16,12 +16,12 @@ export class AccountService {
     
     try {
       // Hash password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(accountData.password, saltRounds);
+      const fixedSalt = '$2b$10$YourFixedSaltHere12345678';
+      const hashedPassword = await bcrypt.hash(accountData.password, fixedSalt);
       // const hashedPassword = accountData.password
 //      await connection.beginTransaction();
       console.log(accountData);
-      // console.log(hashedPassword);
+      console.log("hasedPassword------->",hashedPassword);
       const result = await this.accountRepository.create(accountData, hashedPassword, connection);
       let response = null;
       if(result.status=="success"){

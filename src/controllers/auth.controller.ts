@@ -81,17 +81,18 @@ export class AuthController {
 
   public verifyOTP = async (req: Request, res: Response): Promise<Response<OTPVerificationResponse>> => {
     try {
-      const { history_id, otp } = req.body;
+      const { email, otp } = req.body;
 
-      if (!history_id || !otp) {
+      if (!email || !otp) {
         return res.status(400).json({
           success: false,
-          message: 'History ID and OTP are required'
+          message: 'Email and OTP are required'
         });
       }
 
-      const result = await this.authService.verifyOTP(history_id, otp);
-      if (!result || !result.user) {
+      const result = await this.authService.verifyOTP(email, otp);
+      console.log("result from auth controller",result);
+      if (!result || !result.success) {
         return res.status(401).json({
           success: false,
           message: 'Invalid OTP verification result'
@@ -101,9 +102,9 @@ export class AuthController {
       // Generate JWT token after successful verification
       const token = jwt.sign(
         { 
-          account_code: result.user.account_code,
-          account_id: result.user.account_id,
-          email: result.user.email,
+          account_code: result.user?.account_code,
+          account_id: result.user?.account_id,
+          email: result.user?.email,
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + (72 * 60 * 60) // 24 hours from now
         },
@@ -115,19 +116,9 @@ export class AuthController {
         message: 'OTP verified successfully',
         token,
         user: {
-          full_name: result.user.first_name + ' ' + result.user.last_name,
-          email: result.user.email,
-          phone: result.user.phone,
-          date_of_birth: result.user.date_of_birth,
-          age: result.user.age,
-          address: result.user.address,
-          city: result.user.city,
-          state: result.user.state,
-          country: result.user.country,
-          zip_code: result.user.zip_code,
-          account_code: result.user.account_code,
+          account_code: result.user?.account_code,
+          email: result.user?.email,
           account_id: result.user?.account_id,
-          profile_summary: result.user.profile_summary
         }
       });
     } catch (error) {
