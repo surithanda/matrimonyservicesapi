@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import cors from './config/cors';
 import { specs } from './config/swagger';
 import profileRoutes from './routes/profile.routes';
+import metaDataRoutes from './routes/metaData.routes';
 import logger from './config/logger';
 import path from 'path';
 import fs from 'fs';
@@ -66,6 +67,7 @@ app.get('/', (req, res) => {
 app.use('/api/account', accountRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/metadata', metaDataRoutes);
 
 // Swagger documentation setup
 app.use('/api-docs', swaggerUi.serve);
