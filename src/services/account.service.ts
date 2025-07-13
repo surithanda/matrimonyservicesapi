@@ -23,8 +23,10 @@ export class AccountService {
       console.log(accountData);
       console.log("hasedPassword------->",hashedPassword);
       const result = await this.accountRepository.create(accountData, hashedPassword, connection);
+      console.log("result------->",result[0]);
+      console.log("result status------->",result[0][0].status);
       let response = null;
-      if(result.status=="success"){
+      if(result[0][0].status=="success"){
         response = {
           success: true,
           message: 'Account registered successfully',
@@ -32,17 +34,17 @@ export class AccountService {
         }
       }
       else{
-        if  (result.error_type == "SQL Exception"){
+        if  (result[0][0].error_type == "SQL Exception"){
           response = {
             success: false,
-            message: result.message,
+            message: result[0][0].message,
             data: "Something went wrong. Contact Admin."
           }
         }
         else{
           response = {
             success: false,
-            message: result.message,
+            message: result[0][0].message,
             data: result[0]
           }
         }
