@@ -16,7 +16,7 @@ export class AccountService {
     
     try {
       // Hash password
-      const fixedSalt = '$2b$10$YourFixedSaltHere12345678';
+      const fixedSalt:string = String(process.env.FIXED_SALT);
       const hashedPassword = await bcrypt.hash(accountData.password, fixedSalt);
       // const hashedPassword = accountData.password
 //      await connection.beginTransaction();
@@ -69,9 +69,9 @@ export class AccountService {
     }
   }
 
-  async getAccount(accountCode: string): Promise<{ success: boolean; message: string; data?: any }> {
+  async getAccount(accountEmail: string): Promise<{ success: boolean; message: string; data?: any }> {
     try {
-      const account = await this.accountRepository.findByAccountCode(accountCode);
+      const account = await this.accountRepository.getAccountByEmail(accountEmail);
       
       if (!account) {
         return {
@@ -109,31 +109,69 @@ export class AccountService {
       }
 
       // If updating phone, check if it's already used by another account
-      if (accountData.primary_phone) {
-        const accountsWithPhone = await this.accountRepository.findByEmailOrPhone('', accountData.primary_phone);
-        if (Array.isArray(accountsWithPhone) && accountsWithPhone.length > 0) {
-          const isOwnPhone = accountsWithPhone.some(acc => acc.account_code === accountCode);
-          if (!isOwnPhone) {
-            return {
-              success: false,
-              message: 'Phone number is already in use by another account'
-            };
+      // if (accountData.primary_phone) {
+      //   const accountsWithPhone = await this.accountRepository.findByEmailOrPhone('', accountData.primary_phone);
+      //   if (Array.isArray(accountsWithPhone) && accountsWithPhone.length > 0) {
+      //     const isOwnPhone = accountsWithPhone.some(acc => acc.account_code === accountCode);
+      //     if (!isOwnPhone) {
+      //       return {
+      //         success: false,
+      //         message: 'Phone number is already in use by another account'
+      //       };
+      //     }
+      //   }
+      // }
+      
+      // await connection.beginTransaction();
+      
+      const [result] = await this.accountRepository.update(accountCode, accountData, connection);
+      // console.log(result[0])
+      // await connection.commit();
+      
+      // return {
+      //   success: true,
+      //   message: 'Account updated successfully'
+      // };
+      let response = null;
+      if(result[0].status=="success"){
+        response = {
+          success: true,
+          message: 'Account updated successfully',
+          data: result[0]
+        }
+      }
+      else{
+        if  (result[0].error_type == "SQL Exception"){
+          response = {
+            success: false,
+            message: result.message,
+            data: "Something went wrong. Contact Admin."
+          }
+        }
+        else{
+          response = {
+            success: false,
+            message: result.message,
+            data: result[0]
           }
         }
       }
-      
-      await connection.beginTransaction();
-      
-      await this.accountRepository.update(accountCode, accountData, connection);
-      
-      await connection.commit();
-      
-      return {
-        success: true,
-        message: 'Account updated successfully'
-      };
+
+      return response;
     } catch (error) {
       await connection.rollback();
+      // Check for specific stored procedure error messages
+      // if (error.message.includes('Email already exists')) {
+      //   return {
+      //     success: false,
+      //     message: 'Email already exists'
+      //   };
+      // } else if (error.message.includes('Primary phone number already exists')) {
+      //   return {
+      //     success: false,
+      //     message: 'Phone number already exists'
+      //   };
+      // }
       throw error;
     } finally {
       connection.release();

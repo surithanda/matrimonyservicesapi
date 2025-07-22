@@ -12,21 +12,22 @@ export interface LoginCredentials {
 }
 
 export interface User {
-  login_id: number;
+  account_id: string;
   account_code: string;
-  account_id: number;
   email: string;
-  password: string;
-  first_name: string;
-  last_name: string;
-  phone: string;
-  date_of_birth: string;
-  age: number;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
-  zip_code: string;
+  login_id?: number;
+  password?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  date_of_birth?: string;
+  age?: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zip_code?: string;
+
 }
 
 export interface LoginResponse {
@@ -65,25 +66,7 @@ export interface OTPVerificationResponse {
 export interface VerifyOTPResult {
   success: boolean;
   message?: string;
-
-  user: {
-
-    account_id: string;
-    account_code: string;
-    email: string;
-    login_id?: number;
-    password?: string;
-    first_name?: string;
-    last_name?: string;
-    phone?: string;
-    date_of_birth?: string;
-    age?: number;
-    address?: string;
-    city?: string;
-    state?: string;
-    country?: string;
-    zip_code?: string;
-  };
+  user: User;
 }
 
 export interface ChangePasswordRequest {

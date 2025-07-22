@@ -54,6 +54,35 @@ export const updateAccount = async (req: AuthenticatedRequest, res: Response) =>
   }
 };
 
+export const getAccountDetails = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const accountService = new AccountService();
+    const accountCode = req.user?.account_code;
+
+    if (!accountCode) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    const result = await accountService.getAccount(req.user?.email);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update account',
+      error: error.message
+    });
+  }
+};
+
+
 export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.file) {

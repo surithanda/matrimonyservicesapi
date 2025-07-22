@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { registerAccount, updateAccount, uploadPhoto, getProfilePhoto } from '../controllers/account.controller';
+import { registerAccount, updateAccount, uploadPhoto, getProfilePhoto, getAccountDetails } from '../controllers/account.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 import multer from 'multer';
@@ -243,6 +243,7 @@ router.post('/register', validateApiKey, registerAccount);
  *         description: Server error
  */
 router.put('/update', validateApiKey, authenticateJWT, updateAccount);
+router.post('/details', validateApiKey, authenticateJWT, getAccountDetails);
 
 /**
  * @swagger
