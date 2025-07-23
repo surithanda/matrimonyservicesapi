@@ -31,6 +31,7 @@ export class AuthService {
   }): Promise<LoginResponse> {
     try {
 
+      console.log("Login credentials:", credentials);
       const hashedPassword = await bcrypt.hash(credentials.password, this.fixedSalt);
 
 
@@ -43,6 +44,7 @@ export class AuthService {
         credentials.clientInfo.location
       );
 
+      console.log("loginresult", loginresult);
       if (loginresult.status == "success") {
         // Send OTP via email
         const otpSent = await sendOTP(credentials.email, loginresult.otp);
@@ -57,6 +59,13 @@ export class AuthService {
         return {
           success: true,
           message: "Login successful. Please verify OTP sent to your email.",
+          user: {
+            history_id: loginresult?.history_id,
+            account_code: loginresult?.account_code,
+            email: credentials.email,
+            first_name: loginresult?.first_name,
+            last_name: loginresult?.last_name,
+          },
         };
       } else {
         return {
@@ -106,11 +115,13 @@ export class AuthService {
     newPassword: string
   ): Promise<{ success: boolean; message: string }> {
     try {
+      const fixedSalt:string = String(process.env.FIXED_SALT);
+      const hashedPassword = await bcrypt.hash(newPassword, fixedSalt);
       // Call the stored procedure directly
       const [updateResult] = await this.authRepository.updatePassword(
         email,
         currentPassword,
-        newPassword
+        hashedPassword
       );
 
       // Check if we have a result and it has the expected message

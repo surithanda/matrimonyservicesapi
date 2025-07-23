@@ -109,8 +109,8 @@ export class AuthRepository {
   ): Promise<any> {
     try {
       const [results] = await pool.execute(
-        "CALL usp_api_update_password(?, ?, ?)",
-        [email, currentPassword, newPassword]
+        "CALL eb_update_new_password(?, ?)",
+        [email, newPassword]
       );
       return results;
     } catch (error) {

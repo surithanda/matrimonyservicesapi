@@ -66,33 +66,61 @@ export class AccountRepository {
     return data;
   }
 
-  async update(accountCode: string, accountData: Partial<IAccount>, connection: PoolConnection): Promise<void> {
-    const updateFields: string[] = [];
-    const values: any[] = [];
+  async update(accountCode: string, accountData: Partial<IAccount>, connection: PoolConnection): Promise<any> {
+    // const updateFields: string[] = [];
+    // const values: any[] = [];
 
     // Build dynamic update query based on provided fields
-    Object.entries(accountData).forEach(([key, value]) => {
-      if (value !== undefined && key !== 'account_code' && key !== 'email' && key !== 'password') {
-        updateFields.push(`${key} = ?`);
-        values.push(value);
-      }
-    });
+    // Object.entries(accountData).forEach(([key, value]) => {
+    //   if (value !== undefined && key !== 'account_code' && key !== 'email' && key !== 'password') {
+    //     updateFields.push(`${key} = ?`);
+    //     values.push(value);
+    //   }
+    // });
 
-    if (updateFields.length === 0) {
-      return;
-    }
+    // if (updateFields.length === 0) {
+    //   return;
+    // }
 
     // Add modified date and user
-    updateFields.push('modified_date = NOW()');
-    updateFields.push('modified_user = ?');
-    values.push('SYSTEM');
+    // updateFields.push('modified_date = NOW()');
+    // updateFields.push('modified_user = ?');
+    // values.push('SYSTEM');
 
     // Add account_code for WHERE clause
-    values.push(accountCode);
+    // values.push(accountCode);
 
-    await connection.execute(
-      `UPDATE account SET ${updateFields.join(', ')} WHERE account_code = ?`,
-      values
+    // await connection.execute(
+    //   `UPDATE account SET ${updateFields.join(', ')} WHERE account_code = ?`,
+    //   values
+    // );
+
+    const result = await connection.execute(
+      `CALL eb_account_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        accountCode, // account_code
+        accountData.email, // email
+        accountData.first_name,
+        accountData.middle_name,
+        accountData.last_name,
+        accountData.primary_phone,
+        accountData.primary_phone_country,
+        accountData.primary_phone_type,
+        accountData.birth_date,
+        accountData.gender,
+        accountData.address_line1,
+        accountData.address_line2 || null,
+        accountData.city,
+        accountData.state,
+        accountData.zip,
+        accountData.country,
+        accountData.photo || null,
+        accountData.secondary_phone || null,
+        accountData.secondary_phone_country || null,
+        accountData.secondary_phone_type || null,
+      ]
     );
+    const data = result[0];
+    return data;
   }
 } 
