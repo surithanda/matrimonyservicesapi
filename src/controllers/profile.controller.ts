@@ -6,6 +6,33 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
+export const getPersonalProfile = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    // Add account_id and created_user from authenticated user
+    const profileData = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.getPersonalProfile(profileData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get personal profile details',
+      error: error.message
+    });
+  }
+};
+
 export const createPersonalProfile = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const profileService = new ProfileService();
@@ -33,13 +60,41 @@ export const createPersonalProfile = async (req: AuthenticatedRequest, res: Resp
   }
 };
 
+export const getProfileAddress = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    // Add account_id and created_user from authenticated user
+    const profileData = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.getProfileAddress(profileData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get profile address details',
+      error: error.message
+    });
+  }
+};
+
 export const createProfileAddress = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const profileService = new ProfileService();
     
     const addressData = {
       ...req.body,
-      account_id: parseInt(req.user?.account_code || '0')
+      account_id: parseInt(req.user?.account_code || '0'),
+      created_user: req.user?.email
     };
 
     const result = await profileService.createProfileAddress(addressData);
@@ -53,6 +108,34 @@ export const createProfileAddress = async (req: AuthenticatedRequest, res: Respo
     res.status(500).json({
       success: false,
       message: 'Failed to create profile address',
+      error: error.message
+    });
+  }
+};
+
+// 
+export const getProfileEducation = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    // Add account_id and created_user from authenticated user
+    const profileData = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.getProfileEducation(profileData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get profile education details',
       error: error.message
     });
   }
@@ -83,13 +166,42 @@ export const createProfileEducation = async (req: AuthenticatedRequest, res: Res
   }
 };
 
+// 
+export const getProfileEmployment = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    // Add account_id and created_user from authenticated user
+    const profileData = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.getProfileEmployment(profileData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get profile employment details',
+      error: error.message
+    });
+  }
+};
+
 export const createProfileEmployment = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const profileService = new ProfileService();
     
     const employmentData = {
       ...req.body,
-      account_id: parseInt(req.user?.account_code || '0')
+      account_id: parseInt(req.user?.account_code || '0'),
+      created_user: req.user?.email
     };
 
     const result = await profileService.createProfileEmployment(employmentData);
@@ -103,6 +215,34 @@ export const createProfileEmployment = async (req: AuthenticatedRequest, res: Re
     res.status(500).json({
       success: false,
       message: 'Failed to create profile employment',
+      error: error.message
+    });
+  }
+};
+
+// 
+export const getProfileProperty = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    // Add account_id and created_user from authenticated user
+    const profileData = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.getProfileProperty(profileData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get profile property details',
       error: error.message
     });
   }
@@ -135,13 +275,42 @@ export const createProfileProperty = async (req: AuthenticatedRequest, res: Resp
   }
 };
 
+// 
+export const getFamilyReference = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    // Add account_id and created_user from authenticated user
+    const profileData = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.getFamilyReference(profileData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get profile family reference details',
+      error: error.message
+    });
+  }
+};
+
 export const createFamilyReference = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const profileService = new ProfileService();
     
     const referenceData: IProfileFamilyReference = {
       ...req.body,
-      account_id: parseInt(req.user?.account_code || '0')
+      account_id: parseInt(req.user?.account_code || '0'),
+      created_user: req.user?.email
     };
 
     const result = await profileService.createFamilyReference(referenceData);
@@ -155,6 +324,34 @@ export const createFamilyReference = async (req: AuthenticatedRequest, res: Resp
     res.status(500).json({
       success: false,
       message: 'Failed to create family reference',
+      error: error.message
+    });
+  }
+};
+
+// 
+export const getProfileLifestyle = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    // Add account_id and created_user from authenticated user
+    const profileData = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.getProfileLifestyle(profileData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get profile lifestyle details',
       error: error.message
     });
   }

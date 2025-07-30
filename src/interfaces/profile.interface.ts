@@ -1,4 +1,5 @@
 export interface IProfilePersonal {
+  profile_id:number,
   account_id: number;
   first_name: string;
   last_name: string;
@@ -50,7 +51,7 @@ export interface IProfileAddress {
   phone: string;
   landmark1?: string;
   landmark2?: string;
-  account_id: number;
+  created_user: string;
 }
 
 export interface IProfileEducation {
@@ -72,14 +73,16 @@ export interface IProfileEmployment {
   institution_name: string;
   address_line1: string;
   city: string;
-  state: string;
-  country: string;
+  state: number;
+  country: number;
   zip: string;
   start_year: number;
   end_year: number;
-  job_title: string;
+  job_title: number;
+  other_title: string;
   last_salary_drawn: string;
   account_id: number;
+  created_user: string;
 }
 
 export interface IProfileProperty {
