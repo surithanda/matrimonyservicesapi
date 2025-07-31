@@ -8,18 +8,86 @@ export class ProfileService {
     this.profileRepository = new ProfileRepository();
   }
 
+  validateResponse = (response:any, successMessage:string) => {
+      if(response) {
+        if(response?.error_code === null)
+          return {
+            success: true,
+            message: successMessage,
+            data: response
+          };
+        else {
+          return {
+            success: false,
+            message: response?.error_message,
+            ...response
+          };
+        }
+      } else { //assuming the call went through successfully but there is no matching record
+        return {
+            success: true,
+            message: successMessage,
+            data: null
+          };
+      }
+
+  } 
+
+  async getPersonalProfile(profileData: IProfilePersonal): Promise<IProfileResponse> {
+    try {
+      const response = await this.profileRepository.getPersonalProfile(profileData);
+
+      return this.validateResponse(response, 'Personal profile fetched successfully');
+    } catch (error: any) {
+      if (error.message.includes('Invalid Account ID')) {
+        return {
+          success: false,
+          message: 'Invalid Account ID'
+        };
+      }
+      throw error;
+    }
+  }
+
   async createPersonalProfile(profileData: IProfilePersonal): Promise<IProfileResponse> {
     try {
-      const profileId = await this.profileRepository.createPersonalProfile(profileData);
+      const response = await this.profileRepository.createPersonalProfile(profileData);
 
-      return {
-        success: true,
-        message: 'Personal profile created successfully',
-        data: {
-          profile_id: profileId,
-          profile: profileData
+      if(response?.error_code === null)
+          return {
+            success: true,
+            message: 'Personal profile created successfully',
+            data: {
+              profile_id: response?.profile_id,
+              profile: profileData
+            }
+          };
+        else {
+          return {
+            success: false,
+            message: response?.error_message,
+            ...response
+          };
         }
-      };
+
+      
+    } catch (error: any) {
+      if (error.message.includes('Invalid Account ID')) {
+        return {
+          success: false,
+          message: 'Invalid Account ID'
+        };
+      }
+      throw error;
+    }
+  }
+
+
+  async getProfileAddress(profileData: IProfilePersonal): Promise<any> {
+    try {
+      const response = await this.profileRepository.getProfileAddress(profileData);
+
+      return this.validateResponse(response, 'Profile address fetched successfully');
     } catch (error: any) {
       if (error.message.includes('Invalid Account ID')) {
         return {
@@ -33,17 +101,35 @@ export class ProfileService {
 
   async createProfileAddress(addressData: IProfileAddress): Promise<IProfileResponse> {
     try {
-      await this.profileRepository.createProfileAddress(addressData);
+      const response = await this.profileRepository.createProfileAddress(addressData);
 
       return {
         success: true,
-        message: 'Profile address created successfully'
+        message: 'Profile address created successfully',
+        ...(response as any)
       };
     } catch (error: any) {
       if (error.message.includes('Profile doesnot exist')) {
         return {
           success: false,
           message: 'Profile does not exist'
+        };
+      }
+      throw error;
+    }
+  }
+
+  // 
+  async getProfileEducation(profileData: IProfilePersonal): Promise<any> {
+    try {
+      const response = await this.profileRepository.getProfileEducation(profileData);
+
+      return this.validateResponse(response, 'Profile education fetched successfully');
+    } catch (error: any) {
+      if (error.message.includes('Invalid Account ID')) {
+        return {
+          success: false,
+          message: 'Invalid Account ID'
         };
       }
       throw error;
@@ -52,17 +138,35 @@ export class ProfileService {
 
   async createProfileEducation(educationData: IProfileEducation): Promise<IProfileResponse> {
     try {
-      await this.profileRepository.createProfileEducation(educationData);
+      const response = await this.profileRepository.createProfileEducation(educationData);
 
       return {
         success: true,
-        message: 'Profile education created successfully'
+        message: 'Profile education created successfully',
+        ...(response as any)
       };
     } catch (error: any) {
       if (error.message.includes('Profile doesnot exist')) {
         return {
           success: false,
           message: 'Profile does not exist'
+        };
+      }
+      throw error;
+    }
+  }
+
+  // 
+  async getProfileEmployment(profileData: IProfilePersonal): Promise<any> {
+    try {
+      const response = await this.profileRepository.getProfileEmployment(profileData);
+
+      return this.validateResponse(response, 'Profile employment fetched successfully');
+    } catch (error: any) {
+      if (error.message.includes('Invalid Account ID')) {
+        return {
+          success: false,
+          message: 'Invalid Account ID'
         };
       }
       throw error;
@@ -71,11 +175,12 @@ export class ProfileService {
 
   async createProfileEmployment(employmentData: IProfileEmployment): Promise<IProfileResponse> {
     try {
-      await this.profileRepository.createProfileEmployment(employmentData);
+      const response = await this.profileRepository.createProfileEmployment(employmentData);
 
       return {
         success: true,
-        message: 'Profile employment created successfully'
+        message: 'Profile employment created successfully',
+        ...(response as any)
       };
     } catch (error: any) {
       if (error.message.includes('Profile doesnot exist')) {
@@ -88,6 +193,24 @@ export class ProfileService {
     }
   }
 
+  
+  // 
+  async getProfileProperty(profileData: IProfilePersonal): Promise<any> {
+    try {
+      const response = await this.profileRepository.getProfileProperty(profileData);
+
+      return this.validateResponse(response, 'Profile property fetched successfully');
+    } catch (error: any) {
+      if (error.message.includes('Invalid Account ID')) {
+        return {
+          success: false,
+          message: 'Invalid Account ID'
+        };
+      }
+      throw error;
+    }
+  }
+  
   async createProfileProperty(propertyData: IProfileProperty): Promise<any> {
     try {
       const propertyId:any = await this.profileRepository.createProfileProperty(propertyData);
@@ -110,6 +233,23 @@ export class ProfileService {
     }
   }
 
+  // 
+  async getFamilyReference(profileData: IProfilePersonal): Promise<any> {
+    try {
+      const response = await this.profileRepository.getFamilyReference(profileData);
+
+      return this.validateResponse(response, 'Profile family reference fetched successfully');
+    } catch (error: any) {
+      if (error.message.includes('Invalid Account ID')) {
+        return {
+          success: false,
+          message: 'Invalid Account ID'
+        };
+      }
+      throw error;
+    }
+  }
+
   async createFamilyReference(referenceData: IProfileFamilyReference): Promise<any> {
     try {
       const referenceId = await this.profileRepository.createFamilyReference(referenceData);
@@ -126,6 +266,23 @@ export class ProfileService {
         return {
           success: false,
           message: 'Profile does not exist'
+        };
+      }
+      throw error;
+    }
+  }
+
+  // 
+  async getProfileLifestyle(profileData: IProfilePersonal): Promise<any> {
+    try {
+      const response = await this.profileRepository.getProfileLifestyle(profileData);
+
+      return this.validateResponse(response, 'Profile lifestyle fetched successfully');
+    } catch (error: any) {
+      if (error.message.includes('Invalid Account ID')) {
+        return {
+          success: false,
+          message: 'Invalid Account ID'
         };
       }
       throw error;

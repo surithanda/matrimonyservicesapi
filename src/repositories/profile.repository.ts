@@ -2,10 +2,38 @@ import { IProfilePersonal, IProfileAddress, IProfileEducation, IProfileEmploymen
 import pool from '../config/database';
 
 export class ProfileRepository {
-    async createPersonalProfile(profileData: IProfilePersonal): Promise<number> {
+    async getPersonalProfile(profileData: IProfilePersonal): Promise<any> {
       try {
         // Log the values being passed to help debug
-        console.log('Profile Data:', profileData);
+        // console.log('Profile Data:', profileData);
+        
+        const params = [
+          profileData.profile_id, 
+          null,
+          profileData.created_user
+        ];
+  
+        // Log the parameters being passed to the stored procedure
+        // console.log('Parameters:', params);
+  
+        const [result] = await pool.execute(
+          'CALL eb_profile_personal_get(?, ?, ?)',
+          params
+        );
+  
+        const extractedResponse = (result as any[])[0][0];
+        console.log(extractedResponse)
+        return extractedResponse;
+      } catch (error) {
+        console.error('Error in getPersonalProfile:', error);
+        throw error;
+      }
+    }
+    
+    async createPersonalProfile(profileData: IProfilePersonal): Promise<any> {
+      try {
+        // Log the values being passed to help debug
+        // console.log('Profile Data:', profileData);
         
         const params = [
           profileData.account_id, 
@@ -39,22 +67,82 @@ export class ProfileRepository {
         ];
   
         // Log the parameters being passed to the stored procedure
-        console.log('Parameters:', params);
+        // console.log('Parameters:', params);
   
         const [result] = await pool.execute(
-          'CALL usp_profile_personal_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL eb_profile_personal_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
   
-        const profileId = (result as any[])[0][0].profile_id;
-        return profileId;
+        const extractedResponse = (result as any[])[0][0];
+        console.log(extractedResponse)
+        return extractedResponse;
+        // if(extractedResponse?.error_code === null)
+        //   return extractedResponse?.profile_id;
+        // else {
+        //   return {
+        //     success: false,
+        //     message: 'Email already exists',
+        //     {...extractedResponse}
+        //   };
+        // }
+        
       } catch (error) {
         console.error('Error in createPersonalProfile:', error);
         throw error;
       }
     }
 
-    async createProfileAddress(addressData: IProfileAddress): Promise<void> {
+    formatResponse(result:any, arrayElement:string):any {
+      const extractedResponse = (result as any[])[0];
+      const returnObj = {
+        status: extractedResponse[0].status,
+        error_type: extractedResponse[0].error_type,
+        error_code: extractedResponse[0].error_code,
+        error_message: extractedResponse[0].error_message,
+        [arrayElement]: extractedResponse
+      }
+      return returnObj;
+    }
+
+    async getProfileAddress(profileData: IProfilePersonal): Promise<any> {
+      try {
+        // Log the values being passed to help debug
+        // console.log('Profile Data:', profileData);
+        
+        const params = [
+          profileData.profile_id, 
+          null,
+          profileData.created_user
+        ];
+  
+        // Log the parameters being passed to the stored procedure
+        // console.log('Parameters:', params);
+  
+        const [result] = await pool.execute(
+          'CALL eb_profile_address_get(?, ?, ?)',
+          params
+        );
+  
+        const returnObj = this.formatResponse(result, 'addresses')
+        // const extractedResponse = (result as any[])[0];
+        // const returnObj = {
+        //   status: extractedResponse[0].status,
+        //   error_type: extractedResponse[0].error_type,
+        //   error_code: extractedResponse[0].error_code,
+        //   error_message: extractedResponse[0].error_message,
+        //   addresses: extractedResponse
+        // }
+
+        // console.log(extractedResponse)
+        return returnObj;
+      } catch (error) {
+        console.error('Error in getProfileAddress:', error);
+        throw error;
+      }
+    }
+
+    async createProfileAddress(addressData: IProfileAddress): Promise<any> {
       try {
         const params = [
           addressData.profile_id,
@@ -65,18 +153,46 @@ export class ProfileRepository {
           addressData.state,
           addressData.country,
           addressData.zip,
-          addressData.phone,
           addressData.landmark1 || null,
           addressData.landmark2 || null,
-          addressData.account_id
+          addressData.created_user
         ];
 
-        await pool.execute(
-          'CALL usp_profile_address_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        const [result] = await pool.execute(
+          'CALL eb_profile_address_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
+
+        return (result as any)[0][0];
       } catch (error) {
         console.error('Error in createProfileAddress:', error);
+        throw error;
+      }
+    }
+
+    async getProfileEducation(profileData: IProfilePersonal): Promise<any> {
+      try {
+        // Log the values being passed to help debug
+        // console.log('Profile Data:', profileData);
+        
+        const params = [
+          profileData.profile_id, 
+          null,
+          profileData.created_user
+        ];
+  
+        // Log the parameters being passed to the stored procedure
+        // console.log('Parameters:', params);
+  
+        const [result] = await pool.execute(
+          'CALL eb_profile_education_get(?, ?, ?)',
+          params
+        );
+  
+        const returnObj = this.formatResponse(result, 'educations')
+        return returnObj;
+      } catch (error) {
+        console.error('Error in getProfileEducation:', error);
         throw error;
       }
     }
@@ -97,12 +213,42 @@ export class ProfileRepository {
           educationData.user_created
         ];
 
-        await pool.execute(
-          'CALL usp_profile_education_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        const [result] = await pool.execute(
+          'CALL eb_profile_education_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
+
+        return (result as any)[0][0];
       } catch (error) {
         console.error('Error in createProfileEducation:', error);
+        throw error;
+      }
+    }
+
+    // 
+    async getProfileEmployment(profileData: IProfilePersonal): Promise<any> {
+      try {
+        // Log the values being passed to help debug
+        // console.log('Profile Data:', profileData);
+        
+        const params = [
+          profileData.profile_id, 
+          null,
+          profileData.created_user
+        ];
+  
+        // Log the parameters being passed to the stored procedure
+        // console.log('Parameters:', params);
+  
+        const [result] = await pool.execute(
+          'CALL eb_profile_employment_get(?, ?, ?)',
+          params
+        );
+  
+        const returnObj = this.formatResponse(result, 'employments')
+        return returnObj;
+      } catch (error) {
+        console.error('Error in getProfileEmployment:', error);
         throw error;
       }
     }
@@ -120,21 +266,54 @@ export class ProfileRepository {
           employmentData.start_year,
           employmentData.end_year,
           employmentData.job_title,
+          employmentData.other_title || '',
           employmentData.last_salary_drawn,
-          employmentData.account_id
+          // employmentData.account_id,
+          employmentData.created_user
         ];
 
-        await pool.execute(
-          'CALL usp_profile_employment_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        console.log(params)
+        const [result] = await pool.execute(
+          'CALL eb_profile_employment_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
+
+        return (result as any)[0][0];
       } catch (error) {
         console.error('Error in createProfileEmployment:', error);
         throw error;
       }
     }
 
-    async createProfileProperty(propertyData: IProfileProperty): Promise<number> {
+    // 
+    async getProfileProperty(profileData: IProfilePersonal): Promise<any> {
+      try {
+        // Log the values being passed to help debug
+        // console.log('Profile Data:', profileData);
+        
+        const params = [
+          profileData.profile_id, 
+          null,
+          profileData.created_user
+        ];
+  
+        // Log the parameters being passed to the stored procedure
+        // console.log('Parameters:', params);
+  
+        const [result] = await pool.execute(
+          'CALL eb_profile_property_get(?, ?, ?)',
+          params
+        );
+  
+        const returnObj = this.formatResponse(result, 'properties')
+        return returnObj;
+      } catch (error) {
+        console.error('Error in getProfileProperty:', error);
+        throw error;
+      }
+    }
+
+    async createProfileProperty(propertyData: IProfileProperty): Promise<any> {
       try {
         const params = [
           propertyData.profile_id,
@@ -150,19 +329,46 @@ export class ProfileRepository {
         ];
 
         const [result] = await pool.execute(
-          'CALL usp_profile_property_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL eb_profile_property_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
 
-        const propertyId = (result as any[])[0][0].property_id;
-        return propertyId;
+        return (result as any)[0][0];
       } catch (error) {
         console.error('Error in createProfileProperty:', error);
         throw error;
       }
     }
 
-    async createFamilyReference(referenceData: IProfileFamilyReference): Promise<number> {
+    // references
+    async getFamilyReference(profileData: IProfilePersonal): Promise<any> {
+      try {
+        // Log the values being passed to help debug
+        // console.log('Profile Data:', profileData);
+        
+        const params = [
+          profileData.profile_id, 
+          null,
+          profileData.created_user
+        ];
+  
+        // Log the parameters being passed to the stored procedure
+        // console.log('Parameters:', params);
+  
+        const [result] = await pool.execute(
+          'CALL eb_profile_family_reference_get(?, ?, ?)',
+          params
+        );
+  
+        const returnObj = this.formatResponse(result, 'family')
+        return returnObj;
+      } catch (error) {
+        console.error('Error in getFamilyReference:', error);
+        throw error;
+      }
+    }
+
+    async createFamilyReference(referenceData: IProfileFamilyReference): Promise<any> {
       try {
         const params = [
           referenceData.profile_id,
@@ -202,19 +408,46 @@ export class ProfileRepository {
         ];
 
         const [result] = await pool.execute(
-          'CALL usp_profile_family_reference_create_v2(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL eb_profile_family_reference_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
 
-        const referenceId = (result as any[])[0][0].reference_id;
-        return referenceId;
+        return (result as any)[0][0];
       } catch (error) {
         console.error('Error in createFamilyReference:', error);
         throw error;
       }
     }
 
-    async createProfileLifestyle(lifestyleData: IProfileLifestyle): Promise<void> {
+    // 
+    async getProfileLifestyle(profileData: IProfilePersonal): Promise<any> {
+      try {
+        // Log the values being passed to help debug
+        // console.log('Profile Data:', profileData);
+        
+        const params = [
+          profileData.profile_id, 
+          null,
+          profileData.created_user
+        ];
+  
+        // Log the parameters being passed to the stored procedure
+        // console.log('Parameters:', params);
+  
+        const [result] = await pool.execute(
+          'CALL eb_profile_lifestyle_get(?, ?, ?)',
+          params
+        );
+  
+        // const returnObj = this.formatResponse(result, 'educations')
+        // return returnObj;
+      } catch (error) {
+        console.error('Error in getProfileLifestyle:', error);
+        throw error;
+      }
+    }
+
+    async createProfileLifestyle(lifestyleData: IProfileLifestyle): Promise<any> {
       try {
         const params = [
           lifestyleData.profile_lifestyle_id,
@@ -230,10 +463,12 @@ export class ProfileRepository {
           lifestyleData.profile_id
         ];
 
-        await pool.execute(
-          'CALL usp_profile_lifestyle_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        const [result] = await pool.execute(
+          'CALL eb_profile_lifestyle_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
+
+        return (result as any)[0][0];
       } catch (error) {
         console.error('Error in createProfileLifestyle:', error);
         throw error;
