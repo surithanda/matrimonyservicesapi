@@ -27,6 +27,7 @@ export interface IProfilePersonal {
   whatsapp_number?: string;
   profession?: number;
   disability?: number;
+  type?: string;
   created_user: string;
 }
 

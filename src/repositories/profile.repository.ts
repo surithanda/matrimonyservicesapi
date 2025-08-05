@@ -1,4 +1,5 @@
 import { IProfilePersonal, IProfileAddress, IProfileEducation, IProfileEmployment, IProfileProperty, IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
+import { IProfileHobbyInterest } from '../interfaces/hobby.interface';
 import pool from '../config/database';
 
 export class ProfileRepository {
@@ -93,14 +94,22 @@ export class ProfileRepository {
       }
     }
 
-    formatResponse(result:any, arrayElement:string):any {
-      const extractedResponse = (result as any[])[0];
-      const returnObj = {
-        status: extractedResponse[0].status,
-        error_type: extractedResponse[0].error_type,
-        error_code: extractedResponse[0].error_code,
-        error_message: extractedResponse[0].error_message,
-        [arrayElement]: extractedResponse
+    formatResponse(result:any, arrayElement?:string):any {
+      let returnObj;
+      if(!result || !Array.isArray(result) || result.length === 0) {
+        const extractedResponse = (result as any[])[0];
+        returnObj = {
+          status: extractedResponse[0].status,
+          error_type: extractedResponse[0].error_type,
+          error_code: extractedResponse[0].error_code,
+          error_message: extractedResponse[0].error_message,
+          ...(arrayElement ? { [arrayElement]: extractedResponse } : {...extractedResponse})
+        }
+      } else {
+        returnObj = {
+          status: 'success',
+          [arrayElement]: (result as any[])[0]
+        };
       }
       return returnObj;
     }
@@ -348,7 +357,7 @@ export class ProfileRepository {
         
         const params = [
           profileData.profile_id, 
-          null,
+          profileData.type || null, // type can be null or a specific type
           profileData.created_user
         ];
   
@@ -359,6 +368,8 @@ export class ProfileRepository {
           'CALL eb_profile_family_reference_get(?, ?, ?)',
           params
         );
+        
+        // console.log('Result:', result);
   
         const returnObj = this.formatResponse(result, 'family')
         return returnObj;
@@ -507,6 +518,97 @@ export class ProfileRepository {
         return result[0]; // Assuming the stored procedure returns the profile summary in the first row
       } catch (error) {
         console.error('Error fetching profile summary:', error);
+        throw error;
+      }
+    }
+
+    async getProfileHobbies(profileData: IProfileHobbyInterest): Promise<any> {
+      try {
+        const params = [profileData.profile_id, profileData.category, profileData.created_user];
+        const [result] = await pool.execute('CALL eb_profile_hobby_interest_get(?,?,?)', params);
+        const resultObj = this.formatResponse(result, 'hobby_interests');
+        return resultObj;
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    async addProfileHobby(hobbyData: IProfileHobbyInterest): Promise<any> {
+      try {
+        const params = [hobbyData.profile_id, hobbyData.hobby, hobbyData.created_user];
+        const [result] = await pool.execute('CALL eb_profile_hobby_interest_create(?, ?, ?)', params);
+        return (result as any[])[0][0];
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    async removeProfileHobby(hobbyData: IProfileHobbyInterest): Promise<any> {
+      try {
+        const params = [hobbyData.profile_id, hobbyData.hobby, hobbyData.created_user];
+        const [result] = await pool.execute('CALL eb_profile_hobby_interest_remove(?, ?, ?)', params);
+        return (result as any[])[0][0];
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    async addProfileFamily(family: any): Promise<any> {
+      try {
+        // const params = [family.profile_id, null, family.created_user];
+        const params = [
+          family.profile_id,
+          family.firstname,
+          family.lastname,
+          family.relationshiptoyou,
+          family.contactnumber,
+          family.email,
+          family.address_line,
+          family.city,
+          family.state_id,
+          family.country_id,
+          family.zip,
+          family.created_user,
+        ];
+
+        const [result] = await pool.execute('CALL eb_profile_family_reference_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', params);
+        return (result as any[])[0][0];
+        // TODO: Map family object to params as per your DB schema
+        // const params = [profile_id, ...Object.values(family)];
+        // Example: 'CALL eb_profile_family_create(?, ...)'
+
+        // Replace with your actual stored procedure and params
+        // const [result] = await pool.execute('CALL eb_profile_family_create(?, ...)', params);
+        // return (result as any[])[0][0];
+        // return { profile_id, ...family, id: 1 }; // Placeholder
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    async updateProfileFamily(profile_id: number, family: any): Promise<any> {
+      try {
+        // TODO: Map family object to params as per your DB schema
+        const params = [profile_id, ...Object.values(family)];
+        // Example: 'CALL eb_profile_family_update(?, ...)' 
+        // Replace with your actual stored procedure and params
+        // const [result] = await pool.execute('CALL eb_profile_family_update(?, ...)', params);
+        // return (result as any[])[0][0];
+        return { profile_id, ...family }; // Placeholder
+      } catch (error) {
+        throw error;
+      }
+    }
+
+    async deleteProfileFamily(profile_id: number, family_id: number): Promise<any> {
+      try {
+        // TODO: Use your actual stored procedure and params
+        const params = [profile_id, family_id];
+        // Example: 'CALL eb_profile_family_delete(?, ?)' 
+        // const [result] = await pool.execute('CALL eb_profile_family_delete(?, ?)', params);
+        // return (result as any[])[0][0];
+        return { profile_id, family_id }; // Placeholder
+      } catch (error) {
         throw error;
       }
     }

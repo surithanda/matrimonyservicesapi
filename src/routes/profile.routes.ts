@@ -1,9 +1,118 @@
 import { Router } from 'express';
-import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto, getPersonalProfile, getProfileAddress, getProfileEducation, getProfileEmployment, getProfileProperty, getFamilyReference, getProfileLifestyle } from '../controllers/profile.controller';
+import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto, getPersonalProfile, getProfileAddress, getProfileEducation, getProfileEmployment, getProfileProperty, getFamilyReference, getProfileLifestyle, getProfileHobbies, addProfileHobby, removeProfileHobby, addProfileFamily, updateProfileFamily, deleteProfileFamily } from '../controllers/profile.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 
 const router = Router();
+
+/**
+ * @swagger
+ * /profile/hobbiesDetails:
+ *   post:
+ *     summary: Get all hobbies for a profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: List of hobbies
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/hobbiesDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileHobbies
+);
+
+/**
+ * @swagger
+ * /profile/hobby:
+ *   post:
+ *     summary: Add a hobby for a profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *               hobby:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Hobby added successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/hobby',
+  validateApiKey,
+  authenticateJWT,
+  addProfileHobby
+);
+
+/**
+ * @swagger
+ * /profile/hobby:
+ *   delete:
+ *     summary: Remove a hobby for a profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *               hobby:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Hobby removed successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/hobby',
+  validateApiKey,
+  authenticateJWT,
+  removeProfileHobby
+);
 
 router.post(
   '/personalDetails',
@@ -326,4 +435,115 @@ router.post(
   createProfilePhoto
 );
 
-export default router; 
+/**
+ * @swagger
+ * /profile/family:
+ *   post:
+ *     summary: Add a family record for a profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *               family:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Family record added successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/family',
+  validateApiKey,
+  authenticateJWT,
+  addProfileFamily
+);
+
+/**
+ * @swagger
+ * /profile/family:
+ *   put:
+ *     summary: Update a family record for a profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *               family:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Family record updated successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  '/family',
+  validateApiKey,
+  authenticateJWT,
+  updateProfileFamily
+);
+
+/**
+ * @swagger
+ * /profile/family:
+ *   delete:
+ *     summary: Delete a family record for a profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *               family_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Family record deleted successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/family',
+  validateApiKey,
+  authenticateJWT,
+  deleteProfileFamily
+);
+
+export default router;

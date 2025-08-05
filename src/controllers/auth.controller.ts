@@ -91,7 +91,7 @@ export class AuthController {
       }
 
       const result = await this.authService.verifyOTP(email, otp);
-      console.log("result from auth controller",result);
+      // console.log("result from auth controller",result);
       if (!result || !result.success) {
         return res.status(401).json({
           success: false,
