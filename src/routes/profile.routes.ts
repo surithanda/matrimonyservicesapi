@@ -5,6 +5,219 @@ import { authenticateJWT } from '../middlewares/auth.middleware';
 
 const router = Router();
 
+router.post(
+  '/personalDetails',
+  validateApiKey,
+  authenticateJWT,
+  getPersonalProfile
+);
+
+router.post(
+  '/addressDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileAddress
+);
+
+// modify the below
+router.post(
+  '/educationDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileEducation
+);
+
+router.post(
+  '/employmentDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileEmployment
+);
+
+router.post(
+  '/propertyDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileProperty
+);
+
+router.post(
+  '/family-referenceDetails',
+  validateApiKey,
+  authenticateJWT,
+  getFamilyReference
+);
+
+router.post(
+  '/lifestyleDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileLifestyle
+);
+
+
+
+/**
+ * @swagger
+ * /profile/hobbiesDetails:
+ *   post:
+ *     summary: Get all hobbies for a profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: List of hobbies
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/hobbiesDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileHobbies
+);
+
+/**
+ * @swagger
+ * /profile/hobby:
+ *   post:
+ *     summary: Add a hobby for a profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *               hobby:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Hobby added successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/hobby',
+  validateApiKey,
+  authenticateJWT,
+  addProfileHobby
+);
+
+/**
+ * @swagger
+ * /profile/hobby:
+ *   delete:
+ *     summary: Remove a hobby for a profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *               hobby:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Hobby removed successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/hobby',
+  validateApiKey,
+  authenticateJWT,
+  removeProfileHobby
+);
+
+router.post(
+  '/personalDetails',
+  validateApiKey,
+  authenticateJWT,
+  getPersonalProfile
+);
+
+router.post(
+  '/addressDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileAddress
+);
+
+// modify the below
+router.post(
+  '/educationDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileEducation
+);
+
+router.post(
+  '/employmentDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileEmployment
+);
+
+router.post(
+  '/propertyDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileProperty
+);
+
+router.post(
+  '/family-referenceDetails',
+  validateApiKey,
+  authenticateJWT,
+  getFamilyReference
+);
+
+router.post(
+  '/lifestyleDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileLifestyle
+);
+
+
+
 /**
  * @swagger
  * /profile/hobbiesDetails:
