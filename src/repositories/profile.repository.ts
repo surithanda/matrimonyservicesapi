@@ -103,12 +103,12 @@ export class ProfileRepository {
           error_type: extractedResponse[0].error_type,
           error_code: extractedResponse[0].error_code,
           error_message: extractedResponse[0].error_message,
-          ...(arrayElement ? { [arrayElement]: extractedResponse } : {...extractedResponse})
+          ...(arrayElement ? { [arrayElement.toString()]: extractedResponse } : {...extractedResponse})
         }
       } else {
         returnObj = {
           status: 'success',
-          [arrayElement]: (result as any[])[0]
+          ...(arrayElement ? { [arrayElement.toString()]: (result as any[])[0] } : {})
         };
       }
       return returnObj;

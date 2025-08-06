@@ -1,5 +1,5 @@
 import { IProfilePersonal, IProfileResponse, IProfileAddress, IProfileEducation, IProfileEmployment, IProfileProperty, IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
-import { IProfileHobby } from '../interfaces/hobby.interface';
+import { IProfileHobbyInterest } from '../interfaces/hobby.interface';
 import { ProfileRepository } from '../repositories/profile.repository';
 
 export class ProfileService {
@@ -332,7 +332,7 @@ export class ProfileService {
     }
   }
 
-  async getProfileHobbies(profileData: IProfileHobby): Promise<IProfileResponse> {
+  async getProfileHobbies(profileData: IProfileHobbyInterest): Promise<IProfileResponse> {
     try {
       const response = await this.profileRepository.getProfileHobbies(profileData);
       return this.validateResponse(response, 'Hobbies fetched successfully');
@@ -341,7 +341,7 @@ export class ProfileService {
     }
   }
 
-  async addProfileHobby(hobbyData: IProfileHobby): Promise<IProfileResponse> {
+  async addProfileHobby(hobbyData: IProfileHobbyInterest): Promise<IProfileResponse> {
     try {
       const response = await this.profileRepository.addProfileHobby(hobbyData);
       return this.validateResponse(response, 'Hobby added successfully');
@@ -350,7 +350,7 @@ export class ProfileService {
     }
   }
 
-  async removeProfileHobby(hobbyData: IProfileHobby): Promise<IProfileResponse> {
+  async removeProfileHobby(hobbyData: IProfileHobbyInterest): Promise<IProfileResponse> {
     try {
       const response = await this.profileRepository.removeProfileHobby(hobbyData);
       return this.validateResponse(response, 'Hobby removed successfully');

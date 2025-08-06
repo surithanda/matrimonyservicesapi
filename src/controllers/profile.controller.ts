@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { ProfileService } from '../services/profile.service';
 import { AuthenticatedRequest } from '../interfaces/auth.interface';
 import { IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
-import { IProfileHobby } from '../interfaces/hobby.interface';
+import { IProfileHobbyInterest } from '../interfaces/hobby.interface';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -464,7 +464,7 @@ export const createProfilePhoto = async (req: AuthenticatedRequest, res: Respons
 export const getProfileHobbies = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const profileService = new ProfileService();
-    const profileData: IProfileHobby = {
+    const profileData: IProfileHobbyInterest = {
       ...req.body,
       account_code: req.user?.account_code,
       created_user: req.user?.email
@@ -487,7 +487,7 @@ export const getProfileHobbies = async (req: AuthenticatedRequest, res: Response
 export const addProfileHobby = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const profileService = new ProfileService();
-    const hobbyData: IProfileHobby = {
+    const hobbyData: IProfileHobbyInterest = {
       ...req.body,
       account_code: req.user?.account_code,
       created_user: req.user?.email
@@ -509,7 +509,7 @@ export const addProfileHobby = async (req: AuthenticatedRequest, res: Response) 
 export const removeProfileHobby = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const profileService = new ProfileService();
-    const hobbyData: IProfileHobby = {
+    const hobbyData: IProfileHobbyInterest = {
       ...req.body,
       account_code: req.user?.account_code,
       created_user: req.user?.email
@@ -551,8 +551,8 @@ export const addProfileFamily = async (req: AuthenticatedRequest, res: Response)
     
     res.status(201).json(result);
 
-  } catch (error) {
-    return res.status(500).json({ message: error.message || 'Server error' });
+  } catch (error: unknown) {
+    return res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
 
@@ -565,8 +565,8 @@ export const updateProfileFamily = async (req: AuthenticatedRequest, res: Respon
     }
     const result = await profileService.updateProfileFamily(profile_id, family);
     return res.status(200).json({ message: 'Family record updated successfully', data: result });
-  } catch (error) {
-    return res.status(500).json({ message: error.message || 'Server error' });
+  } catch (error: unknown) {
+    return res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
 
@@ -579,7 +579,7 @@ export const deleteProfileFamily = async (req: AuthenticatedRequest, res: Respon
     }
     const result = await profileService.deleteProfileFamily(profile_id, family_id);
     return res.status(200).json({ message: 'Family record deleted successfully', data: result });
-  } catch (error) {
-    return res.status(500).json({ message: error.message || 'Server error' });
+  } catch (error: unknown) {
+    return res.status(500).json({ message: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
