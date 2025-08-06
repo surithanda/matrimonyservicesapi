@@ -368,8 +368,6 @@ export class ProfileRepository {
           'CALL eb_profile_family_reference_get(?, ?, ?)',
           params
         );
-        
-        // console.log('Result:', result);
   
         const returnObj = this.formatResponse(result, 'family')
         return returnObj;

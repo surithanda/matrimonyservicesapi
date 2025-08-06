@@ -5,6 +5,58 @@ import { authenticateJWT } from '../middlewares/auth.middleware';
 
 const router = Router();
 
+router.post(
+  '/personalDetails',
+  validateApiKey,
+  authenticateJWT,
+  getPersonalProfile
+);
+
+router.post(
+  '/addressDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileAddress
+);
+
+// modify the below
+router.post(
+  '/educationDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileEducation
+);
+
+router.post(
+  '/employmentDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileEmployment
+);
+
+router.post(
+  '/propertyDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileProperty
+);
+
+router.post(
+  '/family-referenceDetails',
+  validateApiKey,
+  authenticateJWT,
+  getFamilyReference
+);
+
+router.post(
+  '/lifestyleDetails',
+  validateApiKey,
+  authenticateJWT,
+  getProfileLifestyle
+);
+
+
+
 /**
  * @swagger
  * /profile/hobbiesDetails:
