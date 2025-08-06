@@ -103,12 +103,12 @@ export class ProfileRepository {
           error_type: extractedResponse[0].error_type,
           error_code: extractedResponse[0].error_code,
           error_message: extractedResponse[0].error_message,
-          ...(arrayElement ? { [arrayElement]: extractedResponse } : {...extractedResponse})
+          ...(arrayElement ? { [arrayElement.toString()]: extractedResponse } : {...extractedResponse})
         }
       } else {
         returnObj = {
           status: 'success',
-          [arrayElement]: (result as any[])[0]
+          ...(arrayElement ? { [arrayElement.toString()]: (result as any[])[0] } : {})
         };
       }
       return returnObj;
@@ -522,8 +522,8 @@ export class ProfileRepository {
 
     async getProfileHobbies(profileData: IProfileHobbyInterest): Promise<any> {
       try {
-        const params = [profileData.profile_id, profileData.category, profileData.created_user];
-        const [result] = await pool.execute('CALL eb_profile_hobby_interest_get(?,?,?)', params);
+        const params = [profileData.profile_id, null, profileData.category, profileData.created_user];
+        const [result] = await pool.execute('CALL eb_profile_hobby_interest_get(?,?,?,?)', params);
         const resultObj = this.formatResponse(result, 'hobby_interests');
         return resultObj;
       } catch (error) {
