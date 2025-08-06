@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ProfileService } from '../services/profile.service';
 import { AuthenticatedRequest } from '../interfaces/auth.interface';
 import { IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
+import { IProfileHobby } from '../interfaces/hobby.interface';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -457,5 +458,128 @@ export const createProfilePhoto = async (req: AuthenticatedRequest, res: Respons
       message: 'Failed to upload profile photo',
       error: error.message
     });
+  }
+};
+
+export const getProfileHobbies = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const profileData: IProfileHobby = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+    console.log('Profile Data:', profileData); // Debugging line to check profileData
+    const result = await profileService.getProfileHobbies(profileData);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get hobbies',
+      error: error.message
+    });
+  }
+};
+
+export const addProfileHobby = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const hobbyData: IProfileHobby = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+    const result = await profileService.addProfileHobby(hobbyData);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.status(201).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add hobby',
+      error: error.message
+    });
+  }
+};
+
+export const removeProfileHobby = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const hobbyData: IProfileHobby = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+    const result = await profileService.removeProfileHobby(hobbyData);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to remove hobby',
+      error: error.message
+    });
+  }
+};
+
+export const addProfileFamily = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    // const { profile_id, family } = req.body;
+    const data = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+    if (!req.body?.profile_id) {
+      return res.status(400).json({ message: 'profile_id is required' });
+    }
+    const result = await profileService.addProfileFamily(data);
+    // return res.status(201).json({ message: 'Family record added successfully', data: result });
+
+    // const result = await profileService.createProfileEmployment(employmentData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(201).json(result);
+
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Server error' });
+  }
+};
+
+export const updateProfileFamily = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const { profile_id, family } = req.body;
+    if (!profile_id || !family) {
+      return res.status(400).json({ message: 'profile_id and family are required' });
+    }
+    const result = await profileService.updateProfileFamily(profile_id, family);
+    return res.status(200).json({ message: 'Family record updated successfully', data: result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Server error' });
+  }
+};
+
+export const deleteProfileFamily = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const { profile_id, family_id } = req.body;
+    if (!profile_id || !family_id) {
+      return res.status(400).json({ message: 'profile_id and family_id are required' });
+    }
+    const result = await profileService.deleteProfileFamily(profile_id, family_id);
+    return res.status(200).json({ message: 'Family record deleted successfully', data: result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Server error' });
   }
 };

@@ -1,4 +1,5 @@
 import { IProfilePersonal, IProfileResponse, IProfileAddress, IProfileEducation, IProfileEmployment, IProfileProperty, IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
+import { IProfileHobby } from '../interfaces/hobby.interface';
 import { ProfileRepository } from '../repositories/profile.repository';
 
 export class ProfileService {
@@ -9,8 +10,9 @@ export class ProfileService {
   }
 
   validateResponse = (response:any, successMessage:string) => {
+    console.log("Response from repository:", response);
       if(response) {
-        if(response?.error_code === null)
+        if(response?.error_code === null || response?.status === 'success')
           return {
             success: true,
             message: successMessage,
@@ -329,4 +331,58 @@ export class ProfileService {
       throw error;
     }
   }
-} 
+
+  async getProfileHobbies(profileData: IProfileHobby): Promise<IProfileResponse> {
+    try {
+      const response = await this.profileRepository.getProfileHobbies(profileData);
+      return this.validateResponse(response, 'Hobbies fetched successfully');
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  async addProfileHobby(hobbyData: IProfileHobby): Promise<IProfileResponse> {
+    try {
+      const response = await this.profileRepository.addProfileHobby(hobbyData);
+      return this.validateResponse(response, 'Hobby added successfully');
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  async removeProfileHobby(hobbyData: IProfileHobby): Promise<IProfileResponse> {
+    try {
+      const response = await this.profileRepository.removeProfileHobby(hobbyData);
+      return this.validateResponse(response, 'Hobby removed successfully');
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  async addProfileFamily(family: any): Promise<IProfileResponse> {
+    try {
+      const response = await this.profileRepository.addProfileFamily(family);
+      return this.validateResponse(response, 'Family record added successfully');
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  async updateProfileFamily(profile_id: number, family: any): Promise<IProfileResponse> {
+    try {
+      const response = await this.profileRepository.updateProfileFamily(profile_id, family);
+      return this.validateResponse(response, 'Family record updated successfully');
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  async deleteProfileFamily(profile_id: number, family_id: number): Promise<IProfileResponse> {
+    try {
+      const response = await this.profileRepository.deleteProfileFamily(profile_id, family_id);
+      return this.validateResponse(response, 'Family record deleted successfully');
+    } catch (error: any) {
+      throw error;
+    }
+  }
+}

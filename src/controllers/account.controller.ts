@@ -6,12 +6,12 @@ import path from 'path';
 
 export const registerAccount = async (req: Request, res: Response) => {
   try {
-    console.log(req.body);
+    // console.log(req.body);
     const accountService = new AccountService();
     const result = await accountService.registerAccount(req.body);
 
-    console.log("Controller result", result);
-    console.log("-----------------------------------------------------------------------------");
+    // console.log("Controller result", result);
+    // console.log("-----------------------------------------------------------------------------");
     if (!result.success) {
       return res.status(409).json(result);
     }
@@ -66,7 +66,7 @@ export const getAccountDetails = async (req: AuthenticatedRequest, res: Response
       });
     }
 
-    const result = await accountService.getAccount(req.user?.email);
+    const result = await accountService.getAccount(String(req?.user?.email));
     
     if (!result.success) {
       return res.status(400).json(result);
