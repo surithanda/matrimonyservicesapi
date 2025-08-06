@@ -522,8 +522,8 @@ export class ProfileRepository {
 
     async getProfileHobbies(profileData: IProfileHobbyInterest): Promise<any> {
       try {
-        const params = [profileData.profile_id, profileData.category, profileData.created_user];
-        const [result] = await pool.execute('CALL eb_profile_hobby_interest_get(?,?,?)', params);
+        const params = [profileData.profile_id, null, profileData.category, profileData.created_user];
+        const [result] = await pool.execute('CALL eb_profile_hobby_interest_get(?,?,?,?)', params);
         const resultObj = this.formatResponse(result, 'hobby_interests');
         return resultObj;
       } catch (error) {
