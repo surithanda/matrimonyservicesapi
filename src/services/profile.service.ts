@@ -12,7 +12,7 @@ export class ProfileService {
   validateResponse = (response:any, successMessage:string) => {
     console.log("Response from repository:", response);
       if(response) {
-        if(response?.error_code === null || response?.status === 'success')
+        if(response?.error_code === null || (!response?.hasOwnProperty('error_code') && response?.status === 'success'))
           return {
             success: true,
             message: successMessage,
@@ -291,13 +291,14 @@ export class ProfileService {
     }
   }
 
-  async createProfileLifestyle(lifestyleData: IProfileLifestyle): Promise<IProfileResponse> {
+  async createProfileLifestyle(lifestyleData: IProfileLifestyle): Promise<any> {
     try {
-      await this.profileRepository.createProfileLifestyle(lifestyleData);
+      const reference = await this.profileRepository.createProfileLifestyle(lifestyleData);
 
       return {
         success: true,
         message: 'Profile lifestyle created successfully',
+        data: reference,
       };
     } catch (error: any) {
       if (error.message.includes('Invalid profile_id')) {
