@@ -215,14 +215,12 @@ export class ProfileService {
   
   async createProfileProperty(propertyData: IProfileProperty): Promise<any> {
     try {
-      const propertyId:any = await this.profileRepository.createProfileProperty(propertyData);
+      const property:any = await this.profileRepository.createProfileProperty(propertyData);
 
       return {
         success: true,
         message: 'Profile property created successfully',
-        data: {
-          profile_id: propertyId,
-        }
+        data: property,
       };
     } catch (error: any) {
       if (error.message.includes('Profile does not exist')) {
