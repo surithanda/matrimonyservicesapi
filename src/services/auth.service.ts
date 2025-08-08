@@ -12,7 +12,7 @@ import { generateOTP, sendOTP } from "../utils/email.util";
 export class AuthService {
   private authRepository: AuthRepository;
   private profileRepository: ProfileRepository;
-  private fixedSalt = "$2b$10$YourFixedSaltHere12345678";
+  private fixedSalt = String(process.env.FIXED_SALT);
 
   constructor() {
     this.authRepository = new AuthRepository();
@@ -34,7 +34,7 @@ export class AuthService {
       console.log("Login credentials:", credentials);
       const hashedPassword = await bcrypt.hash(credentials.password, this.fixedSalt);
 
-
+      console.log("hashedPassword", hashedPassword);
       const loginresult = await this.authRepository.validateLogin(
         credentials.email,
         hashedPassword,
