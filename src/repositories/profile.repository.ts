@@ -125,6 +125,7 @@ export class ProfileRepository {
       let returnObj;
       if(!result || !Array.isArray(result) || result.length === 0) {
         const extractedResponse = (result as any[])[0];
+        console.log(extractedResponse)
         returnObj = {
           status: extractedResponse[0].status,
           error_type: extractedResponse[0].error_type,
@@ -358,17 +359,18 @@ export class ProfileRepository {
           propertyData.property_address,
           propertyData.property_value,
           propertyData.property_description,
-          propertyData.isoktodisclose,
+          propertyData.isoktodisclose || false, // Default to false if not provided
           propertyData.created_by,
-          propertyData.ip_address,
-          propertyData.browser_profile
+          // propertyData.ip_address,
+          // propertyData.browser_profile
         ];
 
         const [result] = await pool.execute(
-          'CALL eb_profile_property_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL eb_profile_property_create(?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
-
+        
+        console.log('Result from stored procedure:', result);
         return (result as any)[0][0];
       } catch (error) {
         console.error('Error in createProfileProperty:', error);
@@ -475,8 +477,8 @@ export class ProfileRepository {
           params
         );
   
-        // const returnObj = this.formatResponse(result, 'educations')
-        // return returnObj;
+        const returnObj = this.formatResponse(result, 'lifestyles')
+        return returnObj;
       } catch (error) {
         console.error('Error in getProfileLifestyle:', error);
         throw error;
@@ -486,7 +488,7 @@ export class ProfileRepository {
     async createProfileLifestyle(lifestyleData: IProfileLifestyle): Promise<any> {
       try {
         const params = [
-          lifestyleData.profile_lifestyle_id,
+          lifestyleData.profile_id,
           lifestyleData.eating_habit,
           lifestyleData.diet_habit,
           lifestyleData.cigarettes_per_day,
@@ -494,13 +496,12 @@ export class ProfileRepository {
           lifestyleData.gambling_engage,
           lifestyleData.physical_activity_level,
           lifestyleData.relaxation_methods,
+          lifestyleData.addition_info || '',
           lifestyleData.created_user,
-          Number(lifestyleData.is_active),
-          lifestyleData.profile_id
         ];
 
         const [result] = await pool.execute(
-          'CALL eb_profile_lifestyle_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL eb_profile_lifestyle_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
 
