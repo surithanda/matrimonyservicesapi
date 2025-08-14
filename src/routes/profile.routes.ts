@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto, getPersonalProfile, getProfileAddress, getProfileEducation, getProfileEmployment, getProfileProperty, getFamilyReference, getProfileLifestyle, getProfileHobbies, addProfileHobby, removeProfileHobby, addProfileFamily, updateProfileFamily, deleteProfileFamily } from '../controllers/profile.controller';
+import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto, getPersonalProfile, getProfileAddress, getProfileEducation, getProfileEmployment, getProfileProperty, getFamilyReference, getProfileLifestyle, getProfileHobbies, addProfileHobby, removeProfileHobby, addProfileFamily, updateProfileFamily, deleteProfileFamily, searchProfiles, getUserPreferences, saveUserPreferences, createFavoriteProfile, getFavorites, deleteFavorite, trackProfileView, getProfilesByAccountId } from '../controllers/profile.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 
@@ -607,7 +607,8 @@ router.post(
  * @swagger
  * /profile/photo:
  *   post:
- *     summary: Upload profile photo
+ *     summary: Upload a profile photo
+ *     description: Upload a profile photo with type (1=profile, 2=cover, 3=additional)
  *     tags: [Profile]
  *     security:
  *       - ApiKeyAuth: []
@@ -618,27 +619,85 @@ router.post(
  *         multipart/form-data:
  *           schema:
  *             type: object
+ *             required:
+ *               - profile_id
+ *               - photo_type
+ *               - photo
  *             properties:
  *               profile_id:
  *                 type: integer
+ *                 description: The ID of the profile to attach the photo to
+ *                 example: 123
  *               photo_type:
  *                 type: integer
+ *                 description: Type of photo (1=profile, 2=cover, 3=additional)
+ *                 enum: [1, 2, 3]
+ *                 example: 1
  *               description:
  *                 type: string
+ *                 description: Optional description of the photo
+ *                 example: "Profile picture from summer vacation"
  *               caption:
  *                 type: string
+ *                 description: Optional caption for the photo
+ *                 example: "Summer 2023"
  *               photo:
  *                 type: string
  *                 format: binary
+ *                 description: The image file to upload (JPEG, PNG, or WebP, max 5MB)
  *     responses:
  *       201:
- *         description: Profile photo uploaded successfully
+ *         description: Photo uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Profile photo uploaded successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     photo_id:
+ *                       type: integer
+ *                       example: 456
+ *                     url:
+ *                       type: string
+ *                       example: "/uploads/accounts/abc123/profiles/123/photos/profile-1234567890.jpg"
  *       400:
- *         description: Invalid request data
+ *         description: Invalid request or file
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
- *         description: Unauthorized
+ *         description: Unauthorized - Missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       413:
+ *         description: File too large (max 5MB)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       415:
+ *         description: Unsupported file type (only JPEG, PNG, WebP allowed)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.post(
   '/photo',
@@ -757,6 +816,351 @@ router.delete(
   validateApiKey,
   authenticateJWT,
   deleteProfileFamily
+);
+
+/**
+ * @swagger
+ * /profile/search:
+ *   post:
+ *     summary: Search profiles with filters
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *                 description: Current user's profile ID
+ *               min_age:
+ *                 type: integer
+ *                 description: Minimum age filter
+ *               max_age:
+ *                 type: integer
+ *                 description: Maximum age filter
+ *               religion:
+ *                 type: integer
+ *                 description: Religion ID filter
+ *               max_education:
+ *                 type: integer
+ *                 description: Maximum education level filter
+ *               occupation:
+ *                 type: integer
+ *                 description: Occupation ID filter
+ *               country:
+ *                 type: string
+ *                 description: Country filter
+ *               caste_id:
+ *                 type: integer
+ *                 description: Caste ID filter
+ *               marital_status:
+ *                 type: integer
+ *                 description: Marital status filter
+ *     responses:
+ *       200:
+ *         description: Profiles retrieved successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/search',
+  validateApiKey,
+  authenticateJWT,
+  searchProfiles
+);
+
+/**
+ * @swagger
+ * /profile/favorites:
+ *   post:
+ *     summary: Add or remove a profile from favorites
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - favoriteProfileId
+ *               - isFavorite
+ *             properties:
+ *               favoriteProfileId:
+ *                 type: integer
+ *                 description: ID of the profile to add/remove from favorites
+ *               isFavorite:
+ *                 type: boolean
+ *                 description: Whether to add (true) or remove (false) from favorites
+ *     responses:
+ *       200:
+ *         description: Favorite status updated successfully
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Server error
+ */
+// router.post(
+//   '/favorites',
+//   validateApiKey,
+//   authenticateJWT,
+//   toggleFavoriteProfile
+// );
+
+/**
+ * @swagger
+ * /profile/search/preferences/{profileId}:
+ *   get:
+ *     summary: Get user search preferences
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Profile ID
+ *     responses:
+ *       200:
+ *         description: User preferences retrieved successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  '/search/preferences/:profileId',
+  validateApiKey,
+  authenticateJWT,
+  getUserPreferences
+);
+
+/**
+ * @swagger
+ * /profile/favorites:
+ *   get:
+ *     summary: Get user's favorites
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Profile ID
+ *     responses:
+ *       200:
+ *         description: Favorites retrieved successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/favoriteList',
+  validateApiKey,
+  authenticateJWT,
+  getFavorites
+);
+
+/**
+ * @swagger
+ * /profile/favorites:
+ *   post:
+ *     summary: Add or remove a profile from favorites
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - profile_id
+ *               - favorite_profile_id
+ *               - is_favorite
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *                 description: ID of the profile who is favoriting
+ *               favorite_profile_id:
+ *                 type: integer
+ *                 description: ID of the profile being favorited
+ *               is_favorite:
+ *                 type: boolean
+ *                 description: Whether to add (true) or remove (false) from favorites
+ *     responses:
+ *       200:
+ *         description: Favorite status updated successfully
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/favorites',
+  validateApiKey,
+  authenticateJWT,
+  createFavoriteProfile
+);
+
+/**
+ * @swagger
+ * /profile/favorites/{profileId}/{favoriteProfileId}:
+ *   delete:
+ *     summary: Remove a profile from favorites
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: profileId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Profile ID
+ *       - in: path
+ *         name: favoriteProfileId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Favorite Profile ID
+ *     responses:
+ *       200:
+ *         description: Favorite removed successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/removeFavorites',
+  validateApiKey,
+  authenticateJWT,
+  deleteFavorite
+);
+
+/**
+ * @swagger
+ * /profile/search/preferences:
+ *   post:
+ *     summary: Save user search preferences
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - profile_id
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *                 description: Profile ID
+ *               min_age:
+ *                 type: integer
+ *                 description: Minimum age preference
+ *               max_age:
+ *                 type: integer
+ *                 description: Maximum age preference
+ *               gender:
+ *                 type: string
+ *                 description: Gender preference
+ *               location_preference:
+ *                 type: string
+ *                 description: Location preference
+ *               distance_preference:
+ *                 type: integer
+ *                 description: Distance preference in kilometers
+ *     responses:
+ *       200:
+ *         description: User preferences saved successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/search/preferences',
+  validateApiKey,
+  authenticateJWT,
+  saveUserPreferences
+);
+
+/**
+ * @swagger
+ * /profile/views:
+ *   post:
+ *     summary: Track when a user views another profile
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - viewedProfileId
+ *             properties:
+ *               viewedProfileId:
+ *                 type: integer
+ *                 description: ID of the profile being viewed
+ *     responses:
+ *       200:
+ *         description: Profile view tracked successfully
+ *       400:
+ *         description: Invalid input or user not authenticated
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.post(
+  '/views',
+  validateApiKey,
+  authenticateJWT,
+  trackProfileView
+);
+
+// Get profiles by account ID
+router.get(
+  '/account_profiles/:accountId',
+  validateApiKey,
+  authenticateJWT,
+  getProfilesByAccountId
 );
 
 export default router;

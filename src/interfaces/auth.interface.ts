@@ -108,5 +108,6 @@ export interface AuthenticatedRequest extends Request {
     email: string;
     first_name: string;
     last_name: string;
+    account_id: number;
   };
 } 
