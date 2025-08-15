@@ -3,6 +3,33 @@ import { IProfileHobbyInterest } from '../interfaces/hobby.interface';
 import pool from '../config/database';
 
 export class ProfileRepository {
+  async getProfilesByAccountId(accountId: number): Promise<any[]> {
+    try {
+      const [rows] = await pool.query(
+        'SELECT * FROM matrimony_services.profile_personal WHERE account_id = ?',
+        [accountId]
+      );
+      return rows as any[];
+    } catch (error) {
+      console.error('Error fetching profiles by account ID:', error);
+      throw error;
+    }
+  }
+
+  async trackProfileView(profileId: number, viewedProfileId: number, account: number): Promise<boolean> {
+    try {
+      const [result] = await pool.execute(
+        'CALL eb_profile_views_create(?, ?, ?)',
+        [profileId, viewedProfileId, account]
+      );
+      const extractedResponse = (result as any[])[0][0];
+      console.log(extractedResponse)
+      return extractedResponse;
+    } catch (error) {
+      console.error('Error tracking profile view:', error);
+      throw error;
+    }
+  }
     async getPersonalProfile(profileData: IProfilePersonal): Promise<any> {
       try {
         // Log the values being passed to help debug
@@ -489,17 +516,17 @@ export class ProfileRepository {
       try {
         const params = [
           photoData.profile_id,
-          photoData.photo_type,
-          photoData.description,
-          photoData.caption,
           photoData.url,
+          photoData.photo_type,
+          photoData.caption,
+          photoData.description,
           photoData.user_created,
-          photoData.ip_address,
-          photoData.browser_profile
+          // photoData.ip_address,
+          // photoData.browser_profile
         ];
 
         const [result] = await pool.execute(
-          'CALL usp_profile_photo_create(?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL eb_profile_photo_create(?, ?, ?, ?, ?, ?)',
           params
         );
 
@@ -608,6 +635,220 @@ export class ProfileRepository {
         // return (result as any[])[0][0];
         return { profile_id, family_id }; // Placeholder
       } catch (error) {
+        throw error;
+      }
+    }
+
+
+
+  async getProfileByAccountCode(accountCode: string): Promise<any> {
+    try {
+      const [result] = await pool.execute(
+        'CALL eb_profile_get_by_account_code(?)',
+        [accountCode]
+      );
+      
+      // The stored procedure returns the profile in the first row of the first result set
+      const profile = (result as any[])[0][0];
+      return profile || null;
+    } catch (error) {
+      console.error('Error in getProfileByAccountCode:', error);
+      throw error;
+    }
+  }
+
+  async searchProfiles(searchParams: {
+      profile_id: number;
+      min_age?: number;
+      max_age?: number;
+      religion?: number;
+      max_education?: number;
+      occupation?: number;
+      country?: string;
+      caste_id?: number;
+      marital_status?: number;
+    }): Promise<any> {
+      try {
+        const params = [
+          searchParams.profile_id,
+          searchParams.min_age || null,
+          searchParams.max_age || null,
+          searchParams.religion || null,
+          searchParams.max_education || null,
+          searchParams.occupation || null,
+          searchParams.country || null,
+          searchParams.caste_id || null,
+          searchParams.marital_status || null
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_search_get(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        return (result as any[])[0];
+      } catch (error) {
+        console.error('Error in searchProfiles:', error);
+        throw error;
+      }
+    }
+
+    async getUserPreferences(profileId: number, preferenceId?: number, createdUser?: string): Promise<any> {
+      try {
+        const params = [
+          profileId,
+          // preferenceId || null,
+          // createdUser || null
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_search_preference_get(?)',
+          params
+        );
+
+        // Handle case where no preferences exist yet
+        const extractedResponse = (result as any[])[0];
+        if (extractedResponse && extractedResponse.length > 0) {
+          console.log(extractedResponse[0]);
+          return extractedResponse[0];
+        } else {
+          // Return null if no preferences found (this is normal for new users)
+          return null;
+        }
+      } catch (error: any) {
+        console.error('Error in getUserPreferences:', error);
+        // If the error is about table not existing, return null (no preferences yet)
+        if (error.message && error.message.includes('doesn\'t exist')) {
+          console.log('No preferences table found, returning null (normal for new users)');
+          return null;
+        }
+        throw error;
+      }
+    }
+
+    async saveUserPreferences(preferencesData: {
+      profile_id: number;
+      min_age?: number | null;
+      max_age?: number | null;
+      gender?: string | null;
+      religion?: string | null;
+      caste?: string | null;
+      marital_status?: string | null;
+      country?: string | null;
+      max_education?: string | null;
+      occupation?: string | null;
+      created_user?: string;
+    }): Promise<any> {
+      try {
+        console.log('Saving preferences with data:', preferencesData);
+        
+        // Map frontend fields to stored procedure parameters
+        const params = [
+          preferencesData.profile_id,
+          preferencesData.min_age || null,
+          preferencesData.max_age || null,
+          preferencesData.gender || null,
+          preferencesData.religion || null,
+          preferencesData.max_education || null,
+          preferencesData.occupation || null,
+          preferencesData.country || null,
+          preferencesData.caste || null,
+          preferencesData.marital_status || null,          
+          preferencesData.created_user || null
+        ];
+
+        console.log('Calling stored procedure with params:', params);
+        
+        const [result] = await pool.execute(
+          'CALL eb_profile_search_preference_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        // Handle the response from the stored procedure
+        const extractedResponse = (result as any[])[0];
+        if (extractedResponse && extractedResponse.length > 0) {
+          const response = extractedResponse[0];
+          console.log('Preferences saved successfully:', response);
+          return response;
+        } else {
+          // Return success response if no specific data returned
+          const response = {
+            success: true,
+            profile_id: preferencesData.profile_id,
+            message: 'Preferences saved successfully'
+          };
+          console.log('No data returned from stored procedure, returning:', response);
+          return response;
+        }
+      } catch (error: any) {
+        console.error('Error in saveUserPreferences:', error);
+        throw error;
+      }
+    }
+
+    async getFavorites({profileId, account}: {profileId: number, account: number}): Promise<any> {
+      try {
+        const [result] = await pool.execute(
+          'CALL eb_profile_favorites_get(?, ?)',
+          [profileId, account]
+        );
+
+        const extractedResponse = (result as any[])[0];
+        return {
+          success: true,
+          data: extractedResponse || []
+        };
+      } catch (error: any) {
+        console.error('Error in getFavorites:', error);
+        throw error;
+      }
+    }
+
+    async createFavoriteProfile(
+      profileId: number,
+      favoriteProfileId: number,
+      isFavorite: boolean,
+      account: number
+    ): Promise<any> {
+      try {
+        const [result] = await pool.execute(
+          'CALL eb_profile_favorites_create(?, ?, ?)',
+          [profileId, favoriteProfileId, account]
+        );
+
+        // Handle the response from the stored procedure
+        const extractedResponse = (result as any[])[0];
+        if (extractedResponse && extractedResponse.length > 0) {
+          return extractedResponse[0];
+        } else {
+          // Return success response if no specific data returned
+          return {
+            success: true,
+            profile_id: profileId,
+            favorite_profile_id: favoriteProfileId,
+            message: 'Added to favorites'
+          };
+        }
+      } catch (error: any) {
+        console.error('Error in createFavoriteProfile:', error);
+        throw error;
+      }
+    }
+
+    async deleteFavorite({profileId, account}: {profileId: number, account: number}): Promise<any> {
+      try {
+        const [result] = await pool.execute(
+          'CALL eb_profile_favorites_delete(?, ?)',
+          [profileId, account]
+        );
+
+        return {
+          success: true,
+          profile_id: profileId,
+          message: 'Removed from favorites'
+        };
+      } catch (error: any) {
+        console.error('Error in deleteFavorite:', error);
         throw error;
       }
     }

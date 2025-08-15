@@ -9,6 +9,178 @@ export class ProfileService {
     this.profileRepository = new ProfileRepository();
   }
 
+  async getProfilesByAccountId(accountId: number): Promise<{
+    success: boolean;
+    message: string;
+    data?: any[];
+  }> {
+    try {
+      if (!accountId) {
+        return {
+          success: false,
+          message: 'Account ID is required'
+        };
+      }
+
+      const profiles = await this.profileRepository.getProfilesByAccountId(accountId);
+      
+      return {
+        success: true,
+        message: 'Profiles retrieved successfully',
+        data: profiles
+      };
+    } catch (error) {
+      console.error('Error in getProfilesByAccountId:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to retrieve profiles'
+      };
+    }
+  }
+
+  async trackProfileView(profileId: number, viewedProfileId: number, account: number): Promise<{ success: boolean; message: string }> {
+    try {
+      if (!profileId || !viewedProfileId) {
+        return {
+          success: false,
+          message: 'Both profile ID and viewed profile ID are required'
+        };
+      }
+
+      const result = await this.profileRepository.trackProfileView(
+        profileId,
+        viewedProfileId,
+        account
+      );
+
+      if (!result) {
+        throw new Error('Failed to track profile view');
+      }
+      console.log(result);
+      return {
+        success: true,
+        message: 'Profile view tracked successfully'
+      };
+    } catch (error: any) {
+      console.error('Error in trackProfileView service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to track profile view'
+      };
+    }
+  }
+
+  async getFavorites({profileId, account}: {profileId: number, account: number}): Promise<IProfileResponse> {
+    try {
+      if (!profileId) {
+        return {
+          success: false,
+          message: 'Profile ID is required',
+          error: 'Profile ID is required to fetch favorites'
+        };
+      }
+
+      const result = await this.profileRepository.getFavorites({profileId, account});
+      return result.data;
+      
+    } catch (error: any) {
+      console.error('Error in getFavorites:', error);
+      return {
+        success: false,
+        message: 'Failed to fetch favorites',
+        error: error.message
+      };
+    }
+  }
+
+  async createFavoriteProfile(
+    profileId: number,
+    favoriteProfileId: number,
+    isFavorite: boolean,
+    account: number
+  ): Promise<IProfileResponse> {
+    try {
+      if (!profileId || !favoriteProfileId || typeof isFavorite === 'undefined') {
+        return {
+          success: false,
+          message: 'Missing required parameters',
+          error: 'Profile ID, favorite profile ID, and favorite status are required'
+        };
+      }
+
+      // Call the repository method to handle the favorite/unfavorite logic
+      const result = await this.profileRepository.createFavoriteProfile(
+        profileId,
+        favoriteProfileId,
+        isFavorite,
+        account
+      );
+
+      console.log(result);
+      return this.validateResponse(
+        result, 
+        isFavorite ? 'Added to favorites' : 'Removed from favorites'
+      );
+    } catch (error: any) {
+      console.error('Error in createFavoriteProfile:', error);
+      return {
+        success: false,
+        message: 'Failed to update favorite status',
+        error: error.message
+      };
+    }
+  }
+
+  async deleteFavorite({profileId, account}: {profileId: number, account: number}): Promise<IProfileResponse> {
+    try {
+      if (!profileId) {
+        return {
+          success: false,
+          message: 'Missing required parameters',
+          error: 'Profile ID is required'
+        };
+      }
+
+      const result = await this.profileRepository.deleteFavorite({profileId, account});
+      return {
+        success: true,
+        message: result.message || 'Removed from favorites',
+        data: {
+          profile_id: profileId,
+        } as any // Temporary type assertion to fix the type error
+      };
+    } catch (error: any) {
+      console.error('Error in deleteFavorite:', error);
+      return {
+        success: false,
+        message: 'Failed to remove from favorites',
+        error: error.message
+      };
+    }
+  }
+
+  async getProfileByAccountCode(accountCode: string): Promise<any> {
+    try {
+      const response = await this.profileRepository.getProfileByAccountCode(accountCode);
+      
+      if (!response) {
+        return {
+          success: false,
+          message: 'Profile not found for the given account code'
+        };
+      }
+      
+      return {
+        success: true,
+        message: 'Profile retrieved successfully',
+        data: response
+      };
+    } catch (error) {
+      console.error('Error in getProfileByAccountCode service:', error);
+      throw error;
+    }
+  }
+
   validateResponse = (response:any, successMessage:string) => {
     console.log("Response from repository:", response);
       if(response) {
@@ -384,4 +556,156 @@ export class ProfileService {
       throw error;
     }
   }
+
+  async searchProfiles(searchParams: {
+    profile_id: number;
+    min_age?: number;
+    max_age?: number;
+    religion?: number;
+    max_education?: number;
+    occupation?: number;
+    country?: string;
+    caste_id?: number;
+    marital_status?: number;
+  }): Promise<any> {
+    try {
+      const response = await this.profileRepository.searchProfiles(searchParams);
+      return {
+        success: true,
+        message: 'Profiles fetched successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error in searchProfiles service:', error);
+      return {
+        success: false,
+        message: 'Failed to search profiles',
+        error: error.message
+      };
+    }
+  }
+
+  async getUserPreferences(profileId: number, preferenceId?: number, createdUser?: string): Promise<any> {
+    try {
+      const response = await this.profileRepository.getUserPreferences(profileId, preferenceId, createdUser);
+      
+      // If no preferences exist yet, return empty preferences object with all fields
+      if (response === null) {
+        return {
+          success: true,
+          message: 'No preferences found for this profile',
+          data: {
+            profile_id: profileId,
+            min_age: 18,  // Default minimum age
+            max_age: 45,  // Default maximum age
+            gender: null,
+            religion: null,
+            max_education: null,
+            occupation: null,
+            country: null,
+            caste: null,
+            marital_status: null,
+            location_preference: null,  // For backward compatibility
+            distance_preference: null,  // For backward compatibility
+            created_user: createdUser || null
+          }
+        };
+      }
+      
+      // Map the response to include all fields, even if they're null
+      const mappedResponse = {
+        ...response,
+        // Ensure all fields are present in the response
+        min_age: response.min_age ?? 18,
+        max_age: response.max_age ?? 45,
+        gender: response.gender ?? null,
+        religion: response.religion ?? null,
+        max_education: response.max_education ?? null,
+        occupation: response.occupation ?? null,
+        country: response.country ?? null,
+        caste: response.caste ?? null,
+        marital_status: response.marital_status ?? null,
+        location_preference: response.location_preference ?? null,
+        distance_preference: response.distance_preference ?? null,
+        created_user: response.created_user ?? createdUser ?? null
+      };
+      
+      return this.validateResponse(mappedResponse, 'User preferences fetched successfully');
+    } catch (error: any) {
+      const errorResponse: any = {
+        success: false,
+        message: 'Failed to fetch user preferences',
+        error: error.message,
+        data: {
+          profile_id: profileId,
+          min_age: 18,
+          max_age: 45,
+          gender: null,
+          religion: null,
+          max_education: null,
+          occupation: null,
+          country: null,
+          caste: null,
+          marital_status: null,
+          location_preference: null,
+          distance_preference: null,
+          created_user: createdUser || null
+        }
+      };
+
+      if (error.message && error.message.includes('Invalid Profile ID')) {
+        errorResponse.message = 'Invalid Profile ID';
+      }
+      
+      return errorResponse;
+    }
+  }
+
+  async saveUserPreferences(preferencesData: {
+    profile_id: number;
+    min_age?: number | null;
+    max_age?: number | null;
+    gender?: string | null;
+    religion?: string | null;
+    caste?: string | null;
+    marital_status?: string | null;
+    max_education?: string | null;
+    occupation?: string | null;
+    country?: string | null;
+    created_user?: string;
+  }): Promise<IProfileResponse> {
+    try {
+      const response = await this.profileRepository.saveUserPreferences(preferencesData);
+      
+      // If we got a success response from the repository, return it
+      if (response && (response as any).success !== false) {
+        return {
+          success: true,
+          message: (response as any).message || 'User preferences saved successfully',
+          data: response.data
+        };
+      }
+      
+      // If we got an error response from the repository, return it
+      if (response && (response as any).success === false) {
+        return response as any;
+      }
+      
+      // Default success response if no specific response from repository
+      return {
+        success: true,
+        message: 'User preferences saved successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error saving user preferences:', error);
+      return {
+        success: false,
+        message: 'Failed to save user preferences',
+        error: error.message
+      };
+    }
+  }
+
+
 }

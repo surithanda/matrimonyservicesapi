@@ -36,8 +36,12 @@ export interface IProfileResponse {
   message: string;
   data?: {
     profile_id: number;
-    profile: IProfilePersonal;
+    favorite_profile_id?: number;
+    profile?: IProfilePersonal;
+    [key: string]: any; // Allow additional properties
   };
+  error?: string;
+  error_code?: string | null;
 }
 
 export interface IProfileAddress {
