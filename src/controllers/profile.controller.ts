@@ -41,6 +41,7 @@ export const createPersonalProfile = async (req: AuthenticatedRequest, res: Resp
     // Add account_id and created_user from authenticated user
     const profileData = {
       ...req.body,
+      account_id: req.user?.account_id,
       account_code: req.user?.account_code,
       created_user: req.user?.email
     };
