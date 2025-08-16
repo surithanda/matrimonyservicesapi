@@ -15,11 +15,12 @@ const allowedOrigins = ['http://localhost:3000', 'https://your-production-site.c
 
 const corsOptions = {
 
-  origin: (origin: any, callback: (arg0: null, arg1?: boolean) =>  void) =>  {
+
+  origin: (origin: any, callback: (err: Error | null, success?: boolean) =>  void) =>  {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true); // Allow request
     } else {
-      callback(new Error('Not allowed by CORS')); // Block request
+      callback(null, false); // Block request
     }
   },
   credentials: true,
