@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import  pool  from '../config/database';
 
 export const validateApiKey = async (req: Request, res: Response, next: NextFunction) => {
-  const apiKey = req.header('X-API-Key');
+  const apiKey = req.header('x-api-Key');
 
   if (!apiKey) {
     return res.status(401).json({
