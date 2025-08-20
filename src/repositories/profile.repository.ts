@@ -538,6 +538,20 @@ export class ProfileRepository {
       }
     }
 
+    async getProfilePhotos(profileId: number): Promise<any[]> {
+      try {
+        const [result] = await pool.execute(
+          'CALL eb_profile_photo_get(?)',
+          [profileId]
+        );
+        // Stored procedure returns the rows in the first result set
+        return (result as any[])[0] || [];
+      } catch (error) {
+        console.error('Error in getProfilePhotos:', error);
+        throw error;
+      }
+    }
+
     async getProfileSummary(accountId: number): Promise<any> {
       try {
         const [result]:any = await pool.execute('CALL usp_get_profile_summary(?)', [accountId]);
