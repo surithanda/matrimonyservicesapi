@@ -503,6 +503,37 @@ export class ProfileService {
     }
   }
 
+  async getProfilePhotos(profileId: number): Promise<IProfileResponse> {
+    try {
+      if (!profileId) {
+        return {
+          success: false,
+          message: 'Profile ID is required',
+          error: 'Profile ID is required'
+        } as any;
+      }
+
+      const photos = await this.profileRepository.getProfilePhotos(profileId);
+      const normalized = (photos || []).map((p: any) => ({
+        ...p,
+        url: p?.url || p?.photo_url || p?.file_url || null,
+        caption: p?.caption || p?.photo_caption || null,
+        photo_type: (p?.photo_type ?? p?.type ?? null)
+      }));
+      return {
+        success: true,
+        message: 'Profile photos retrieved successfully',
+        data: normalized
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: 'Failed to retrieve profile photos',
+        error: error.message
+      };
+    }
+  }
+
   async getProfileHobbies(profileData: IProfileHobbyInterest): Promise<IProfileResponse> {
     try {
       const response = await this.profileRepository.getProfileHobbies(profileData);

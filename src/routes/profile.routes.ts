@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto, getPersonalProfile, getProfileAddress, getProfileEducation, getProfileEmployment, getProfileProperty, getFamilyReference, getProfileLifestyle, getProfileHobbies, addProfileHobby, removeProfileHobby, addProfileFamily, updateProfileFamily, deleteProfileFamily, searchProfiles, getUserPreferences, saveUserPreferences, createFavoriteProfile, getFavorites, deleteFavorite, trackProfileView, getProfilesByAccountId } from '../controllers/profile.controller';
+import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto, getPersonalProfile, getProfileAddress, getProfileEducation, getProfileEmployment, getProfileProperty, getFamilyReference, getProfileLifestyle, getProfileHobbies, addProfileHobby, removeProfileHobby, addProfileFamily, updateProfileFamily, deleteProfileFamily, searchProfiles, getUserPreferences, saveUserPreferences, createFavoriteProfile, getFavorites, deleteFavorite, trackProfileView, getProfilesByAccountId, getProfilePhotos } from '../controllers/profile.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 
@@ -705,6 +705,14 @@ router.post(
   authenticateJWT,
   uploadProfilePhoto,
   createProfilePhoto
+);
+
+// Get profile photos
+router.get(
+  '/photos/:profileId',
+  validateApiKey,
+  authenticateJWT,
+  getProfilePhotos
 );
 
 /**

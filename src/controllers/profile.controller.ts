@@ -658,6 +658,33 @@ export const createProfilePhoto = async (req: AuthenticatedRequest, res: Respons
   }
 };
 
+export const getProfilePhotos = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileId = parseInt(req.params.profileId);
+    if (!profileId || isNaN(profileId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid profile ID'
+      });
+    }
+
+    const profileService = new ProfileService();
+    const result = await profileService.getProfilePhotos(profileId);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.status(200).json(result);
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve profile photos',
+      error: error.message
+    });
+  }
+};
+
 export const getProfileHobbies = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const profileService = new ProfileService();
