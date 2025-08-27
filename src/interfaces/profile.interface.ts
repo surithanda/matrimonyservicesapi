@@ -66,8 +66,8 @@ export interface IProfileEducation {
   institution_name: string;
   address_line1: string;
   city: string;
-  state: string;
-  country: string;
+  state_id: number;
+  country_id: number;
   zip: string;
   field_of_study: number;
   user_created: string;
@@ -78,12 +78,12 @@ export interface IProfileEmployment {
   institution_name: string;
   address_line1: string;
   city: string;
-  state: number;
-  country: number;
+  state_id: number;
+  country_id: number;
   zip: string;
   start_year: number;
   end_year: number;
-  job_title: number;
+  job_title_id: number;
   other_title: string;
   last_salary_drawn: string;
   account_id: number;
