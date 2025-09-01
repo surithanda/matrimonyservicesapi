@@ -608,7 +608,7 @@ router.post(
  * /profile/photo:
  *   post:
  *     summary: Upload a profile photo
- *     description: Upload a profile photo with type (1=profile, 2=cover, 3=additional)
+ *     description: Upload a profile photo with type (450=profile, 454=cover, 456=additional)
  *     tags: [Profile]
  *     security:
  *       - ApiKeyAuth: []

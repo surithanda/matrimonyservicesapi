@@ -462,10 +462,11 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
       return cb(new Error('Profile ID is required'));
     }
 
-    // Check photo type (1: profile, 2: cover, 3: additional)
+    // Check photo type (450: profile, 454: cover, 456: additional)
     const photoType = parseInt(req.body.photo_type);
-    if (isNaN(photoType) || photoType < 1 || photoType > 3) {
-      return cb(new Error('Invalid photo type. Must be 1 (profile), 2 (cover), or 3 (additional)'));
+    const validPhotoTypes = [450, 454, 456];
+    if (isNaN(photoType) || !validPhotoTypes.includes(photoType)) {
+      return cb(new Error('Invalid photo type. Must be 450 (profile), 454 (cover), or 456 (additional)'));
     }
 
     cb(null, true);
@@ -609,7 +610,7 @@ export const createProfilePhoto = async (req: AuthenticatedRequest, res: Respons
 
     const photoData: IProfilePhoto = {
       profile_id: parseInt(req.body.profile_id),
-      photo_type: parseInt(req.body.photo_type) || 3, // Default to additional photos
+      photo_type: parseInt(req.body.photo_type) || 456, // Default to additional photos
       description: req.body.description || '',
       caption: req.body.caption || path.parse(req.file.originalname).name,
       url: `/uploads/${relativePath}`,
