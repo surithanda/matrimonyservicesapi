@@ -11,7 +11,7 @@ import cors from 'cors';
 //};
 
 
-const allowedOrigins = ['http://localhost:3000', 'https://your-production-site.com'];
+const allowedOrigins = ['http://localhost:3000', 'https://matrimonyservices-fm8tfyoyn-superreaders-projects.vercel.app'];
 
 const corsOptions = {
 
