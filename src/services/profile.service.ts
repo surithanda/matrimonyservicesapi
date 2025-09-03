@@ -523,7 +523,10 @@ export class ProfileService {
       return {
         success: true,
         message: 'Profile photos retrieved successfully',
-        data: normalized
+        data: {
+          profile_id: profileId,
+          photos: normalized
+        }
       };
     } catch (error: any) {
       return {
