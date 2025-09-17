@@ -207,6 +207,54 @@ export class ProfileRepository {
       }
     }
 
+    async updateProfileAddress(addressData: any): Promise<any> {
+      try {
+        const params = [
+          addressData.profile_address_id,
+          addressData.address_type || 1,
+          addressData.address_line1,
+          addressData.address_line2 || null,
+          addressData.city,
+          addressData.state,
+          addressData.country_id || addressData.country,
+          addressData.zip,
+          addressData.landmark1 || null,
+          addressData.landmark2 || null,
+          addressData.modified_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_address_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in updateProfileAddress:', error);
+        throw error;
+      }
+    }
+
+    async deleteProfileAddress(deleteData: any): Promise<any> {
+      try {
+        const params = [
+          deleteData.profile_id,
+          deleteData.profile_address_id,
+          deleteData.created_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_address_delete(?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in deleteProfileAddress:', error);
+        throw error;
+      }
+    }
+
     async getProfileEducation(profileData: IProfilePersonal): Promise<any> {
       try {
         // Log the values being passed to help debug
@@ -863,6 +911,330 @@ export class ProfileRepository {
         };
       } catch (error: any) {
         console.error('Error in deleteFavorite:', error);
+        throw error;
+      }
+    }
+
+    // Property Update/Delete Methods
+    async updateProfileProperty(propertyData: any): Promise<any> {
+      try {
+        const params = [
+          propertyData.property_id,
+          propertyData.property_type,
+          propertyData.ownership_type,
+          propertyData.value || null,
+          propertyData.address || null,
+          propertyData.city || null,
+          propertyData.state || null,
+          propertyData.country || null,
+          propertyData.zip || null,
+          propertyData.comments || null,
+          propertyData.modified_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_property_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in updateProfileProperty:', error);
+        throw error;
+      }
+    }
+
+    async deleteProfileProperty(deleteData: any): Promise<any> {
+      try {
+        const params = [
+          deleteData.profile_id,
+          deleteData.property_id,
+          deleteData.created_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_property_delete(?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in deleteProfileProperty:', error);
+        throw error;
+      }
+    }
+
+    // Family Reference Update/Delete Methods
+    async updateFamilyReference(referenceData: any): Promise<any> {
+      try {
+        const params = [
+          referenceData.reference_id,
+          referenceData.name,
+          referenceData.contact_number || null,
+          referenceData.email || null,
+          referenceData.address || null,
+          referenceData.relationship || null,
+          referenceData.comments || null,
+          referenceData.modified_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_family_reference_update(?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in updateFamilyReference:', error);
+        throw error;
+      }
+    }
+
+    async deleteFamilyReference(deleteData: any): Promise<any> {
+      try {
+        const params = [
+          deleteData.profile_id,
+          deleteData.reference_id,
+          deleteData.created_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_family_reference_delete(?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in deleteFamilyReference:', error);
+        throw error;
+      }
+    }
+
+    // Education Update/Delete Methods
+    async updateProfileEducation(educationData: any): Promise<any> {
+      try {
+        const params = [
+          educationData.education_id,
+          educationData.education_level,
+          educationData.field_of_study,
+          educationData.institution_name,
+          educationData.year_of_passing || null,
+          educationData.grade || null,
+          educationData.comments || null,
+          educationData.modified_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_education_update(?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in updateProfileEducation:', error);
+        throw error;
+      }
+    }
+
+    async deleteProfileEducation(deleteData: any): Promise<any> {
+      try {
+        const params = [
+          deleteData.profile_id,
+          deleteData.education_id,
+          deleteData.created_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_education_delete(?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in deleteProfileEducation:', error);
+        throw error;
+      }
+    }
+
+    // Employment Update/Delete Methods
+    async updateProfileEmployment(employmentData: any): Promise<any> {
+      try {
+        const params = [
+          employmentData.employment_id,
+          employmentData.employment_status,
+          employmentData.job_title_id || employmentData.job_title,
+          employmentData.company_name,
+          employmentData.annual_income || null,
+          employmentData.work_location || null,
+          employmentData.experience_years || null,
+          employmentData.comments || null,
+          employmentData.modified_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_employment_update(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in updateProfileEmployment:', error);
+        throw error;
+      }
+    }
+
+    async deleteProfileEmployment(deleteData: any): Promise<any> {
+      try {
+        const params = [
+          deleteData.profile_id,
+          deleteData.employment_id,
+          deleteData.created_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_employment_delete(?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in deleteProfileEmployment:', error);
+        throw error;
+      }
+    }
+
+    // Lifestyle Update/Delete Methods
+    async updateProfileLifestyle(lifestyleData: any): Promise<any> {
+      try {
+        const params = [
+          lifestyleData.lifestyle_id,
+          lifestyleData.dietary_habits || null,
+          lifestyleData.drinking_habits || null,
+          lifestyleData.smoking_habits || null,
+          lifestyleData.exercise_habits || null,
+          lifestyleData.hobbies || null,
+          lifestyleData.interests || null,
+          lifestyleData.comments || null,
+          lifestyleData.modified_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_lifestyle_update(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in updateProfileLifestyle:', error);
+        throw error;
+      }
+    }
+
+    async deleteProfileLifestyle(deleteData: any): Promise<any> {
+      try {
+        const params = [
+          deleteData.profile_id,
+          deleteData.lifestyle_id,
+          deleteData.created_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_lifestyle_delete(?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in deleteProfileLifestyle:', error);
+        throw error;
+      }
+    }
+
+    // Personal Profile Update/Delete Methods
+    async updatePersonalProfile(profileData: any): Promise<any> {
+      try {
+        const params = [
+          profileData.profile_id,
+          profileData.first_name,
+          profileData.middle_name || null,
+          profileData.last_name,
+          profileData.date_of_birth,
+          profileData.gender,
+          profileData.marital_status || null,
+          profileData.height || null,
+          profileData.weight || null,
+          profileData.religion || null,
+          profileData.caste || null,
+          profileData.occupation || null,
+          profileData.annual_income || null,
+          profileData.description || null,
+          profileData.modified_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_personal_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in updatePersonalProfile:', error);
+        throw error;
+      }
+    }
+
+    async deletePersonalProfile(deleteData: any): Promise<any> {
+      try {
+        const params = [
+          deleteData.profile_id,
+          deleteData.created_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_personal_delete(?, ?)',
+          params
+        );
+
+        return (result as any)[0][0];
+      } catch (error) {
+        console.error('Error in deletePersonalProfile:', error);
+        throw error;
+      }
+    }
+
+    async getCompleteProfile(profileData: any): Promise<any> {
+      try {
+        const params = [
+          profileData.profile_id,
+          profileData.created_user
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_get_complete_data(?, ?)',
+          params
+        );
+
+        return (result as any[])[0][0];
+      } catch (error) {
+        console.error('Error in getCompleteProfile:', error);
+        throw error;
+      }
+    }
+
+    async getAllProfiles(profileData: any): Promise<any> {
+      try {
+        const params = [
+          profileData.profile_id
+        ];
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_search_get_all(?)',
+          params
+        );
+
+        return (result as any[])[0];
+      } catch (error) {
+        console.error('Error in getAllProfiles:', error);
         throw error;
       }
     }
