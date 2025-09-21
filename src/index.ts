@@ -7,6 +7,7 @@ import cors from './config/cors';
 import { specs } from './config/swagger';
 import profileRoutes from './routes/profile.routes';
 import metaDataRoutes from './routes/metaData.routes';
+import stripeRoutes from './routes/stripe.routes';
 import logger from './config/logger';
 import path from 'path';
 import fs from 'fs';
@@ -68,6 +69,10 @@ app.use('/api/account', accountRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/metadata', metaDataRoutes);
+app.use('/api/stripe', stripeRoutes);
+
+// Special handling for Stripe webhook endpoint - needs raw body
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 
 // Swagger documentation setup
 app.use('/api-docs', swaggerUi.serve);
