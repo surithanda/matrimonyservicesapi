@@ -195,7 +195,7 @@ export class ProfileService {
           return {
               success: true,
               message: successMessage,
-              ...response
+              data: response
             };
         }
         // if(response?.error_code === null || (!response?.hasOwnProperty('error_code') && response?.status === 'success'))
