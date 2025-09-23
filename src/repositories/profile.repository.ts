@@ -1014,18 +1014,21 @@ export class ProfileRepository {
     async updateProfileEducation(educationData: any): Promise<any> {
       try {
         const params = [
-          educationData.education_id,
+          educationData.profile_id,
           educationData.education_level,
-          educationData.field_of_study,
+          educationData.year_completed,
           educationData.institution_name,
-          educationData.year_of_passing || null,
-          educationData.grade || null,
-          educationData.comments || null,
+          educationData.address_line1,
+          educationData.city,
+          educationData.state_id,
+          educationData.country_id,
+          educationData.zip,
+          educationData.field_of_study,
           educationData.modified_user
         ];
 
         const [result] = await pool.execute(
-          'CALL eb_profile_education_update(?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL eb_profile_education_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
 
@@ -1155,24 +1158,38 @@ export class ProfileRepository {
       try {
         const params = [
           profileData.profile_id,
+          profileData.account_id,
           profileData.first_name,
-          profileData.middle_name || null,
           profileData.last_name,
-          profileData.date_of_birth,
+          profileData.middle_name === undefined ? null : profileData.middle_name,
+          profileData.prefix === undefined ? null : profileData.prefix,
+          profileData.suffix === undefined ? null : profileData.suffix,
           profileData.gender,
-          profileData.marital_status || null,
-          profileData.height || null,
-          profileData.weight || null,
-          profileData.religion || null,
-          profileData.caste || null,
-          profileData.occupation || null,
-          profileData.annual_income || null,
-          profileData.description || null,
+          profileData.birth_date,
+          profileData.phone_mobile,
+          profileData.phone_home === undefined ? null : profileData.phone_home,
+          profileData.phone_emergency === undefined ? null : profileData.phone_emergency,
+          profileData.email_id,
+          profileData.marital_status,
+          profileData.religion === undefined ? null : profileData.religion,
+          profileData.nationality === undefined ? null : profileData.nationality,
+          profileData.caste === undefined ? null : profileData.caste,
+          profileData.height_inches === undefined ? null : profileData.height_inches,
+          profileData.height_cms === undefined ? null : profileData.height_cms,
+          profileData.weight === undefined ? null : profileData.weight,
+          profileData.weight_units === undefined ? null : profileData.weight_units,
+          profileData.complexion === undefined ? null : profileData.complexion,
+          profileData.linkedin === undefined ? null : profileData.linkedin,
+          profileData.facebook === undefined ? null : profileData.facebook,
+          profileData.instagram === undefined ? null : profileData.instagram,
+          profileData.whatsapp_number === undefined ? null : profileData.whatsapp_number,
+          profileData.profession === undefined ? null : profileData.profession,
+          profileData.disability === undefined ? null : profileData.disability,
           profileData.modified_user
         ];
 
         const [result] = await pool.execute(
-          'CALL eb_profile_personal_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL eb_profile_personal_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
 
