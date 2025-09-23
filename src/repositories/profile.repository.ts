@@ -676,13 +676,23 @@ export class ProfileRepository {
 
     async updateProfileFamily(profile_id: number, family: any): Promise<any> {
       try {
-        // TODO: Map family object to params as per your DB schema
-        const params = [profile_id, ...Object.values(family)];
-        // Example: 'CALL eb_profile_family_update(?, ...)' 
-        // Replace with your actual stored procedure and params
-        // const [result] = await pool.execute('CALL eb_profile_family_update(?, ...)', params);
-        // return (result as any[])[0][0];
-        return { profile_id, ...family }; // Placeholder
+        const params = [
+          family.profile_id,
+          family.firstname,
+          family.lastname,
+          family.relationshiptoyou,
+          family.contactnumber,
+          family.email,
+          family.address_line,
+          family.city,
+          family.state_id,
+          family.country_id,
+          family.zip,
+          family.modified_user,
+        ];
+
+        const [result] = await pool.execute('CALL eb_profile_family_update(?, ...)', params);
+        return (result as any[])[0][0];
       } catch (error) {
         throw error;
       }
@@ -919,21 +929,18 @@ export class ProfileRepository {
     async updateProfileProperty(propertyData: any): Promise<any> {
       try {
         const params = [
-          propertyData.property_id,
+          propertyData.profile_id,
           propertyData.property_type,
           propertyData.ownership_type,
-          propertyData.value || null,
-          propertyData.address || null,
-          propertyData.city || null,
-          propertyData.state || null,
-          propertyData.country || null,
-          propertyData.zip || null,
-          propertyData.comments || null,
+          propertyData.property_address,
+          propertyData.property_value,
+          propertyData.property_description,
+          propertyData.isoktodisclose,
           propertyData.modified_user
         ];
 
         const [result] = await pool.execute(
-          'CALL eb_profile_property_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL eb_profile_property_update(?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
 
@@ -1063,19 +1070,23 @@ export class ProfileRepository {
     async updateProfileEmployment(employmentData: any): Promise<any> {
       try {
         const params = [
-          employmentData.employment_id,
-          employmentData.employment_status,
-          employmentData.job_title_id || employmentData.job_title,
-          employmentData.company_name,
-          employmentData.annual_income || null,
-          employmentData.work_location || null,
-          employmentData.experience_years || null,
-          employmentData.comments || null,
+          employmentData.profile_id,
+          employmentData.institution_name,
+          employmentData.address_line1,
+          employmentData.city,
+          employmentData.state_id,
+          employmentData.country_id,
+          employmentData.zip,
+          employmentData.start_year,
+          employmentData.end_year,
+          employmentData.job_title_id,
+          employmentData.other_title || '',
+          employmentData.last_salary_drawn,
           employmentData.modified_user
         ];
 
         const [result] = await pool.execute(
-          'CALL eb_profile_employment_update(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          'CALL eb_profile_employment_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           params
         );
 

@@ -1646,7 +1646,7 @@ export const updatePersonalProfile = async (req: AuthenticatedRequest, res: Resp
     res.status(200).json({
       success: true,
       status: 'success',
-      message: 'Personal profile updated successfully',
+      message: result.message || 'Personal profile updated successfully',
       data: result
     });
   } catch (error: any) {

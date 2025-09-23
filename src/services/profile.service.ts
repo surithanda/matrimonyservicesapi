@@ -1,6 +1,7 @@
 import { IProfilePersonal, IProfileResponse, IProfileAddress, IProfileEducation, IProfileEmployment, IProfileProperty, IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
 import { IProfileHobbyInterest } from '../interfaces/hobby.interface';
 import { ProfileRepository } from '../repositories/profile.repository';
+import { validate } from 'uuid';
 
 export class ProfileService {
   private profileRepository: ProfileRepository;
@@ -184,19 +185,39 @@ export class ProfileService {
   validateResponse = (response:any, successMessage:string) => {
     console.log("Response from repository:", response);
       if(response) {
-        if(response?.error_code === null || (!response?.hasOwnProperty('error_code') && response?.status === 'success'))
-          return {
-            success: true,
-            message: successMessage,
-            data: response
-          };
-        else {
+        if(response?.error_code !== null && response?.error_type !== null && response?.status !== 'success') {
           return {
             success: false,
             message: response?.error_message,
             ...response
           };
+        } else {
+          return {
+              success: true,
+              message: successMessage,
+              ...response
+            };
         }
+        // if(response?.error_code === null || (!response?.hasOwnProperty('error_code') && response?.status === 'success'))
+        //   // if(response?.data && response?.data?.status === 'fail') {
+        //   //   return {
+        //   //     success: false,
+        //   //     message: response?.data?.error_message,
+        //   //   };
+        //   // } else {
+        //     return {
+        //       success: true,
+        //       message: successMessage,
+        //       data: response
+        //     };
+        //   // }
+        // else {
+        //   return {
+        //     success: false,
+        //     message: response?.error_message,
+        //     ...response
+        //   };
+        // }
       } else { //assuming the call went through successfully but there is no matching record
         return {
             success: true,
@@ -227,22 +248,24 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.createPersonalProfile(profileData);
 
-      if(response?.error_code === null)
-          return {
-            success: true,
-            message: 'Personal profile created successfully',
-            data: {
-              profile_id: response?.profile_id,
-              profile: profileData
-            }
-          };
-        else {
-          return {
-            success: false,
-            message: response?.error_message,
-            ...response
-          };
-        }
+      return this.validateResponse(response, 'Personal profile created successfully');
+      
+      // if(response?.error_code === null)
+      //     return {
+      //       success: true,
+      //       message: 'Personal profile created successfully',
+      //       data: {
+      //         profile_id: response?.profile_id,
+      //         profile: profileData
+      //       }
+      //     };
+      //   else {
+      //     return {
+      //       success: false,
+      //       message: response?.error_message,
+      //       ...response
+      //     };
+      //   }
 
       
     } catch (error: any) {
@@ -277,11 +300,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.createProfileAddress(addressData);
 
-      return {
-        success: true,
-        message: 'Profile address created successfully',
-        ...(response as any)
-      };
+      return this.validateResponse(response, 'Profile address created successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile address created successfully',
+      //   ...(response as any)
+      // };
     } catch (error: any) {
       if (error.message.includes('Profile doesnot exist')) {
         return {
@@ -296,12 +320,12 @@ export class ProfileService {
   async updateProfileAddress(addressData: any): Promise<any> {
     try {
       const response = await this.profileRepository.updateProfileAddress(addressData);
-
-      return {
-        success: true,
-        message: 'Profile address updated successfully',
-        data: response
-      };
+      return this.validateResponse(response, 'Profile address updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile address updated successfully',
+      //   data: response
+      // };
     } catch (error: any) {
       console.error('Error in updateProfileAddress service:', error);
       return {
@@ -352,11 +376,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.createProfileEducation(educationData);
 
-      return {
-        success: true,
-        message: 'Profile education created successfully',
-        ...(response as any)
-      };
+      return this.validateResponse(response, 'Profile education created successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile education created successfully',
+      //   ...(response as any)
+      // };
     } catch (error: any) {
       if (error.message.includes('Profile doesnot exist')) {
         return {
@@ -389,11 +414,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.createProfileEmployment(employmentData);
 
-      return {
-        success: true,
-        message: 'Profile employment created successfully',
-        ...(response as any)
-      };
+      return this.validateResponse(response, 'Profile employment created successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile employment created successfully',
+      //   ...(response as any)
+      // };
     } catch (error: any) {
       if (error.message.includes('Profile doesnot exist')) {
         return {
@@ -427,11 +453,12 @@ export class ProfileService {
     try {
       const property:any = await this.profileRepository.createProfileProperty(propertyData);
 
-      return {
-        success: true,
-        message: 'Profile property created successfully',
-        data: property,
-      };
+      return this.validateResponse(property, 'Profile property created successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile property created successfully',
+      //   data: property,
+      // };
     } catch (error: any) {
       if (error.message.includes('Profile does not exist')) {
         return {
@@ -464,6 +491,7 @@ export class ProfileService {
     try {
       const referenceId = await this.profileRepository.createFamilyReference(referenceData);
 
+      // return this.validateResponse({reference_id: referenceId}, 'Family reference created successfully');
       return {
         success: true,
         message: 'Family reference created successfully',
@@ -503,11 +531,12 @@ export class ProfileService {
     try {
       const reference = await this.profileRepository.createProfileLifestyle(lifestyleData);
 
-      return {
-        success: true,
-        message: 'Profile lifestyle created successfully',
-        data: reference,
-      };
+      return this.validateResponse(reference, 'Profile lifestyle created successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile lifestyle created successfully',
+      //   data: reference,
+      // };
     } catch (error: any) {
       if (error.message.includes('Invalid profile_id')) {
         return {
@@ -784,11 +813,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.updateProfileProperty(propertyData);
 
-      return {
-        success: true,
-        message: 'Profile property updated successfully',
-        data: response
-      };
+      return this.validateResponse(response, 'Profile property updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile property updated successfully',
+      //   data: response
+      // };
     } catch (error: any) {
       console.error('Error in updateProfileProperty service:', error);
       return {
@@ -823,11 +853,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.updateFamilyReference(referenceData);
 
-      return {
-        success: true,
-        message: 'Family reference updated successfully',
-        data: response
-      };
+      return this.validateResponse(response, 'Family reference updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Family reference updated successfully',
+      //   data: response
+      // };
     } catch (error: any) {
       console.error('Error in updateFamilyReference service:', error);
       return {
@@ -862,11 +893,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.updateProfileEducation(educationData);
 
-      return {
-        success: true,
-        message: 'Profile education updated successfully',
-        data: response
-      };
+      return this.validateResponse(response, 'Profile education updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile education updated successfully',
+      //   data: response
+      // };
     } catch (error: any) {
       console.error('Error in updateProfileEducation service:', error);
       return {
@@ -901,11 +933,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.updateProfileEmployment(employmentData);
 
-      return {
-        success: true,
-        message: 'Profile employment updated successfully',
-        data: response
-      };
+      return this.validateResponse(response, 'Profile employment updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile employment updated successfully',
+      //   data: response
+      // };
     } catch (error: any) {
       console.error('Error in updateProfileEmployment service:', error);
       return {
@@ -940,11 +973,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.updateProfileLifestyle(lifestyleData);
 
-      return {
-        success: true,
-        message: 'Profile lifestyle updated successfully',
-        data: response
-      };
+      return this.validateResponse(response, 'Profile lifestyle updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile lifestyle updated successfully',
+      //   data: response
+      // };
     } catch (error: any) {
       console.error('Error in updateProfileLifestyle service:', error);
       return {
@@ -979,11 +1013,8 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.updatePersonalProfile(profileData);
 
-      return {
-        success: true,
-        message: 'Personal profile updated successfully',
-        data: response
-      };
+      console.log("Update Personal Profile Response:", response);
+      return this.validateResponse(response, 'Personal profile updated successfully');
     } catch (error: any) {
       console.error('Error in updatePersonalProfile service:', error);
       return {
