@@ -929,7 +929,7 @@ export class ProfileRepository {
     async updateProfileProperty(propertyData: any): Promise<any> {
       try {
         const params = [
-          propertyData.profile_id,
+          propertyData.profile_property_id,
           propertyData.property_type,
           propertyData.ownership_type,
           propertyData.property_address,
@@ -1021,7 +1021,7 @@ export class ProfileRepository {
     async updateProfileEducation(educationData: any): Promise<any> {
       try {
         const params = [
-          educationData.profile_id,
+          educationData.profile_education_id,
           educationData.education_level,
           educationData.year_completed,
           educationData.institution_name,
@@ -1070,7 +1070,7 @@ export class ProfileRepository {
     async updateProfileEmployment(employmentData: any): Promise<any> {
       try {
         const params = [
-          employmentData.profile_id,
+          employmentData.profile_employment_id,
           employmentData.institution_name,
           employmentData.address_line1,
           employmentData.city,
