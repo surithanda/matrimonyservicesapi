@@ -11,7 +11,10 @@ import cors from 'cors';
 //};
 
 
-const allowedOrigins = ['http://localhost:3000', 'https://matrimonyservices-mj3b0sjs2-superreaders-projects.vercel.app'];
+const allowedOrigins = [
+  'http://localhost:3000', 
+   /^https:\/\/matrimonyservices-[a-zA-Z0-9-]+-superreaders-projects\.vercel\.app$/
+];
 
 const corsOptions = {
 
