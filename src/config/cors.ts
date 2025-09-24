@@ -14,7 +14,8 @@ import cors from 'cors';
 const allowedOrigins = [
   'http://localhost:3000', 
    /^https:\/\/matrimonyservices-[a-zA-Z0-9]+-superreaders-projects\.vercel\.app$/,
-  // 'https://matrimonyservices-47gn0w4ye-superreaders-projects.vercel.app'
+  // 'https://matrimonyservices-47gn0w4ye-superreaders-projects.vercel.app',
+  "https://matrimonyservices.vercel.app"
 ];
 
 const corsOptions = {
