@@ -10,6 +10,7 @@ import metaDataRoutes from './routes/metaData.routes';
 import logger from './config/logger';
 import path from 'path';
 import fs from 'fs';
+import stripeRoutes from '../src/routes/stripe.routes'
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../uploads');
@@ -68,6 +69,8 @@ app.use('/api/account', accountRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/metadata', metaDataRoutes);
+app.use("/api/stripe", stripeRoutes);
+
 
 // Swagger documentation setup
 app.use('/api-docs', swaggerUi.serve);
