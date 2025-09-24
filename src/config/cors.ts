@@ -21,7 +21,7 @@ const corsOptions = {
 
 
   origin: (origin: any, callback: (err: Error | null, success?: boolean) =>  void) =>  {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.some((o) => (o instanceof RegExp ? o.test(origin) : false))) {
       callback(null, true); // Allow request
     } else {
       callback(null, false); // Block request
