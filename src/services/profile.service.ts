@@ -1,6 +1,7 @@
 import { IProfilePersonal, IProfileResponse, IProfileAddress, IProfileEducation, IProfileEmployment, IProfileProperty, IProfileFamilyReference, IProfileLifestyle, IProfilePhoto } from '../interfaces/profile.interface';
 import { IProfileHobbyInterest } from '../interfaces/hobby.interface';
 import { ProfileRepository } from '../repositories/profile.repository';
+import { validate } from 'uuid';
 
 export class ProfileService {
   private profileRepository: ProfileRepository;
@@ -184,19 +185,39 @@ export class ProfileService {
   validateResponse = (response:any, successMessage:string) => {
     console.log("Response from repository:", response);
       if(response) {
-        if(response?.error_code === null || (!response?.hasOwnProperty('error_code') && response?.status === 'success'))
-          return {
-            success: true,
-            message: successMessage,
-            data: response
-          };
-        else {
+        if(response?.error_code !== null && response?.error_type !== null && response?.status !== 'success') {
           return {
             success: false,
             message: response?.error_message,
             ...response
           };
+        } else {
+          return {
+              success: true,
+              message: successMessage,
+              data: response
+            };
         }
+        // if(response?.error_code === null || (!response?.hasOwnProperty('error_code') && response?.status === 'success'))
+        //   // if(response?.data && response?.data?.status === 'fail') {
+        //   //   return {
+        //   //     success: false,
+        //   //     message: response?.data?.error_message,
+        //   //   };
+        //   // } else {
+        //     return {
+        //       success: true,
+        //       message: successMessage,
+        //       data: response
+        //     };
+        //   // }
+        // else {
+        //   return {
+        //     success: false,
+        //     message: response?.error_message,
+        //     ...response
+        //   };
+        // }
       } else { //assuming the call went through successfully but there is no matching record
         return {
             success: true,
@@ -227,22 +248,24 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.createPersonalProfile(profileData);
 
-      if(response?.error_code === null)
-          return {
-            success: true,
-            message: 'Personal profile created successfully',
-            data: {
-              profile_id: response?.profile_id,
-              profile: profileData
-            }
-          };
-        else {
-          return {
-            success: false,
-            message: response?.error_message,
-            ...response
-          };
-        }
+      return this.validateResponse(response, 'Personal profile created successfully');
+      
+      // if(response?.error_code === null)
+      //     return {
+      //       success: true,
+      //       message: 'Personal profile created successfully',
+      //       data: {
+      //         profile_id: response?.profile_id,
+      //         profile: profileData
+      //       }
+      //     };
+      //   else {
+      //     return {
+      //       success: false,
+      //       message: response?.error_message,
+      //       ...response
+      //     };
+      //   }
 
       
     } catch (error: any) {
@@ -277,11 +300,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.createProfileAddress(addressData);
 
-      return {
-        success: true,
-        message: 'Profile address created successfully',
-        ...(response as any)
-      };
+      return this.validateResponse(response, 'Profile address created successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile address created successfully',
+      //   ...(response as any)
+      // };
     } catch (error: any) {
       if (error.message.includes('Profile doesnot exist')) {
         return {
@@ -290,6 +314,44 @@ export class ProfileService {
         };
       }
       throw error;
+    }
+  }
+
+  async updateProfileAddress(addressData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.updateProfileAddress(addressData);
+      return this.validateResponse(response, 'Profile address updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile address updated successfully',
+      //   data: response
+      // };
+    } catch (error: any) {
+      console.error('Error in updateProfileAddress service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to update address',
+        error: error
+      };
+    }
+  }
+
+  async deleteProfileAddress(deleteData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.deleteProfileAddress(deleteData);
+
+      return {
+        success: true,
+        message: 'Profile address deleted successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error in deleteProfileAddress service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete address',
+        error: error
+      };
     }
   }
 
@@ -314,11 +376,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.createProfileEducation(educationData);
 
-      return {
-        success: true,
-        message: 'Profile education created successfully',
-        ...(response as any)
-      };
+      return this.validateResponse(response, 'Profile education created successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile education created successfully',
+      //   ...(response as any)
+      // };
     } catch (error: any) {
       if (error.message.includes('Profile doesnot exist')) {
         return {
@@ -351,11 +414,12 @@ export class ProfileService {
     try {
       const response = await this.profileRepository.createProfileEmployment(employmentData);
 
-      return {
-        success: true,
-        message: 'Profile employment created successfully',
-        ...(response as any)
-      };
+      return this.validateResponse(response, 'Profile employment created successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile employment created successfully',
+      //   ...(response as any)
+      // };
     } catch (error: any) {
       if (error.message.includes('Profile doesnot exist')) {
         return {
@@ -389,11 +453,12 @@ export class ProfileService {
     try {
       const property:any = await this.profileRepository.createProfileProperty(propertyData);
 
-      return {
-        success: true,
-        message: 'Profile property created successfully',
-        data: property,
-      };
+      return this.validateResponse(property, 'Profile property created successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile property created successfully',
+      //   data: property,
+      // };
     } catch (error: any) {
       if (error.message.includes('Profile does not exist')) {
         return {
@@ -426,6 +491,7 @@ export class ProfileService {
     try {
       const referenceId = await this.profileRepository.createFamilyReference(referenceData);
 
+      // return this.validateResponse({reference_id: referenceId}, 'Family reference created successfully');
       return {
         success: true,
         message: 'Family reference created successfully',
@@ -465,11 +531,12 @@ export class ProfileService {
     try {
       const reference = await this.profileRepository.createProfileLifestyle(lifestyleData);
 
-      return {
-        success: true,
-        message: 'Profile lifestyle created successfully',
-        data: reference,
-      };
+      return this.validateResponse(reference, 'Profile lifestyle created successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile lifestyle created successfully',
+      //   data: reference,
+      // };
     } catch (error: any) {
       if (error.message.includes('Invalid profile_id')) {
         return {
@@ -741,5 +808,282 @@ export class ProfileService {
     }
   }
 
+  // Property Update/Delete Methods
+  async updateProfileProperty(propertyData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.updateProfileProperty(propertyData);
+
+      return this.validateResponse(response, 'Profile property updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile property updated successfully',
+      //   data: response
+      // };
+    } catch (error: any) {
+      console.error('Error in updateProfileProperty service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to update property',
+        error: error
+      };
+    }
+  }
+
+  async deleteProfileProperty(deleteData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.deleteProfileProperty(deleteData);
+
+      return {
+        success: true,
+        message: 'Profile property deleted successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error in deleteProfileProperty service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete property',
+        error: error
+      };
+    }
+  }
+
+  // Family Reference Update/Delete Methods
+  async updateFamilyReference(referenceData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.updateFamilyReference(referenceData);
+
+      return this.validateResponse(response, 'Family reference updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Family reference updated successfully',
+      //   data: response
+      // };
+    } catch (error: any) {
+      console.error('Error in updateFamilyReference service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to update family reference',
+        error: error
+      };
+    }
+  }
+
+  async deleteFamilyReference(deleteData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.deleteFamilyReference(deleteData);
+
+      return {
+        success: true,
+        message: 'Family reference deleted successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error in deleteFamilyReference service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete family reference',
+        error: error
+      };
+    }
+  }
+
+  // Education Update/Delete Methods
+  async updateProfileEducation(educationData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.updateProfileEducation(educationData);
+
+      return this.validateResponse(response, 'Profile education updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile education updated successfully',
+      //   data: response
+      // };
+    } catch (error: any) {
+      console.error('Error in updateProfileEducation service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to update education',
+        error: error
+      };
+    }
+  }
+
+  async deleteProfileEducation(deleteData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.deleteProfileEducation(deleteData);
+
+      return {
+        success: true,
+        message: 'Profile education deleted successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error in deleteProfileEducation service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete education',
+        error: error
+      };
+    }
+  }
+
+  // Employment Update/Delete Methods
+  async updateProfileEmployment(employmentData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.updateProfileEmployment(employmentData);
+
+      return this.validateResponse(response, 'Profile employment updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile employment updated successfully',
+      //   data: response
+      // };
+    } catch (error: any) {
+      console.error('Error in updateProfileEmployment service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to update employment',
+        error: error
+      };
+    }
+  }
+
+  async deleteProfileEmployment(deleteData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.deleteProfileEmployment(deleteData);
+
+      return {
+        success: true,
+        message: 'Profile employment deleted successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error in deleteProfileEmployment service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete employment',
+        error: error
+      };
+    }
+  }
+
+  // Lifestyle Update/Delete Methods
+  async updateProfileLifestyle(lifestyleData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.updateProfileLifestyle(lifestyleData);
+
+      return this.validateResponse(response, 'Profile lifestyle updated successfully');
+      // return {
+      //   success: true,
+      //   message: 'Profile lifestyle updated successfully',
+      //   data: response
+      // };
+    } catch (error: any) {
+      console.error('Error in updateProfileLifestyle service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to update lifestyle',
+        error: error
+      };
+    }
+  }
+
+  async deleteProfileLifestyle(deleteData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.deleteProfileLifestyle(deleteData);
+
+      return {
+        success: true,
+        message: 'Profile lifestyle deleted successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error in deleteProfileLifestyle service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete lifestyle',
+        error: error
+      };
+    }
+  }
+
+  // Personal Profile Update/Delete Methods
+  async updatePersonalProfile(profileData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.updatePersonalProfile(profileData);
+
+      console.log("Update Personal Profile Response:", response);
+      return this.validateResponse(response, 'Personal profile updated successfully');
+    } catch (error: any) {
+      console.error('Error in updatePersonalProfile service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to update personal profile',
+        error: error
+      };
+    }
+  }
+
+  async deletePersonalProfile(deleteData: any): Promise<any> {
+    try {
+      const response = await this.profileRepository.deletePersonalProfile(deleteData);
+
+      return {
+        success: true,
+        message: 'Personal profile deleted successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error in deletePersonalProfile service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to delete personal profile',
+        error: error
+      };
+    }
+  }
+
+  async getCompleteProfile(profileData: any): Promise<any> {
+    try {
+      const repository = new ProfileRepository();
+      const response = await repository.getCompleteProfile(profileData);
+      
+      // Return the response directly for now - will validate after repository method is added
+      return {
+        success: true,
+        message: 'Complete profile data retrieved successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error in getCompleteProfile service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to get complete profile data',
+        error: error
+      };
+    }
+  }
+
+  async getAllProfiles(profileData: any): Promise<any> {
+    try {
+      const repository = new ProfileRepository();
+      const response = await repository.getAllProfiles(profileData);
+      
+      // Return the response directly for now - will validate after repository method is added
+      return {
+        success: true,
+        message: 'All profiles retrieved successfully',
+        data: response
+      };
+    } catch (error: any) {
+      console.error('Error in getAllProfiles service:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to get all profiles',
+        error: error
+      };
+    }
+  }
 
 }

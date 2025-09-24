@@ -114,6 +114,80 @@ export const createProfileAddress = async (req: AuthenticatedRequest, res: Respo
   }
 };
 
+export const updateProfileAddress = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const addressId = req.params.id;
+    
+    const addressData = {
+      ...req.body,
+      profile_address_id: parseInt(addressId),
+      modified_user: req.user?.email
+    };
+
+    const result = await profileService.updateProfileAddress(addressData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Address updated successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile address',
+      error: error.message
+    });
+  }
+};
+
+export const deleteProfileAddress = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const addressId = req.params.id;
+    
+    // Get profile_id from request body or query params
+    const profileId = req.body.profile_id || req.query.profile_id;
+    
+    if (!profileId) {
+      return res.status(400).json({
+        success: false,
+        message: 'profile_id is required'
+      });
+    }
+
+    const deleteData = {
+      profile_id: parseInt(profileId as string),
+      profile_address_id: parseInt(addressId),
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.deleteProfileAddress(deleteData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Address deleted successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete profile address',
+      error: error.message
+    });
+  }
+};
+
 // 
 export const getProfileEducation = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -1181,6 +1255,499 @@ export const deleteFavorite = async (req: AuthenticatedRequest, res: Response) =
     res.status(500).json({
       success: false,
       message: 'Failed to remove from favorites',
+      error: error.message
+    });
+  }
+};
+
+// Property Update/Delete Operations
+export const updateProfileProperty = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const propertyId = req.params.id;
+    
+    const propertyData = {
+      ...req.body,
+      property_id: parseInt(propertyId),
+      modified_user: req.user?.email
+    };
+
+    const result = await profileService.updateProfileProperty(propertyData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Property updated successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile property',
+      error: error.message
+    });
+  }
+};
+
+export const deleteProfileProperty = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const propertyId = req.params.id;
+    const profileId = req.body.profile_id || req.query.profile_id;
+    
+    if (!profileId) {
+      return res.status(400).json({
+        success: false,
+        message: 'profile_id is required'
+      });
+    }
+
+    const deleteData = {
+      profile_id: parseInt(profileId as string),
+      property_id: parseInt(propertyId),
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.deleteProfileProperty(deleteData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Property deleted successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete profile property',
+      error: error.message
+    });
+  }
+};
+
+// Family Reference Update/Delete Operations
+export const updateFamilyReference = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const referenceId = req.params.id;
+    
+    const referenceData = {
+      ...req.body,
+      reference_id: parseInt(referenceId),
+      modified_user: req.user?.email
+    };
+
+    const result = await profileService.updateFamilyReference(referenceData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Family reference updated successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update family reference',
+      error: error.message
+    });
+  }
+};
+
+export const deleteFamilyReference = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const referenceId = req.params.id;
+    const profileId = req.body.profile_id || req.query.profile_id;
+    
+    if (!profileId) {
+      return res.status(400).json({
+        success: false,
+        message: 'profile_id is required'
+      });
+    }
+
+    const deleteData = {
+      profile_id: parseInt(profileId as string),
+      reference_id: parseInt(referenceId),
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.deleteFamilyReference(deleteData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Family reference deleted successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete family reference',
+      error: error.message
+    });
+  }
+};
+
+// Education Update/Delete Operations
+export const updateProfileEducation = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const educationId = req.params.id;
+    
+    const educationData = {
+      ...req.body,
+      education_id: parseInt(educationId),
+      modified_user: req.user?.email
+    };
+
+    const result = await profileService.updateProfileEducation(educationData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Education updated successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile education',
+      error: error.message
+    });
+  }
+};
+
+export const deleteProfileEducation = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const educationId = req.params.id;
+    const profileId = req.body.profile_id || req.query.profile_id;
+    
+    if (!profileId) {
+      return res.status(400).json({
+        success: false,
+        message: 'profile_id is required'
+      });
+    }
+
+    const deleteData = {
+      profile_id: parseInt(profileId as string),
+      education_id: parseInt(educationId),
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.deleteProfileEducation(deleteData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Education deleted successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete profile education',
+      error: error.message
+    });
+  }
+};
+
+// Employment Update/Delete Operations
+export const updateProfileEmployment = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const employmentId = req.params.id;
+    
+    const employmentData = {
+      ...req.body,
+      employment_id: parseInt(employmentId),
+      modified_user: req.user?.email
+    };
+
+    const result = await profileService.updateProfileEmployment(employmentData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Employment updated successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile employment',
+      error: error.message
+    });
+  }
+};
+
+export const deleteProfileEmployment = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const employmentId = req.params.id;
+    const profileId = req.body.profile_id || req.query.profile_id;
+    
+    if (!profileId) {
+      return res.status(400).json({
+        success: false,
+        message: 'profile_id is required'
+      });
+    }
+
+    const deleteData = {
+      profile_id: parseInt(profileId as string),
+      employment_id: parseInt(employmentId),
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.deleteProfileEmployment(deleteData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Employment deleted successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete profile employment',
+      error: error.message
+    });
+  }
+};
+
+// Lifestyle Update/Delete Operations
+export const updateProfileLifestyle = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const lifestyleId = req.params.id;
+    
+    const lifestyleData = {
+      ...req.body,
+      lifestyle_id: parseInt(lifestyleId),
+      modified_user: req.user?.email
+    };
+
+    const result = await profileService.updateProfileLifestyle(lifestyleData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Lifestyle updated successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile lifestyle',
+      error: error.message
+    });
+  }
+};
+
+export const deleteProfileLifestyle = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const lifestyleId = req.params.id;
+    const profileId = req.body.profile_id || req.query.profile_id;
+    
+    if (!profileId) {
+      return res.status(400).json({
+        success: false,
+        message: 'profile_id is required'
+      });
+    }
+
+    const deleteData = {
+      profile_id: parseInt(profileId as string),
+      lifestyle_id: parseInt(lifestyleId),
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.deleteProfileLifestyle(deleteData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Lifestyle deleted successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete profile lifestyle',
+      error: error.message
+    });
+  }
+};
+
+// Personal Profile Update/Delete Operations
+export const updatePersonalProfile = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const profileId = req.params.id;
+    
+    const profileData = {
+      ...req.body,
+      profile_id: parseInt(profileId),
+      modified_user: req.user?.email
+    };
+
+    const result = await profileService.updatePersonalProfile(profileData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: result.message || 'Personal profile updated successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update personal profile',
+      error: error.message
+    });
+  }
+};
+
+export const deletePersonalProfile = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    const profileId = req.params.id;
+    
+    const deleteData = {
+      profile_id: parseInt(profileId),
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.deletePersonalProfile(deleteData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Personal profile deleted successfully',
+      data: result
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete personal profile',
+      error: error.message
+    });
+  }
+};
+
+export const getCompleteProfile = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    // Add account_id and created_user from authenticated user
+    const profileData = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.getCompleteProfile(profileData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'Complete profile data retrieved successfully',
+      data: result.data
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get complete profile data',
+      error: error.message
+    });
+  }
+};
+
+export const getAllProfiles = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const profileService = new ProfileService();
+    
+    // Add account_id and created_user from authenticated user
+    const profileData = {
+      ...req.body,
+      account_code: req.user?.account_code,
+      created_user: req.user?.email
+    };
+
+    const result = await profileService.getAllProfiles(profileData);
+    
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    
+    res.status(200).json({
+      success: true,
+      status: 'success',
+      message: 'All profiles retrieved successfully',
+      data: result.data
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get all profiles',
       error: error.message
     });
   }
