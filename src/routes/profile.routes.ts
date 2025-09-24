@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createPersonalProfile, createProfileAddress, createProfileEducation, createProfileEmployment, createProfileProperty, createFamilyReference, createProfileLifestyle, uploadProfilePhoto, createProfilePhoto, getPersonalProfile, getProfileAddress, getProfileEducation, getProfileEmployment, getProfileProperty, getFamilyReference, getProfileLifestyle, getProfileHobbies, addProfileHobby, removeProfileHobby, addProfileFamily, updateProfileFamily, deleteProfileFamily, searchProfiles, getUserPreferences, saveUserPreferences, createFavoriteProfile, getFavorites, deleteFavorite, trackProfileView, getProfilesByAccountId, getProfilePhotos } from '../controllers/profile.controller';
+import { createPersonalProfile, updatePersonalProfile, deletePersonalProfile, createProfileAddress, updateProfileAddress, deleteProfileAddress, createProfileEducation, updateProfileEducation, deleteProfileEducation, createProfileEmployment, updateProfileEmployment, deleteProfileEmployment, createProfileProperty, updateProfileProperty, deleteProfileProperty, createFamilyReference, updateFamilyReference, deleteFamilyReference, createProfileLifestyle, updateProfileLifestyle, deleteProfileLifestyle, uploadProfilePhoto, createProfilePhoto, getPersonalProfile, getProfileAddress, getProfileEducation, getProfileEmployment, getProfileProperty, getFamilyReference, getProfileLifestyle, getProfileHobbies, addProfileHobby, removeProfileHobby, addProfileFamily, updateProfileFamily, deleteProfileFamily, searchProfiles, getUserPreferences, saveUserPreferences, createFavoriteProfile, getFavorites, deleteFavorite, trackProfileView, getProfilesByAccountId, getProfilePhotos, getCompleteProfile, getAllProfiles } from '../controllers/profile.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 
@@ -413,6 +413,78 @@ router.post(
 
 /**
  * @swagger
+ * /profile/personal/{id}:
+ *   put:
+ *     summary: Update personal profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Profile ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PersonalProfile'
+ *     responses:
+ *       200:
+ *         description: Personal profile updated successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  '/personal/:id',
+  validateApiKey,
+  authenticateJWT,
+  updatePersonalProfile
+);
+
+/**
+ * @swagger
+ * /profile/personal/{id}:
+ *   delete:
+ *     summary: Delete personal profile
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Profile ID
+ *     responses:
+ *       200:
+ *         description: Personal profile deleted successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/personal/:id',
+  validateApiKey,
+  authenticateJWT,
+  deletePersonalProfile
+);
+
+/**
+ * @swagger
  * /profile/address:
  *   post:
  *     summary: Create profile address
@@ -441,6 +513,84 @@ router.post(
   validateApiKey,
   authenticateJWT,
   createProfileAddress
+);
+
+/**
+ * @swagger
+ * /profile/address/{id}:
+ *   put:
+ *     summary: Update profile address
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Address ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProfileAddress'
+ *     responses:
+ *       200:
+ *         description: Profile address updated successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  '/address/:id',
+  validateApiKey,
+  authenticateJWT,
+  updateProfileAddress
+);
+
+/**
+ * @swagger
+ * /profile/address/{id}:
+ *   delete:
+ *     summary: Delete profile address
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Address ID
+ *       - in: query
+ *         name: profile_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Profile ID
+ *     responses:
+ *       200:
+ *         description: Profile address deleted successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/address/:id',
+  validateApiKey,
+  authenticateJWT,
+  deleteProfileAddress
 );
 
 /**
@@ -477,6 +627,87 @@ router.post(
 
 /**
  * @swagger
+ * /profile/education/{id}:
+ *   put:
+ *     summary: Update profile education
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Education ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProfileEducation'
+ *     responses:
+ *       200:
+ *         description: Education updated successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  '/education/:id',
+  validateApiKey,
+  authenticateJWT,
+  updateProfileEducation
+);
+
+/**
+ * @swagger
+ * /profile/education/{id}:
+ *   delete:
+ *     summary: Delete profile education
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Education ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Education deleted successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/education/:id',
+  validateApiKey,
+  authenticateJWT,
+  deleteProfileEducation
+);
+
+/**
+ * @swagger
  * /profile/employment:
  *   post:
  *     summary: Create profile employment
@@ -505,6 +736,87 @@ router.post(
   validateApiKey,
   authenticateJWT,
   createProfileEmployment
+);
+
+/**
+ * @swagger
+ * /profile/employment/{id}:
+ *   put:
+ *     summary: Update profile employment
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Employment ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProfileEmployment'
+ *     responses:
+ *       200:
+ *         description: Employment updated successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  '/employment/:id',
+  validateApiKey,
+  authenticateJWT,
+  updateProfileEmployment
+);
+
+/**
+ * @swagger
+ * /profile/employment/{id}:
+ *   delete:
+ *     summary: Delete profile employment
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Employment ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Employment deleted successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/employment/:id',
+  validateApiKey,
+  authenticateJWT,
+  deleteProfileEmployment
 );
 
 /**
@@ -541,6 +853,87 @@ router.post(
 
 /**
  * @swagger
+ * /profile/property/{id}:
+ *   put:
+ *     summary: Update profile property
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Property ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProfileProperty'
+ *     responses:
+ *       200:
+ *         description: Property updated successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  '/property/:id',
+  validateApiKey,
+  authenticateJWT,
+  updateProfileProperty
+);
+
+/**
+ * @swagger
+ * /profile/property/{id}:
+ *   delete:
+ *     summary: Delete profile property
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Property ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Property deleted successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/property/:id',
+  validateApiKey,
+  authenticateJWT,
+  deleteProfileProperty
+);
+
+/**
+ * @swagger
  * /profile/family-reference:
  *   post:
  *     summary: Create family reference
@@ -573,6 +966,87 @@ router.post(
 
 /**
  * @swagger
+ * /profile/family-reference/{id}:
+ *   put:
+ *     summary: Update family reference
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Reference ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProfileFamilyReference'
+ *     responses:
+ *       200:
+ *         description: Family reference updated successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  '/family-reference/:id',
+  validateApiKey,
+  authenticateJWT,
+  updateFamilyReference
+);
+
+/**
+ * @swagger
+ * /profile/family-reference/{id}:
+ *   delete:
+ *     summary: Delete family reference
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Reference ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Family reference deleted successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/family-reference/:id',
+  validateApiKey,
+  authenticateJWT,
+  deleteFamilyReference
+);
+
+/**
+ * @swagger
  * /profile/lifestyle:
  *   post:
  *     summary: Create profile lifestyle
@@ -601,6 +1075,87 @@ router.post(
   validateApiKey,
   authenticateJWT,
   createProfileLifestyle
+);
+
+/**
+ * @swagger
+ * /profile/lifestyle/{id}:
+ *   put:
+ *     summary: Update profile lifestyle
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Lifestyle ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProfileLifestyle'
+ *     responses:
+ *       200:
+ *         description: Lifestyle updated successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  '/lifestyle/:id',
+  validateApiKey,
+  authenticateJWT,
+  updateProfileLifestyle
+);
+
+/**
+ * @swagger
+ * /profile/lifestyle/{id}:
+ *   delete:
+ *     summary: Delete profile lifestyle
+ *     tags: [Profile]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Lifestyle ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profile_id:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Lifestyle deleted successfully
+ *       400:
+ *         description: Invalid request data
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/lifestyle/:id',
+  validateApiKey,
+  authenticateJWT,
+  deleteProfileLifestyle
 );
 
 /**
@@ -1169,6 +1724,22 @@ router.get(
   validateApiKey,
   authenticateJWT,
   getProfilesByAccountId
+);
+
+// Get complete profile data using eb_profile_get_complete_data
+router.post(
+  '/completeProfile',
+  validateApiKey,
+  authenticateJWT,
+  getCompleteProfile
+);
+
+// Get all profiles using eb_profile_search_get_all
+router.post(
+  '/allProfiles',
+  validateApiKey,
+  authenticateJWT,
+  getAllProfiles
 );
 
 export default router;

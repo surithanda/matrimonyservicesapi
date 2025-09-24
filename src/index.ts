@@ -10,7 +10,7 @@ import metaDataRoutes from './routes/metaData.routes';
 import logger from './config/logger';
 import path from 'path';
 import fs from 'fs';
-import stripeRoutes from '../src/routes/stripe.routes'
+import stripeRoutes from './routes/stripe.routes'
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../uploads');
