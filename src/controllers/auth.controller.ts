@@ -92,7 +92,7 @@ export class AuthController {
 
       const result = await this.authService.verifyOTP(email, otp);
       // console.log("result from auth controller",result);
-      if (!result || !result.success) {
+      if (!result || result.success=="Fail") {
         return res.status(401).json({
           success: false,
           message: 'Invalid OTP verification result'
