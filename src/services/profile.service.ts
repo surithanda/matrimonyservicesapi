@@ -1274,6 +1274,12 @@ export class ProfileService {
       const repository = new ProfileRepository();
       const response = await repository.getCompleteProfile(profileData);
 
+      if (response.profile_photo_url) {
+        const image = await getFileById(response.profile_photo_url);
+        if (image) {
+          response.profile_photo_url = image.imgUrl;
+        }
+      }
       // Return the response directly for now - will validate after repository method is added
       return {
         success: true,
@@ -1289,7 +1295,6 @@ export class ProfileService {
       };
     }
   }
-
   async getAllProfiles(profileData: any): Promise<any> {
     try {
       const repository = new ProfileRepository();
