@@ -3,6 +3,7 @@ import { AccountService } from '../services/account.service';
 import { AuthenticatedRequest } from '../interfaces/auth.interface';
 import fs from 'fs';
 import path from 'path';
+import { createFile, getFileById, deleteFile } from '../utils/drive.util';
 
 export const registerAccount = async (req: Request, res: Response) => {
   try {
@@ -85,6 +86,8 @@ export const getAccountDetails = async (req: AuthenticatedRequest, res: Response
 
 export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
   try {
+    console.log("uploading file ",req.file)
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -96,12 +99,6 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
     const accountCode = req.user?.account_code;
     
     if (!accountCode) {
-      // Delete uploaded file if unauthorized
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (unlinkError) {
-        console.error('Error deleting file:', unlinkError);
-      }
       return res.status(401).json({
         success: false,
         message: 'Unauthorized'
@@ -111,59 +108,76 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
     // Get the existing account to check for old photo
     const existingAccount = await accountService.getAccount(accountCode);
     if (!existingAccount.success) {
-      // Delete uploaded file if account not found
-      try {
-        fs.unlinkSync(req.file.path);
-      } catch (unlinkError) {
-        console.error('Error deleting file:', unlinkError);
-      }
       return res.status(404).json(existingAccount);
     }
 
-    // If there's an existing photo, delete it
-    if (existingAccount.data?.photo) {
-      const oldPhotoPath = path.join(__dirname, '../../uploads/photos', existingAccount.data.photo);
-      if (fs.existsSync(oldPhotoPath)) {
-        try {
-          fs.unlinkSync(oldPhotoPath);
-        } catch (unlinkError) {
-          console.error('Error deleting old photo:', unlinkError);
+    // Upload file to Google Drive using multer file
+    const driveFile = await createFile(req.file);
+    
+    if (!driveFile.data.id) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to upload file to Google Drive',
+      });
+    }
+
+    const fileDetails = await getFileById(driveFile.data.id);
+
+    if (existingAccount.data?.photo && existingAccount.data.photo.startsWith('https://')) {
+      try {
+        const fileId = existingAccount.data.photo.split('/').pop()?.split('?')[0];
+        if (fileId) {
+          await deleteFile(fileId);
         }
+      } catch (unlinkError) {
+        console.error('Error deleting old photo from Google Drive:', unlinkError);
       }
     }
 
-    // Store relative path in database
-    const relativePhotoPath = `account/${req.file.filename}`;
     const result = await accountService.updateAccount(accountCode, {
-      photo: relativePhotoPath
+      photo: fileDetails.imgUrl
     });
 
     if (!result.success) {
-      // Delete uploaded file if update fails
+      try {
+        await deleteFile(driveFile.data.id);
+      } catch (unlinkError) {
+        console.error('Error deleting uploaded file from Google Drive:', unlinkError);
+      }
+      
       try {
         fs.unlinkSync(req.file.path);
-      } catch (unlinkError) {
-        console.error('Error deleting uploaded file:', unlinkError);
+      } catch (error) {
+        console.error('Error deleting local file:', error);
       }
+      
       return res.status(400).json(result);
+    }
+
+    try {
+      fs.unlinkSync(req.file.path);
+      console.log('Local file cleaned up after successful upload');
+    } catch (error) {
+      console.error('Failed to clean up local file:', error);
     }
 
     res.status(200).json({
       success: true,
       message: 'Photo uploaded successfully',
       data: {
-        photo_url: `/uploads/photos/${relativePhotoPath}`
+        photo_url: fileDetails.imgUrl
       }
     });
   } catch (error: any) {
-    // Delete uploaded file if any error occurs
     if (req.file) {
       try {
         fs.unlinkSync(req.file.path);
       } catch (unlinkError) {
-        console.error('Error deleting uploaded file on error:', unlinkError);
+        console.error('Error deleting local file on error:', unlinkError);
       }
     }
+    
+    console.error('Error uploading photo:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to upload photo',
