@@ -751,48 +751,48 @@ export const createProfilePhoto = async (
       });
     }
 
-    console.log("req.file", req.file);
     const profileService = new ProfileService();
 
-    // Test Google Drive connection first
-    const connectionTest = await testDriveConnection();
-    if (!connectionTest) {
-      return res.status(500).json({
+    const accountId = (req as AuthenticatedRequest)?.user?.account_code;
+    const profileId = req.body.profile_id;
+    
+    if (!accountId || !profileId) {
+      return res.status(400).json({
         success: false,
-        message: "Google Drive connection failed. Please check configuration.",
+        message: "Missing account ID or profile ID",
       });
     }
-
-    // Upload file to Google Drive using multer file
-    const driveFile = await createFile(req.file);
+    
+    const driveFile = await createFile(req.file, accountId, profileId);
     
     if (!driveFile.data.id) {
       return res.status(500).json({
         success: false,
-        message: "Failed to upload file to Google Drive",
+        message: "Failed to upload file",
       });
     }
 
-    // Get file details from Google Drive
-    // const fileDetails = await getFileById(driveFile.data.id);
+
+    const relativePath = path.relative(
+      path.join(__dirname, '../../uploads'),
+      req.file.path
+    ).replace(/\\/g, '/');
 
     const photoData: IProfilePhoto = {
       profile_id: parseInt(req.body.profile_id),
       photo_type: parseInt(req.body.photo_type) || 456, // Default to additional photos
-      description: req.body.description || "",
+      description: req.body.description || '',
       caption: req.body.caption || path.parse(req.file.originalname).name,
-      url: driveFile.data.id, // Use Google Drive URL
-      user_created: req.user?.email || "system",
-      ip_address: req.ip || "",
-      browser_profile: req.headers["user-agent"] || "",
+      url: `/uploads/${relativePath}`,
+      user_created: req.user?.email || 'system',
+      ip_address: req.ip || '',
+      browser_profile: req.headers['user-agent'] || ''
     };
 
-    console.log("photo Data",photoData)
     const result = await profileService.createProfilePhoto(photoData);
 
     console.log("photo upload result",result)
     if (!result.success) {
-      // Clean up the uploaded file from Google Drive if database operation fails
       try {
         const { deleteFile } = await import("../utils/drive.util");
         await deleteFile(driveFile.data.id!);
@@ -800,7 +800,6 @@ export const createProfilePhoto = async (
         console.error("Failed to clean up file from Google Drive after database error:", error);
       }
       
-      // Clean up the local file
       try {
         fs.unlinkSync(req.file.path);
       } catch (error) {
@@ -810,7 +809,6 @@ export const createProfilePhoto = async (
       return res.status(400).json(result);
     }
 
-    // Clean up the local file after successful upload to Google Drive
     try {
       fs.unlinkSync(req.file.path);
       console.log("Local file cleaned up after successful upload");
@@ -818,7 +816,6 @@ export const createProfilePhoto = async (
       console.error("Failed to clean up local file:", error);
     }
 
-    // Return success response with file URL
     res.status(201).json({
       success: true,
       message: "Profile photo uploaded successfully",
