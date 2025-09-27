@@ -16,7 +16,7 @@ const ensureDirectoryExists = (dirPath: string) => {
   }
 };
 
-// Configure multer for photo uploads
+// Configure disk storage for Google Drive upload
 const storage = multer.diskStorage({
   destination: (req: express.Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
     const uploadPath = path.join(__dirname, '../../uploads/photos/account');
