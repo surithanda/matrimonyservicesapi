@@ -68,8 +68,6 @@ export class AuthService {
           },
         };
       } else {
-
-        console.log("login result",loginresult)
         return {
           success: false,
           message: loginresult.error_message,
@@ -88,7 +86,6 @@ export class AuthService {
     try {
       const results = await this.authRepository.verifyOTP(email, otp);
       
-
       console.log("result from auth service",results);
       console.log("user",results.user);
       console.log("message",results.message);
@@ -98,8 +95,9 @@ export class AuthService {
     } catch (error) {
       console.error("OTP verification error:", error);
       return {
-        success: "Fail",
+        success: false,
         message: "Internal server error",
+
         user: {
           account_id: "",
           account_code: "",
