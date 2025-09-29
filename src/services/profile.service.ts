@@ -12,7 +12,7 @@ import {
 import { IProfileHobbyInterest } from "../interfaces/hobby.interface";
 import { ProfileRepository } from "../repositories/profile.repository";
 import { validate } from "uuid";
-import { getFileById } from "../utils/drive.util";
+import { getFileById } from "../utils/storage.util";
 
 export class ProfileService {
   private profileRepository: ProfileRepository;

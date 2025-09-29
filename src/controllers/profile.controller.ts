@@ -10,7 +10,7 @@ import { IProfileHobbyInterest } from "../interfaces/hobby.interface";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { createFile, testDriveConnection } from "../utils/drive.util";
+import { createFile, getFileStream } from "../utils/storage.util";
 
 export const getPersonalProfile = async (
   req: AuthenticatedRequest,
@@ -25,6 +25,8 @@ export const getPersonalProfile = async (
       account_code: req.user?.account_code,
       created_user: req.user?.email,
     };
+
+ 
 
     const result = await profileService.getPersonalProfile(profileData);
 
@@ -773,17 +775,13 @@ export const createProfilePhoto = async (
     }
 
 
-    const relativePath = path.relative(
-      path.join(__dirname, '../../uploads'),
-      req.file.path
-    ).replace(/\\/g, '/');
-
     const photoData: IProfilePhoto = {
       profile_id: parseInt(req.body.profile_id),
       photo_type: parseInt(req.body.photo_type) || 456, // Default to additional photos
       description: req.body.description || '',
       caption: req.body.caption || path.parse(req.file.originalname).name,
-      url: `/uploads/${relativePath}`,
+      // Store OneDrive item id in url column as agreed
+      url: driveFile.data.id,
       user_created: req.user?.email || 'system',
       ip_address: req.ip || '',
       browser_profile: req.headers['user-agent'] || ''
@@ -794,7 +792,7 @@ export const createProfilePhoto = async (
     console.log("photo upload result",result)
     if (!result.success) {
       try {
-        const { deleteFile } = await import("../utils/drive.util");
+        const { deleteFile } = await import("../utils/storage.util");
         await deleteFile(driveFile.data.id!);
       } catch (error) {
         console.error("Failed to clean up file from Google Drive after database error:", error);
@@ -809,19 +807,13 @@ export const createProfilePhoto = async (
       return res.status(400).json(result);
     }
 
-    try {
-      fs.unlinkSync(req.file.path);
-      console.log("Local file cleaned up after successful upload");
-    } catch (error) {
-      console.error("Failed to clean up local file:", error);
-    }
-
     res.status(201).json({
       success: true,
       message: "Profile photo uploaded successfully",
       data: {
         ...result.data,
-        url: photoData.url, // Return the full URL for client-side use
+        // Provide a streaming URL the UI can use directly
+        stream_url: `/api/profile/photo/${(result.data as any)?.photo_id || (result as any)?.data?.photo_id}?profileId=${req.body.profile_id}`,
       },
     });
   } catch (error: any) {
@@ -1964,7 +1956,6 @@ export const getAllProfiles = async (
     if (!result.success) {
       return res.status(400).json(result);
     }
-
     res.status(200).json({
       success: true,
       status: "success",
@@ -1977,5 +1968,49 @@ export const getAllProfiles = async (
       message: "Failed to get all profiles",
       error: error.message,
     });
+  }
+};
+
+// Stream a profile photo by photoId (OneDrive item id is stored in `url` column)
+export const streamProfilePhoto = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const photoId = parseInt(req.params.photoId);
+    const profileId = req.query.profileId ? parseInt(req.query.profileId as string) : NaN;
+
+    if (!photoId || isNaN(photoId)) {
+      return res.status(400).json({ success: false, message: "Invalid photo ID" });
+    }
+    if (!profileId || isNaN(profileId)) {
+      return res.status(400).json({ success: false, message: "profileId is required as a query parameter" });
+    }
+
+    const profileService = new ProfileService();
+    const result = await profileService.getProfilePhotos(profileId);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    const photos = (result.data && (result.data as any).photos) || [];
+    const photo = photos.find((p: any) => p.photo_id === photoId || p.id === photoId);
+    if (!photo) {
+      return res.status(404).json({ success: false, message: "Photo not found" });
+    }
+
+    const itemId = photo.url; // Now stores OneDrive item id
+    if (!itemId) {
+      return res.status(500).json({ success: false, message: "Photo storage reference missing" });
+    }
+
+    const streamResp = await getFileStream(itemId);
+    res.setHeader("Content-Type", streamResp.contentType);
+    if (streamResp.contentLength) res.setHeader("Content-Length", streamResp.contentLength);
+    if (streamResp.fileName) res.setHeader("Content-Disposition", `inline; filename=\"${streamResp.fileName}\"`);
+    (streamResp.stream as any).pipe(res);
+  } catch (error: any) {
+    console.error("Error streaming profile photo:", error);
+    res.status(500).json({ success: false, message: "Failed to stream photo", error: error.message });
   }
 };
