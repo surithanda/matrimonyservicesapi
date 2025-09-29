@@ -5,10 +5,11 @@ import pool from '../config/database';
 export class ProfileRepository {
   async getProfilesByAccountId(accountId: number): Promise<any[]> {
     try {
-      const [rows] = await pool.query(
-        'SELECT * FROM matrimony_services.profile_personal WHERE account_id = ?',
+      const [results] = await pool.execute(
+        'CALL account_profile_get(?)',
         [accountId]
       );
+      const rows = (results as any[])[0]; // Stored procedure results are nested in an array
       return rows as any[];
     } catch (error) {
       console.error('Error fetching profiles by account ID:', error);

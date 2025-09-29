@@ -11,15 +11,10 @@ let allowedOrigins = [
 // Function to load active domains from database
 async function loadAllowedOrigins(): Promise<void> {
   try {
-    const query = `
-      SELECT partner_root_domain 
-      FROM matrimony_services.api_clients 
-      WHERE is_active = 1 
-      AND partner_root_domain IS NOT NULL 
-      AND partner_root_domain != ''
-    `;
+    const query = `CALL api_clients_get(null, null)`;
     
-    const [rows] = await pool.execute(query) as any;
+    const [results] = await pool.execute(query) as any;
+    const rows = results[0]; // Stored procedure results are nested in an array
     
     // Add database domains to allowedOrigins array
     const dbDomains = rows.map((row: any) => row.partner_root_domain);
