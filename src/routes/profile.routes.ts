@@ -1266,7 +1266,8 @@ router.get(
   '/photos/:profileId',
   validateApiKey,
   authenticateJWT,
-  getProfilePhotos
+  // getProfilePhotos
+  streamProfilePhoto
 );
 
 /**

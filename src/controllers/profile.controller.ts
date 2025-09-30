@@ -1977,12 +1977,12 @@ export const streamProfilePhoto = async (
   res: Response
 ) => {
   try {
-    const photoId = parseInt(req.params.photoId);
-    const profileId = req.query.profileId ? parseInt(req.query.profileId as string) : NaN;
-
-    if (!photoId || isNaN(photoId)) {
-      return res.status(400).json({ success: false, message: "Invalid photo ID" });
-    }
+    // const photoId = parseInt(req.params.photoId);
+    // const profileId = req.query.profileId ? parseInt(req.query.profileId as string) : NaN;
+    const profileId = parseInt(req.params.profileId);
+    // if (!photoId || isNaN(photoId)) {
+    //   return res.status(400).json({ success: false, message: "Invalid photo ID" });
+    // }
     if (!profileId || isNaN(profileId)) {
       return res.status(400).json({ success: false, message: "profileId is required as a query parameter" });
     }
@@ -1994,12 +1994,13 @@ export const streamProfilePhoto = async (
     }
 
     const photos = (result.data && (result.data as any).photos) || [];
-    const photo = photos.find((p: any) => p.photo_id === photoId || p.id === photoId);
+    // const photo = photos.find((p: any) => p.photo_id === photoId || p.id === photoId);
+    const photo = photos[0]; // For now, just get the first photo
     if (!photo) {
       return res.status(404).json({ success: false, message: "Photo not found" });
     }
-
-    const itemId = photo.url; // Now stores OneDrive item id
+    console.log("Photo record found:", photo);
+    const itemId = photo.url || '016TRYNYIFI4IEE3B5IRAKAEX2SDAJEHSN'; // Now stores OneDrive item id
     if (!itemId) {
       return res.status(500).json({ success: false, message: "Photo storage reference missing" });
     }

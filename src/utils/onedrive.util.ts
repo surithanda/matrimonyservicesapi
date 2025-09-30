@@ -54,12 +54,13 @@ export const getFileStream = async (fileId: string) => {
     driveBaseUrl = `/users/${encodeURIComponent(ONEDRIVE_USER_ID)}/drive`;
   }
 
+  console.log("[OneDrive] Fetching file stream for item ID:", fileId, driveBaseUrl);
   // Get a short-lived download URL for the item
   const item = await client
     .api(`${driveBaseUrl}/items/${encodeURIComponent(fileId)}`)
     .select(["@microsoft.graph.downloadUrl", "name"].join(","))
     .get();
-
+  console.log("[OneDrive] Retrieved item metadata:", item);
   const downloadUrl = item["@microsoft.graph.downloadUrl"] as string;
   if (!downloadUrl) throw new Error("downloadUrl not available for this item");
 
