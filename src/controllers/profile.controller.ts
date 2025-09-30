@@ -1979,3 +1979,28 @@ export const getAllProfiles = async (
     });
   }
 };
+
+
+export const getProfileCompletion=async(req:AuthenticatedRequest,res:Response)=>{
+  try {
+    const profile_id=req.params.profile_id
+    let user=req.user?.email
+    const profileService = new ProfileService();
+    let profileData={
+      profile_id,
+      user
+    }
+    const result = await profileService.getProfileCompletion(profileData);
+    return res.status(200).json(result)
+  } catch (error:any) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to get profile completion",
+      error: error.message,
+    });
+  }
+}
+
+
+
+
