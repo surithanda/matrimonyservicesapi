@@ -12,26 +12,33 @@ import path from 'path';
 import fs from 'fs';
 import stripeRoutes from './routes/stripe.routes'
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads');
-const photoUploadsDir = path.join(uploadsDir, 'photos');
-const accountPhotoDir = path.join(photoUploadsDir, 'account');
+// Ensure directory structure exists for persistent disk storage
+const isRenderEnvironment = process.env.RENDER === 'true';
+const baseStoragePath = isRenderEnvironment ? '/photos' : path.join(__dirname, '../uploads');
 
+// Helper function to ensure directory exists with proper permissions
+const ensureDirectoryExists = (dirPath: string) => {
+  try {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true, mode: 0o755 });
+      logger.info(`Created directory: ${dirPath}`);
+    }
+  } catch (error) {
+    logger.error(`Error creating directory ${dirPath}:`, error);
+  }
+};
+
+// Create necessary directory structure
 try {
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    logger.info('Created uploads directory');
-  }
-  if (!fs.existsSync(photoUploadsDir)) {
-    fs.mkdirSync(photoUploadsDir, { recursive: true });
-    logger.info('Created photos upload directory');
-  }
-  if (!fs.existsSync(accountPhotoDir)) {
-    fs.mkdirSync(accountPhotoDir, { recursive: true });
-    logger.info('Created account photos directory');
-  }
+  ensureDirectoryExists(baseStoragePath);
+  
+  // Create common subdirectories for better organization
+  ensureDirectoryExists(path.join(baseStoragePath, 'accounts'));
+  ensureDirectoryExists(path.join(baseStoragePath, 'temp'));
+  
+  logger.info(`Storage configured at: ${baseStoragePath}`);
 } catch (error) {
-  logger.error('Error creating upload directories:', error);
+  logger.error('Error configuring storage directories:', error);
 }
 
 dotenv.config();
@@ -44,9 +51,26 @@ app.use(cors);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploads directory statically
-// app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-app.use('/uploads', express.static('/photos'));
+// Serve photos from persistent disk storage
+// Use /photos route to serve files from the mounted persistent disk
+app.use('/photos', express.static('/photos', {
+  maxAge: '7d', // Cache photos for 7 days
+  setHeaders: (res, path) => {
+    // Set proper headers for images
+    if (path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      res.setHeader('Content-Type', 'image/' + path.split('.').pop()?.toLowerCase());
+      res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 days
+    }
+  }
+}));
+
+// Backward compatibility: serve legacy uploads if they exist
+const legacyUploadsPath = path.join(__dirname, '../uploads');
+if (fs.existsSync(legacyUploadsPath)) {
+  app.use('/uploads', express.static(legacyUploadsPath, {
+    maxAge: '7d'
+  }));
+}
 
 // Request logging middleware
 app.use((req, res, next) => {

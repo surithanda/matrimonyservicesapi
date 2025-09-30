@@ -471,6 +471,19 @@ const ensureDirectoryExists = (dirPath: string) => {
   }
 };
 
+// Environment detection
+const isRenderEnvironment = () => {
+  return process.env.RENDER === 'true' || process.env.NODE_ENV === 'production';
+};
+
+// Get the appropriate storage base path
+const getStorageBasePath = () => {
+  if (isRenderEnvironment()) {
+    return '/photos'; // Render persistent disk mount path
+  }
+  return path.join(__dirname, '../../uploads'); // Local development path
+};
+
 // Sanitize filename to prevent directory traversal and special characters
 const sanitizeFilename = (filename: string): string => {
   // Remove any path traversal attempts and replace special characters
@@ -480,7 +493,7 @@ const sanitizeFilename = (filename: string): string => {
     .toLowerCase();
 };
 
-// Configure storage
+// Configure storage for Render persistent disk
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     try {
@@ -491,10 +504,15 @@ const storage = multer.diskStorage({
         throw new Error('Missing account ID or profile ID');
       }
 
-      // Create a more organized directory structure
+      // Use environment-aware storage path
+      const basePath = getStorageBasePath();
       const uploadPath = path.join(
-        __dirname, 
-        `../../uploads/accounts/${accountId}/profiles/${profileId}/photos`
+        basePath,
+        'accounts',
+        accountId.toString(),
+        'profiles', 
+        profileId.toString(),
+        'photos'
       );
       
       ensureDirectoryExists(uploadPath);
@@ -676,18 +694,16 @@ export const createProfilePhoto = async (req: AuthenticatedRequest, res: Respons
 
     const profileService = new ProfileService();
     
-    // Create relative URL for the uploaded file
-    const relativePath = path.relative(
-      path.join(__dirname, '../../uploads'),
-      req.file.path
-    ).replace(/\\/g, '/'); // Convert Windows paths to forward slashes
-
+    // Create URL for the uploaded file using environment-aware path generation
+    const basePath = getStorageBasePath();
+    const relativePath = path.relative(basePath, req.file.path);
+    
     const photoData: IProfilePhoto = {
       profile_id: parseInt(req.body.profile_id),
       photo_type: parseInt(req.body.photo_type) || 456, // Default to additional photos
       description: req.body.description || '',
       caption: req.body.caption || path.parse(req.file.originalname).name,
-      url: `/uploads/${relativePath}`,
+      url: `/photos/${relativePath.replace(/\\/g, '/')}`, // Always use /photos for client access
       user_created: req.user?.email || 'system',
       ip_address: req.ip || '',
       browser_profile: req.headers['user-agent'] || ''
