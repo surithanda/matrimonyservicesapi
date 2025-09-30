@@ -45,7 +45,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve uploads directory statically
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static('/photos'));
 
 // Request logging middleware
 app.use((req, res, next) => {
