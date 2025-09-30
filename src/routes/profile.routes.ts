@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { createPersonalProfile, updatePersonalProfile, deletePersonalProfile, createProfileAddress, updateProfileAddress, deleteProfileAddress, createProfileEducation, updateProfileEducation, deleteProfileEducation, createProfileEmployment, updateProfileEmployment, deleteProfileEmployment, createProfileProperty, updateProfileProperty, deleteProfileProperty, createFamilyReference, updateFamilyReference, deleteFamilyReference, createProfileLifestyle, updateProfileLifestyle, deleteProfileLifestyle, uploadProfilePhoto, createProfilePhoto, getPersonalProfile, getProfileAddress, getProfileEducation, getProfileEmployment, getProfileProperty, getFamilyReference, getProfileLifestyle, getProfileHobbies, addProfileHobby, removeProfileHobby, addProfileFamily, updateProfileFamily, deleteProfileFamily, searchProfiles, getUserPreferences, saveUserPreferences, createFavoriteProfile, getFavorites, deleteFavorite, trackProfileView, getProfilesByAccountId, getProfilePhotos, getCompleteProfile, getAllProfiles } from '../controllers/profile.controller';
+import { createPersonalProfile, updatePersonalProfile, deletePersonalProfile, createProfileAddress, updateProfileAddress, deleteProfileAddress, createProfileEducation, updateProfileEducation, deleteProfileEducation, createProfileEmployment, updateProfileEmployment, deleteProfileEmployment, createProfileProperty, updateProfileProperty, deleteProfileProperty, createFamilyReference, updateFamilyReference, deleteFamilyReference, createProfileLifestyle, updateProfileLifestyle, deleteProfileLifestyle, uploadProfilePhoto, createProfilePhoto, getPersonalProfile, getProfileAddress, getProfileEducation, getProfileEmployment, getProfileProperty, getFamilyReference, getProfileLifestyle, getProfileHobbies, addProfileHobby, removeProfileHobby, addProfileFamily, updateProfileFamily, deleteProfileFamily, searchProfiles, getUserPreferences, saveUserPreferences, createFavoriteProfile, getFavorites, deleteFavorite, trackProfileView, getProfilesByAccountId, getProfilePhotos, getCompleteProfile, getAllProfiles, streamProfilePhoto } from '../controllers/profile.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
 
 const router = Router();
-
 router.post(
   '/personalDetails',
   validateApiKey,

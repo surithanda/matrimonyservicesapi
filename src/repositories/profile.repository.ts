@@ -581,6 +581,8 @@ export class ProfileRepository {
           params
         );
 
+        console.log("result",result)
+
         const photoId = (result as any[])[0][0].photo_id;
         return photoId;
       } catch (error) {
