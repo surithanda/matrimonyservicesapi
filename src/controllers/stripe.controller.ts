@@ -15,9 +15,6 @@ export const createCheckoutSession = async (
       });
     }
 
-    console.log("req.user", req.user);
-    console.log("req.body", req.body);
-
     let data: IStripeBody = {
       ...req.body,
       email: req.user?.email || null,
@@ -49,7 +46,6 @@ export const createCheckoutSession = async (
 export const handleWebhookEvent = async (req: Request, res: Response) => {
   try {
     let data = req.body;
-    
     let stripeService = new StripeService();
     let result = await stripeService.handleWebhookEvent(data);
     return res.status(200).json(result);
