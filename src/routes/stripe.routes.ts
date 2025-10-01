@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import { Router } from "express";
 import { validateApiKey } from "../middlewares/apiKey.middleware";
 import { authenticateJWT } from "../middlewares/auth.middleware";
 import {
@@ -13,5 +13,5 @@ router.post(
   authenticateJWT,
   createCheckoutSession
 );
-router.post("/webhook",express.raw({type: 'application/json'}), handleWebhookEvent);
+router.post("/webhook", handleWebhookEvent);
 export default router;
