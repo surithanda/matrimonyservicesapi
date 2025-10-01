@@ -152,7 +152,8 @@ export interface IProfileLifestyle {
   created_user: string;
   is_active: boolean;
   profile_id: number;
-  addition_info:string;
+  additional_info?: string;
+  modified_user?: string;
 }
 
 export interface IProfilePhoto {

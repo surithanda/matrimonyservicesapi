@@ -35,7 +35,7 @@ export class AccountRepository {
     
     const result = await connection.execute(
       // `CALL usp_account_login_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      `CALL eb_account_login_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `CALL eb_account_login_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         accountData.email, // email
         // accountData.email, // user_name (same as email)
@@ -59,7 +59,8 @@ export class AccountRepository {
         accountData.country,
         accountData.photo || null,
         accountData.secret_question || null,
-        accountData.secret_answer || null
+        accountData.secret_answer || null,
+        accountData.client_id
       ]
     );
     const data = result[0];
