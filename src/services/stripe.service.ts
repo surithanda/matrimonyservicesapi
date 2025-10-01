@@ -26,7 +26,7 @@ export class StripeService {
     };
   }
 
-  async handleWebhookEvent(data: Stripe.Event) {
+  async handleWebhookEvent(data: any) {
     try {
       let res = await this.stripeRepository.handleWebhookEvent(data);
       if (res.status === "success") {

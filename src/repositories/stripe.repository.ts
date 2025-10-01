@@ -4,8 +4,9 @@ import {
   IStripeBody,
 } from "../interfaces/stripe.interface";
 import Stripe from "stripe";
-let stripeKey = process.env.STRIPE_SECRET_KEY as string;
 import pool from "../config/database";
+let stripeKey = process.env.STRIPE_SECRET_KEY as string;
+let webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 
 export class StripeRepository {
   private stripe;
@@ -16,8 +17,10 @@ export class StripeRepository {
     try {
       let data = paymentData;
       let referenceId = crypto.randomBytes(32).toString("hex");
+
       //TODO: Need to create a Payment session in the database and then we need to send the client_reference_id
       //  payment status needs to pending - initially
+
       const session = await this.stripe.checkout.sessions.create({
         client_reference_id: referenceId,
         line_items: [
@@ -38,28 +41,13 @@ export class StripeRepository {
         cancel_url: `${data.front_end_failed_uri}`,
       });
 
-      // IN p_account_id INT,
-      // IN p_client_reference_id VARCHAR(100),
-      // IN p_session_id VARCHAR(100),
-      // IN p_email VARCHAR(100),
-      // IN p_name VARCHAR(100),
-      // IN p_address VARCHAR(256),
-      // IN p_country VARCHAR(100),
-      // IN p_state VARCHAR(100),
-      // IN p_city VARCHAR(100),
-      // IN p_zip_code VARCHAR(100),
-      // IN p_amount DECIMAL(10,2),
-      // IN p_currency VARCHAR(10),
-      // IN p_payment_status VARCHAR(50),
-      // IN p_payment_mode VARCHAR(50),
-      // IN p_created_user VARCHAR(45)
       if (session && session.id) {
         const query = `
           CALL eb_payment_create(
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
           )
         `;
-        console.log("payment data",paymentData)
+        console.log("payment data", paymentData);
         const params = [
           paymentData.account_id,
           referenceId,
@@ -97,10 +85,33 @@ export class StripeRepository {
     }
   }
 
-  async handleWebhookEvent(event: any) {
+  async handleWebhookEvent(request: any) {
+    let event: any;
+    let signature = request.headers["stripe-signature"];
+    let payload = request.body;
+
+    if (!signature) {
+      throw new Error("Signature is required");
+    }
+
+    if (!payload) {
+      throw new Error("Payload is required");
+    }
+
+    if (!webhookSecret) {
+      throw new Error("Webhook Secret is required");
+    }
+
+    event = this.stripe.webhooks.constructEvent(
+      payload,
+      signature,
+      webhookSecret
+    );
+
     if (!event || !event.type) {
       throw new Error("Event or Event Type is required");
     }
+
     const client_reference_id = event.data.object.client_reference_id;
     try {
       let response: any = null;
@@ -126,6 +137,45 @@ export class StripeRepository {
         }
 
         case "checkout.session.expired": {
+          console.log("Payment Failed/Expired:", {
+            client_reference_id,
+            status: "Failed",
+          });
+
+          const [res] = await pool.execute(
+            `CALL eb_payment_update_status(?, ?,?)`,
+            [client_reference_id, "failed", "webhook"]
+          );
+
+          console.log("database result", res);
+
+          const extractedResponse = (res as any[])[0][0];
+          response = {
+            status: extractedResponse?.status || "failed",
+          };
+
+          break;
+        }
+
+        case "checkout.session.async_payment_succeeded": {
+          console.log("Payment Success:", {
+            client_reference_id,
+            status: "Success",
+          });
+
+          const [res] = await pool.execute(
+            `CALL eb_payment_update_status(?, ?,?)`,
+            [client_reference_id, "paid", "webhook"]
+          );
+
+          console.log("database result", res);
+          const extractedResponse = (res as any[])[0][0];
+          response = {
+            status: extractedResponse?.status || "success",
+          };
+          break;
+        }
+        case "checkout.session.async_payment_failed": {
           console.log("Payment Failed/Expired:", {
             client_reference_id,
             status: "Failed",
