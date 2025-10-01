@@ -4,9 +4,8 @@ import {
   IStripeBody,
 } from "../interfaces/stripe.interface";
 import Stripe from "stripe";
-import pool from "../config/database";
 let stripeKey = process.env.STRIPE_SECRET_KEY as string;
-let webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
+import pool from "../config/database";
 
 export class StripeRepository {
   private stripe;
@@ -47,7 +46,7 @@ export class StripeRepository {
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
           )
         `;
-        console.log("payment data", paymentData);
+        console.log("payment data",paymentData)
         const params = [
           paymentData.account_id,
           referenceId,
@@ -85,33 +84,10 @@ export class StripeRepository {
     }
   }
 
-  async handleWebhookEvent(request: any) {
-    let event: any;
-    let signature = request.headers["stripe-signature"];
-    let payload = request.body;
-
-    if (!signature) {
-      throw new Error("Signature is required");
-    }
-
-    if (!payload) {
-      throw new Error("Payload is required");
-    }
-
-    if (!webhookSecret) {
-      throw new Error("Webhook Secret is required");
-    }
-
-    event = this.stripe.webhooks.constructEvent(
-      payload,
-      signature,
-      webhookSecret
-    );
-
+  async handleWebhookEvent(event: any) {
     if (!event || !event.type) {
       throw new Error("Event or Event Type is required");
     }
-
     const client_reference_id = event.data.object.client_reference_id;
     try {
       let response: any = null;
@@ -154,6 +130,7 @@ export class StripeRepository {
             status: extractedResponse?.status || "failed",
           };
 
+          
           break;
         }
 
@@ -194,6 +171,7 @@ export class StripeRepository {
           };
           break;
         }
+
 
         default:
           console.log("Unhandled webhook event type:", event.type);
