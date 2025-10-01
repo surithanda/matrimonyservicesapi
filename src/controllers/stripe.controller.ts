@@ -9,21 +9,24 @@ export const createCheckoutSession = async (
 ) => {
   try {
     if (!req.body.amount || !req.body.currency) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Please provide amount and currency",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Please provide amount and currency",
+      });
     }
+
     let data: IStripeBody = {
       ...req.body,
       email: req.user?.email || null,
+      account_id: req.user?.account_id,
+      created_user: req.user?.first_name + " " + req.user?.last_name,
     };
 
     let stripeService = new StripeService();
 
     let sessiondata = await stripeService.createSession(data);
+
+    console.log("sessiondata", sessiondata);
     if (!sessiondata) {
       return res.status(400).json({
         success: false,
@@ -42,25 +45,10 @@ export const createCheckoutSession = async (
 
 export const handleWebhookEvent = async (req: Request, res: Response) => {
   try {
-    // console.log("webhook body", req.body);
     let data = req.body;
-    if (data.type === "checkout.session.completed") {
-      let client_reference_id = data.object.client_reference_id;
-      console.log("Payment Success", {
-        client_reference_id,
-        status: "Success",
-      });
-      // TODO: Need to update the Payment Session status to Success
-    }
-
-    if (data.type === "checkout.session.expired") {
-      let client_reference_id = data.object.client_reference_id;
-      console.log("Payment Success", {
-        client_reference_id,
-        status: "Failed",
-      });
-      // TODO: Need to update the Payment Session status to Expired or Failed
-    }
+    let stripeService = new StripeService();
+    let result = await stripeService.handleWebhookEvent(data);
+    return res.status(200).json(result);
   } catch (error) {
     console.log("Webhook error", error);
     res.status(500).json({

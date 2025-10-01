@@ -1300,10 +1300,40 @@ export class ProfileService {
       const repository = new ProfileRepository();
       const response = await repository.getAllProfiles(profileData);
 
+      let updatedResponse = await Promise.all(
+        (response || []).map(async (p: any) => {
+          const image = await getFileById(p?.url);
+          return {
+            ...p,
+            url: image?.imgUrl || null,
+            caption: p?.caption || p?.photo_caption || null,
+            photo_type: p?.photo_type ?? p?.type ?? null,
+          };
+        })
+      );
       // Return the response directly for now - will validate after repository method is added
       return {
         success: true,
         message: "All profiles retrieved successfully",
+        data: updatedResponse,
+      };
+    } catch (error: any) {
+      console.error("Error in getAllProfiles service:", error);
+      return {
+        success: false,
+        message: error.message || "Failed to get all profiles",
+        error: error,
+      };
+    }
+  }
+
+  async getProfileCompletion(profileData: any): Promise<any> {
+    try {
+      const repository = new ProfileRepository();
+      const response = await repository.getProfileCompletionCount(profileData);
+      return {
+        success: true,
+        message: "Profile completion fetched successfully",
         data: response,
       };
     } catch (error: any) {
