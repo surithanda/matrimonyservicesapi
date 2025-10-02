@@ -45,7 +45,6 @@ export const createCheckoutSession = async (
 
 export const handleWebhookEvent = async (req: Request, res: Response) => {
   try {
-    console.log("hitting webhook", req.body);
     let data = req.body;
     let stripeService = new StripeService();
     let result = await stripeService.handleWebhookEvent(req);
