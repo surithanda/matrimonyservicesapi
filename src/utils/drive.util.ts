@@ -6,9 +6,39 @@ const scope = process.env.G_DRIVE_SCOPE as string;
 const serviceAc = process.env.G_DRIVE_SERVICE_AC as string;
 const drivefolderId = process.env.G_DRIVE_FOLDER_ID as string;
 const gdriveUri = process.env.G_DRIVE_IMAGE_URI as string;
-const credentials = JSON.parse(serviceAc);
 
-let auth = new GoogleAuth({ scopes: scope, credentials });
+// Validate required environment variables
+if (!serviceAc) {
+  console.warn("G_DRIVE_SERVICE_AC environment variable is not set. Google Drive functionality will be disabled.");
+}
+
+if (!scope) {
+  console.warn("G_DRIVE_SCOPE environment variable is not set. Google Drive functionality will be disabled.");
+}
+
+if (!drivefolderId) {
+  console.warn("G_DRIVE_FOLDER_ID environment variable is not set. Google Drive functionality will be disabled.");
+}
+
+if (!gdriveUri) {
+  console.warn("G_DRIVE_IMAGE_URI environment variable is not set. Google Drive functionality will be disabled.");
+}
+
+// Only parse credentials if serviceAc is defined and not empty
+let credentials: any = null;
+let auth: GoogleAuth | null = null;
+
+try {
+  if (serviceAc && serviceAc.trim() !== '') {
+    credentials = JSON.parse(serviceAc);
+    auth = new GoogleAuth({ scopes: scope, credentials });
+  } else {
+    console.warn("Google Drive service account credentials not provided. Google Drive functionality will be disabled.");
+  }
+} catch (error) {
+  console.error("Failed to parse Google Drive service account credentials:", error);
+  console.warn("Google Drive functionality will be disabled.");
+}
 
 const sanitizeFilename = (filename: string): string => {
   return filename
@@ -128,7 +158,11 @@ export const createFile = async (
   profileId: string
 ) => {
   try {
-    const service = google.drive({ version: "v3", auth: auth });
+    if (!auth) {
+      throw new Error("Google Drive is not configured. Please check your environment variables.");
+    }
+
+    const service = google.drive({ version: "v3", auth });
     const photosFolderId = await createFolderStructure(
       service,
       accountId,
@@ -163,7 +197,11 @@ export const createFile = async (
 
 export const getFileById = async (filePath: string) => {
   try {
-    const service = google.drive({ version: "v3", auth: auth });
+    if (!auth) {
+      throw new Error("Google Drive is not configured. Please check your environment variables.");
+    }
+
+    const service = google.drive({ version: "v3", auth });
     const parts = filePath.replace(/^\/+/, "").split("/");
     let fileName = parts[parts.length - 1];
     let cacheExists = folderCache.has(fileName);
@@ -227,7 +265,11 @@ export const getFileById = async (filePath: string) => {
 
 export const deleteFile = async (filePath: string) => {
   try {
-    const service = google.drive({ version: "v3", auth: auth });
+    if (!auth) {
+      throw new Error("Google Drive is not configured. Please check your environment variables.");
+    }
+
+    const service = google.drive({ version: "v3", auth });
 
     const parts = filePath.replace(/^\/+/, "").split("/");
     const fileName = parts[parts.length - 1];
@@ -290,14 +332,19 @@ export const deleteFile = async (filePath: string) => {
 
 export const testDriveConnection = async () => {
   try {
-    const service = google.drive({ version: "v3", auth: auth });
+    if (!auth) {
+      console.warn("Google Drive is not configured. Please check your environment variables.");
+      return false;
+    }
+
+    const service = google.drive({ version: "v3", auth });
     const response = await service.about.get({
       fields: "user,storageQuota",
     });
     console.log("Google Drive connection successful:", {
       user: response.data.user?.displayName,
-      totalSpace: response.data.storageQuota?.limit,
-      usedSpace: response.data.storageQuota?.usage,
+      totalSpace: (response.data as any).storageQuota?.limit,
+      usedSpace: (response.data as any).storageQuota?.usage,
     });
     return true;
   } catch (error) {
