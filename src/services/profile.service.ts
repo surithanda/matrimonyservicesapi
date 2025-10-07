@@ -840,10 +840,23 @@ export class ProfileService {
       const response = await this.profileRepository.searchProfiles(
         searchParams
       );
+
+      let updatedResponse = await Promise.all(
+        (response || []).map(async (p: any) => {
+          const image = await getFileById(p?.url);
+          return {
+            ...p,
+            url: image?.imgUrl || null,
+          };
+        })
+      );
+
+      console.log("updatedResponse", updatedResponse);
+
       return {
         success: true,
         message: "Profiles fetched successfully",
-        data: response,
+        data: updatedResponse,
       };
     } catch (error: any) {
       console.error("Error in searchProfiles service:", error);
