@@ -8,7 +8,7 @@ import {
 } from "../interfaces/profile.interface";
 import { IProfileHobbyInterest } from "../interfaces/hobby.interface";
 import multer from "multer";
-import path from "path";
+import path, { relative } from "path";
 import fs from "fs";
 import { createFile, testDriveConnection } from "../utils/drive.util";
 
@@ -792,8 +792,8 @@ export const createProfilePhoto = async (
     if (!result.success) {
       try {
         const { deleteFile } = await import("../utils/drive.util");
-        await deleteFile(driveFile.data.id!);
-      } catch (error) {
+        await deleteFile(relativePath);
+      } catch (error) { 
         console.error("Failed to clean up file from Google Drive after database error:", error);
       }
       
