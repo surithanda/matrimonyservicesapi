@@ -13,5 +13,4 @@ router.post(
   authenticateJWT,
   createCheckoutSession
 );
-router.post("/webhook", handleWebhookEvent);
 export default router;

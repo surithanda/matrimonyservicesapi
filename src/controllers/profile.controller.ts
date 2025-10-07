@@ -1036,7 +1036,6 @@ export const searchProfiles = async (
 ) => {
   try {
     const profileService = new ProfileService();
-
     // Extract search parameters from request body
     const searchParams = {
       profile_id: req.body.profile_id,

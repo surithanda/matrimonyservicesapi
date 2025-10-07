@@ -1,11 +1,11 @@
 import crypto from "crypto";
 import {
-  IPaymentCreateResult,
   IStripeBody,
 } from "../interfaces/stripe.interface";
 import Stripe from "stripe";
-let stripeKey = process.env.STRIPE_SECRET_KEY as string;
 import pool from "../config/database";
+let stripeKey = process.env.STRIPE_SECRET_KEY as string;
+let webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 
 export class StripeRepository {
   private stripe;
@@ -46,7 +46,7 @@ export class StripeRepository {
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
           )
         `;
-        console.log("payment data",paymentData)
+        console.log("payment data", paymentData);
         const params = [
           paymentData.account_id,
           referenceId,
@@ -67,8 +67,6 @@ export class StripeRepository {
 
         const [result]: any = await pool.execute(query, params);
 
-        console.log("result from the database", result);
-
         const extractedResponse = (result as any[])[0][0];
         if (extractedResponse && extractedResponse.status !== "success") {
           throw new Error(
@@ -84,10 +82,33 @@ export class StripeRepository {
     }
   }
 
-  async handleWebhookEvent(event: any) {
+  async handleWebhookEvent(request: any) {
+    let event: any;
+    let signature = request.headers["stripe-signature"];
+    let payload = request.body;
+
+    if (!signature) {
+      throw new Error("Signature is required");
+    }
+
+    if (!payload) {
+      throw new Error("Payload is required");
+    }
+
+    if (!webhookSecret) {
+      throw new Error("Webhook Secret is required");
+    }
+
+    event = this.stripe.webhooks.constructEvent(
+      payload,
+      signature,
+      webhookSecret
+    );
+
     if (!event || !event.type) {
       throw new Error("Event or Event Type is required");
     }
+
     const client_reference_id = event.data.object.client_reference_id;
     try {
       let response: any = null;
@@ -130,7 +151,6 @@ export class StripeRepository {
             status: extractedResponse?.status || "failed",
           };
 
-          
           break;
         }
 
@@ -171,7 +191,6 @@ export class StripeRepository {
           };
           break;
         }
-
 
         default:
           console.log("Unhandled webhook event type:", event.type);

@@ -225,15 +225,65 @@ export const getFileById = async (filePath: string) => {
   }
 };
 
-export const deleteFile = async (fileId: string) => {
+export const deleteFile = async (filePath: string) => {
   try {
     const service = google.drive({ version: "v3", auth: auth });
-    await service.files.delete({
-      fileId,
-      supportsAllDrives: true,
-    });
-    return true;
+
+    const parts = filePath.replace(/^\/+/, "").split("/");
+    const fileName = parts[parts.length - 1];
+
+    // Try cache first
+    if (folderCache.has(fileName)) {
+      const cachedFileId = folderCache.get(fileName)!;
+      await service.files.delete({
+        fileId: cachedFileId,
+        supportsAllDrives: true,
+      });
+      folderCache.delete(fileName);
+      return true;
+    }
+
+    let parentId = drivefolderId;
+
+    for (let i = 0; i < parts.length; i++) {
+      const name = parts[i];
+      const isFile = i === parts.length - 1;
+      const baseQuery = `'${parentId}' in parents and name='${name}' and trashed = false`;
+
+      const res = await service.files.list({
+        q: isFile
+          ? `${baseQuery} and mimeType != 'application/vnd.google-apps.folder'`
+          : `${baseQuery} and mimeType = 'application/vnd.google-apps.folder'`,
+        fields: "files(id, name, mimeType)",
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+      });
+
+      const items = res.data.files || [];
+      if (items.length === 0) {
+        throw new Error(`"${name}" not found under parent ID ${parentId}`);
+      }
+
+      const found = items[0];
+      if (!found.id) {
+        throw new Error(`Item "${name}" has no ID`);
+      }
+
+      if (isFile) {
+        await service.files.delete({
+          fileId: found.id,
+          supportsAllDrives: true,
+        });
+        folderCache.delete(fileName);
+        return true;
+      }
+
+      parentId = found.id;
+    }
+
+    throw new Error("Unexpected path structure while deleting file");
   } catch (error) {
+    console.error("Error deleting file from Google Drive:", error);
     throw error;
   }
 };
