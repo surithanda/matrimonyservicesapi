@@ -1,4 +1,4 @@
-import express, { Router } from "express";
+import { Router } from "express";
 import { validateApiKey } from "../middlewares/apiKey.middleware";
 import { authenticateJWT } from "../middlewares/auth.middleware";
 import {

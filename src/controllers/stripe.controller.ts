@@ -47,7 +47,7 @@ export const handleWebhookEvent = async (req: Request, res: Response) => {
   try {
     let data = req.body;
     let stripeService = new StripeService();
-    let result = await stripeService.handleWebhookEvent(req);
+    let result = await stripeService.handleWebhookEvent(data);
     return res.status(200).json(result);
   } catch (error) {
     console.log("Webhook error", error);
