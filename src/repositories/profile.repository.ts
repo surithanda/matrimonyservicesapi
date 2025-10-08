@@ -14,10 +14,11 @@ import pool from "../config/database";
 export class ProfileRepository {
   async getProfilesByAccountId(accountId: number): Promise<any[]> {
     try {
-      const [rows] = await pool.query(
-        "SELECT * FROM matrimony_services.profile_personal WHERE account_id = ?",
+      const [results] = await pool.execute(
+        'CALL account_profile_get(?)',
         [accountId]
       );
+      const rows = (results as any[])[0]; // Stored procedure results are nested in an array
       return rows as any[];
     } catch (error) {
       console.error("Error fetching profiles by account ID:", error);
@@ -406,20 +407,22 @@ export class ProfileRepository {
     }
   }
 
-  async createProfileProperty(propertyData: IProfileProperty): Promise<any> {
-    try {
-      const params = [
-        propertyData.profile_id,
-        propertyData.property_type,
-        propertyData.ownership_type,
-        propertyData.property_address,
-        propertyData.property_value,
-        propertyData.property_description,
-        propertyData.isoktodisclose || false, // Default to false if not provided
-        propertyData.created_by,
-        // propertyData.ip_address,
-        // propertyData.browser_profile
-      ];
+    async createProfileProperty(propertyData: any): Promise<any> {
+      try {
+        const params = [
+          propertyData.profile_id ? parseInt(String(propertyData.profile_id)) : null,
+          propertyData.property_type ? parseInt(String(propertyData.property_type)) : null,
+          propertyData.ownership_type ? parseInt(String(propertyData.ownership_type)) : null,
+          propertyData.property_address || null,
+          propertyData.property_value ? parseFloat(String(propertyData.property_value)) : null,
+          propertyData.property_description || null,
+          propertyData.isoktodisclose !== undefined ? (propertyData.isoktodisclose ? 1 : 0) : 0, // Default to 0 if not provided
+          propertyData.created_by || null,
+          // propertyData.ip_address,
+          // propertyData.browser_profile
+        ];
+
+        console.log('createProfileProperty params:', params);
 
       const [result] = await pool.execute(
         "CALL eb_profile_property_create(?, ?, ?, ?, ?, ?, ?, ?)",
@@ -539,20 +542,20 @@ export class ProfileRepository {
     }
   }
 
-  async createProfileLifestyle(lifestyleData: IProfileLifestyle): Promise<any> {
-    try {
-      const params = [
-        lifestyleData.profile_id,
-        lifestyleData.eating_habit,
-        lifestyleData.diet_habit,
-        lifestyleData.cigarettes_per_day,
-        lifestyleData.drink_frequency,
-        lifestyleData.gambling_engage,
-        lifestyleData.physical_activity_level,
-        lifestyleData.relaxation_methods,
-        lifestyleData.addition_info || "",
-        lifestyleData.created_user,
-      ];
+    async createProfileLifestyle(lifestyleData: IProfileLifestyle): Promise<any> {
+      try {
+        const params = [
+          lifestyleData.profile_id,
+          lifestyleData.eating_habit,
+          lifestyleData.diet_habit,
+          lifestyleData.cigarettes_per_day,
+          lifestyleData.drink_frequency,
+          lifestyleData.gambling_engage,
+          lifestyleData.physical_activity_level,
+          lifestyleData.relaxation_methods,
+          lifestyleData.additional_info || '',
+          lifestyleData.created_user,
+        ];
 
       const [result] = await pool.execute(
         "CALL eb_profile_lifestyle_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -656,22 +659,22 @@ export class ProfileRepository {
     }
   }
 
-  async removeProfileHobby(hobbyData: IProfileHobbyInterest): Promise<any> {
-    try {
-      const params = [
-        hobbyData.profile_id,
-        hobbyData.hobby,
-        hobbyData.created_user,
-      ];
-      const [result] = await pool.execute(
-        "CALL eb_profile_hobby_interest_remove(?, ?, ?)",
-        params
-      );
-      return (result as any[])[0][0];
-    } catch (error) {
-      throw error;
+    async removeProfileHobby(hobbyData: any): Promise<any> {
+      try {
+        const params = [
+          hobbyData.id ? parseInt(String(hobbyData.id)) : null,
+          hobbyData.created_user || null
+        ];
+        
+        console.log('removeProfileHobby params:', params);
+        
+        const [result] = await pool.execute('CALL eb_profile_hobby_interest_delete(?, ?)', params);
+        return (result as any[])[0][0];
+      } catch (error) {
+        console.error('Error in removeProfileHobby:', error);
+        throw error;
+      }
     }
-  }
 
   async addProfileFamily(family: any): Promise<any> {
     try {
@@ -985,24 +988,28 @@ export class ProfileRepository {
     }
   }
 
-  // Property Update/Delete Methods
-  async updateProfileProperty(propertyData: any): Promise<any> {
-    try {
-      const params = [
-        propertyData.profile_property_id,
-        propertyData.property_type,
-        propertyData.ownership_type,
-        propertyData.property_address,
-        propertyData.property_value,
-        propertyData.property_description,
-        propertyData.isoktodisclose,
-        propertyData.modified_user,
-      ];
+    // Property Update/Delete Methods
+    async updateProfileProperty(propertyData: any): Promise<any> {
+      try {
+        const params = [
+          propertyData.profile_id ? parseInt(String(propertyData.profile_id)) : null,
+          propertyData.profile_property_id ? parseInt(String(propertyData.profile_property_id)) : 
+            (propertyData.property_id ? parseInt(String(propertyData.property_id)) : null),
+          propertyData.property_type ? parseInt(String(propertyData.property_type)) : null,
+          propertyData.ownership_type ? parseInt(String(propertyData.ownership_type)) : null,
+          propertyData.property_address || null,
+          propertyData.property_value ? parseFloat(String(propertyData.property_value)) : null,
+          propertyData.property_description || null,
+          propertyData.isoktodisclose !== undefined ? (propertyData.isoktodisclose ? 1 : 0) : null,
+          propertyData.modified_user || null
+        ];
 
-      const [result] = await pool.execute(
-        "CALL eb_profile_property_update(?, ?, ?, ?, ?, ?, ?, ?)",
-        params
-      );
+        console.log('updateProfileProperty params:', params);
+
+        const [result] = await pool.execute(
+          'CALL eb_profile_property_update(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
 
       return (result as any)[0][0];
     } catch (error) {
@@ -1031,24 +1038,29 @@ export class ProfileRepository {
     }
   }
 
-  // Family Reference Update/Delete Methods
-  async updateFamilyReference(referenceData: any): Promise<any> {
-    try {
-      const params = [
-        referenceData.reference_id,
-        referenceData.name,
-        referenceData.contact_number || null,
-        referenceData.email || null,
-        referenceData.address || null,
-        referenceData.relationship || null,
-        referenceData.comments || null,
-        referenceData.modified_user,
-      ];
+    // Family Reference Update/Delete Methods
+    async updateFamilyReference(referenceData: any): Promise<any> {
+      try {
+        const params = [
+          referenceData.profile_id || null,
+          referenceData.profile_family_reference_id || referenceData.reference_id || null,
+          referenceData.firstname || referenceData.first_name || null,
+          referenceData.lastname || referenceData.last_name || null,
+          referenceData.relationshiptoyou || referenceData.reference_type || null,
+          referenceData.contactnumber || referenceData.primary_phone || null,
+          referenceData.email || null,
+          referenceData.address_line || referenceData.address_line1 || null,
+          referenceData.city || null,
+          referenceData.state_id || referenceData.state || null,
+          referenceData.country_id || referenceData.country || null,
+          referenceData.zip || null,
+          referenceData.modified_user || null
+        ];
 
-      const [result] = await pool.execute(
-        "CALL eb_profile_family_reference_update(?, ?, ?, ?, ?, ?, ?, ?)",
-        params
-      );
+        const [result] = await pool.execute(
+          'CALL eb_profile_family_reference_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
 
       return (result as any)[0][0];
     } catch (error) {
@@ -1177,25 +1189,26 @@ export class ProfileRepository {
     }
   }
 
-  // Lifestyle Update/Delete Methods
-  async updateProfileLifestyle(lifestyleData: any): Promise<any> {
-    try {
-      const params = [
-        lifestyleData.lifestyle_id,
-        lifestyleData.dietary_habits || null,
-        lifestyleData.drinking_habits || null,
-        lifestyleData.smoking_habits || null,
-        lifestyleData.exercise_habits || null,
-        lifestyleData.hobbies || null,
-        lifestyleData.interests || null,
-        lifestyleData.comments || null,
-        lifestyleData.modified_user,
-      ];
+    // Lifestyle Update/Delete Methods
+    async updateProfileLifestyle(lifestyleData: any): Promise<any> {
+      try {
+        const params = [
+          parseInt(lifestyleData.profile_lifestyle_id) || null,
+          String(lifestyleData.eating_habit || ''),
+          String(lifestyleData.diet_habit || ''),
+          String(lifestyleData.cigarettes_per_day || ''),
+          String(lifestyleData.drink_frequency || ''),
+          String(lifestyleData.gambling_engage || ''),
+          String(lifestyleData.physical_activity_level || ''),
+          String(lifestyleData.relaxation_methods || ''),
+          String(lifestyleData.additional_info || ''),
+          String(lifestyleData.modified_user || 'system')
+        ];
 
-      const [result] = await pool.execute(
-        "CALL eb_profile_lifestyle_update(?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        params
-      );
+        const [result] = await pool.execute(
+          'CALL eb_profile_lifestyle_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          params
+        );
 
       return (result as any)[0][0];
     } catch (error) {

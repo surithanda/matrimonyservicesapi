@@ -24,4 +24,5 @@ export interface IAccount {
   secret_answer?: string;
   // driving_license?: string;
   is_active?: boolean;
+  client_id?: number;
 } 

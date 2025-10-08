@@ -3,10 +3,26 @@ import { AccountService } from '../services/account.service';
 import { AuthenticatedRequest } from '../interfaces/auth.interface';
 import fs from 'fs';
 import path from 'path';
+import pool from '../config/database';
 
 export const registerAccount = async (req: Request, res: Response) => {
   try {
-    // console.log(req.body);
+    // extract client id from api key and domain
+    const apiKey = req.headers['x-api-key'];
+    const domain = req.headers.origin || req.headers.referer;
+    console.log("Request received:", { apiKey, domain });
+
+    if(req?.body) {
+      const query = `CALL api_clients_get(?, ?)`;
+      const [results] = await pool.execute(query, [apiKey, domain]) as any;
+      const match = results[0][0];
+
+      console.log("API Client lookup result:", match);
+      // client/partner id is either match.id or match.partner_id based on your db schema
+      req.body.client_id = (match && match?.partner_id) ? match.partner_id : null;
+    }
+    
+    console.log("Account registration data:", req.body);
     const accountService = new AccountService();
     const result = await accountService.registerAccount(req.body);
 
