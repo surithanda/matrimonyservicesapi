@@ -19,7 +19,7 @@ export const registerAccount = async (req: Request, res: Response) => {
 
       console.log("API Client lookup result:", match);
       // client/partner id is either match.id or match.partner_id based on your db schema
-      req.body.client_id = match ? match.partner_id : null;
+      req.body.client_id = (match && match?.partner_id) ? match.partner_id : null;
     }
     
     console.log("Account registration data:", req.body);
