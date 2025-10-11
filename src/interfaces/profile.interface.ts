@@ -28,6 +28,7 @@ export interface IProfilePersonal {
   profession?: number;
   disability?: number;
   type?: string;
+  short_summary?: string;
   created_user: string;
 }
 
