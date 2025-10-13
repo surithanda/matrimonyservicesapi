@@ -1,6 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
-
+import fs from 'fs';
+import path from 'path';
 dotenv.config();
 
 const dbConfig = {
@@ -18,6 +19,10 @@ const dbConfig = {
   namedPlaceholders: true,
   dateStrings: true,
   connectTimeout: 10000,
+  ssl: {
+    rejectUnauthorized: true,
+    ca: process.env.DB_SSL_CA,
+  },
 };
 
 const pool = mysql.createPool(dbConfig);
