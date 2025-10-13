@@ -5,7 +5,6 @@ import pool from '../config/database';
 let allowedOrigins = [
   'http://localhost:3000', 
   /^https:\/\/matrimonyservices-[a-zA-Z0-9]+-superreaders-projects\.vercel\.app$/,
-  "https://matrimonyservices.vercel.app"
 ];
 
 // Function to load active domains from database
