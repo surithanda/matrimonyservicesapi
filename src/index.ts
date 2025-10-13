@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import accountRoutes from "./routes/account.routes";
 import authRoutes from "./routes/auth.routes";
@@ -64,7 +64,7 @@ app.use('/photos', express.static('/photos', {
     // Set proper headers for images
     if (path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
       res.setHeader('Content-Type', 'image/' + path.split('.').pop()?.toLowerCase());
-      res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 days
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
     }
   }
 }));
@@ -89,9 +89,45 @@ app.use((req, res, next) => {
 });
 
 // Health check endpoint
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
   logger.info("Health check endpoint called");
   res.status(200).json({ status: "OK" });
+});
+
+// Additional health probe endpoints
+app.get("/healthz", (req: Request, res: Response) => {
+  logger.info("/healthz called");
+  res.status(200).json({ status: "ok" });
+});
+app.head("/healthz", (req: Request, res: Response) => {
+  res.status(200).end();
+});
+
+app.get("/livez", (req: Request, res: Response) => {
+  res.status(200).json({ status: "ok" });
+});
+app.head("/livez", (req: Request, res: Response) => {
+  res.status(200).end();
+});
+
+app.get("/readyz", (req: Request, res: Response) => {
+  try {
+    const storageExists = fs.existsSync(baseStoragePath);
+    const ready = storageExists;
+    const details = {
+      status: ready ? "ok" : "degraded",
+      storageExists,
+      storagePath: baseStoragePath,
+      timestamp: new Date().toISOString(),
+    };
+    res.status(ready ? 200 : 503).json(details);
+  } catch (e) {
+    res.status(503).json({ status: "error", error: (e as Error).message });
+  }
+});
+app.head("/readyz", (req: Request, res: Response) => {
+  const storageExists = fs.existsSync(baseStoragePath);
+  res.status(storageExists ? 200 : 503).end();
 });
 
 // Routes
