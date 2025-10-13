@@ -3,6 +3,7 @@ import { AccountRepository } from '../repositories/account.repository';
 import { generateAccountCode } from '../utils/helpers';
 import bcrypt from 'bcrypt';
 import pool from '../config/database';
+import { validate } from 'uuid';
 
 export class AccountService {
   private accountRepository: AccountRepository;
@@ -10,6 +11,36 @@ export class AccountService {
   constructor() {
     this.accountRepository = new AccountRepository();
   }
+
+  validateResponse = (response: any, successMessage: string) => {
+    console.log("Response from repository:", response);
+    if (response) {
+      if (
+        response?.error_code !== null &&
+        response?.error_type !== null &&
+        response?.status !== "success"
+      ) {
+        return {
+          success: false,
+          message: response?.error_message,
+          ...response,
+        };
+      } else {
+        return {
+          success: true,
+          message: successMessage,
+          data: response,
+        };
+      }
+    } else {
+      //assuming the call went through successfully but there is no matching record
+      return {
+        success: true,
+        message: successMessage,
+        data: null,
+      };
+    }
+  };
 
   async registerAccount(accountData: IAccount): Promise<{ success: boolean; message: string; data?: any }> {
     const connection = await pool.getConnection();
@@ -26,29 +57,30 @@ export class AccountService {
       console.log("result------->",result[0]);
       console.log("result status------->",result[0][0].status);
       let response = null;
-      if(result[0][0].status=="success"){
-        response = {
-          success: true,
-          message: 'Account registered successfully',
-          data: result[0]
-        }
-      }
-      else{
-        if  (result[0][0].error_type == "SQL Exception"){
-          response = {
-            success: false,
-            message: result[0][0].message,
-            data: "Something went wrong. Contact Admin."
-          }
-        }
-        else{
-          response = {
-            success: false,
-            message: result[0][0].message,
-            data: result[0]
-          }
-        }
-      }
+      response = this.validateResponse(result[0][0], 'Account registered successfully');
+      // if(result[0][0].status=="success"){
+      //   response = {
+      //     success: true,
+      //     message: 'Account registered successfully',
+      //     data: result[0]
+      //   }
+      // }
+      // else{
+      //   if  (result[0][0].error_type == "SQL Exception"){
+      //     response = {
+      //       success: false,
+      //       message: result[0][0].message,
+      //       data: "Something went wrong. Contact Admin."
+      //     }
+      //   }
+      //   else{
+      //     response = {
+      //       success: false,
+      //       message: result[0][0].message,
+      //       data: result[0]
+      //     }
+      //   }
+      // }
 
       return response;
     } catch (error: any) {
@@ -134,30 +166,30 @@ export class AccountService {
       //   success: true,
       //   message: 'Account updated successfully'
       // };
-      let response = null;
-      if(result[0].status=="success"){
-        response = {
-          success: true,
-          message: 'Account updated successfully',
-          data: result[0]
-        }
-      }
-      else{
-        if  (result[0].error_type == "SQL Exception"){
-          response = {
-            success: false,
-            message: result.message,
-            data: "Something went wrong. Contact Admin."
-          }
-        }
-        else{
-          response = {
-            success: false,
-            message: result.message,
-            data: result[0]
-          }
-        }
-      }
+      let response = this.validateResponse(result[0], 'Account updated successfully');
+      // if(result[0].status=="success"){
+      //   response = {
+      //     success: true,
+      //     message: 'Account updated successfully',
+      //     data: result[0]
+      //   }
+      // }
+      // else{
+      //   if  (result[0].error_type == "SQL Exception"){
+      //     response = {
+      //       success: false,
+      //       message: result.message,
+      //       data: "Something went wrong. Contact Admin."
+      //     }
+      //   }
+      //   else{
+      //     response = {
+      //       success: false,
+      //       message: result.message,
+      //       data: result[0]
+      //     }
+      //   }
+      // }
 
       return response;
     } catch (error) {

@@ -110,13 +110,14 @@ export class ProfileRepository {
         profileData.profession === undefined ? null : profileData.profession,
         profileData.disability === undefined ? null : profileData.disability,
         profileData.created_user,
+        profileData.short_summary === undefined ? null : profileData.short_summary
       ];
 
       // Log the parameters being passed to the stored procedure
       // console.log('Parameters:', params);
 
       const [result] = await pool.execute(
-        "CALL eb_profile_personal_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "CALL eb_profile_personal_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         params
       );
 
@@ -1278,10 +1279,11 @@ export class ProfileRepository {
         profileData.profession === undefined ? null : profileData.profession,
         profileData.disability === undefined ? null : profileData.disability,
         profileData.modified_user,
+        profileData.short_summary === undefined ? null : profileData.short_summary
       ];
 
       const [result] = await pool.execute(
-        "CALL eb_profile_personal_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "CALL eb_profile_personal_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         params
       );
 
