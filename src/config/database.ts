@@ -55,7 +55,7 @@ const dbConfig = {
   namedPlaceholders: true,
   dateStrings: true,
   connectTimeout: 10000,
-  ...(forceSSL && { ssl: {
+  ...(forceSSL && sslCa && { ssl: {
     // Enforce TLS; Azure MySQL requires secure transport when enabled
     rejectUnauthorized: true,
     ca: sslCa,
