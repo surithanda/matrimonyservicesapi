@@ -1,34 +1,44 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
-
+import fs from 'fs';
+import path from 'path';
 dotenv.config();
 
-// Function to get SSL configuration
-const getSSLConfig = () => {
-  const sslMode = process.env.DB_SSL_MODE;
-  
-  if (!sslMode) {
-    // Default: if no SSL mode specified but we have SSL errors, handle self-signed certs
-    return { rejectUnauthorized: false };
+// Resolve SSL CA: prefer inline env content, else path from env, else bundled PEM
+function resolveSslCa(): string | undefined {
+  const envCa = process.env.DB_SSL_CA;
+  if (envCa && envCa.includes('BEGIN CERTIFICATE')) {
+    return envCa;
   }
-  
-  switch (sslMode.toLowerCase()) {
-    case 'disabled':
-    case 'false':
-      return undefined; // No SSL
-    case 'require':
-      return process.env.DB_SSL_CA 
-        ? { ca: process.env.DB_SSL_CA }
-        : { rejectUnauthorized: false };
-    case 'allow-self-signed':
-    case 'self-signed':
-      return { rejectUnauthorized: false };
-    default:
-      return { rejectUnauthorized: false };
-  }
-};
 
-const sslConfig = getSSLConfig();
+  const candidates: string[] = [];
+  if (process.env.DB_SSL_CA_PATH) {
+    candidates.push(process.env.DB_SSL_CA_PATH);
+  }
+  // Try common locations in both src and dist
+  candidates.push(
+    path.resolve(__dirname, 'combined-ca-certificates.pem'),
+    path.resolve(process.cwd(), 'src', 'config', 'combined-ca-certificates.pem'),
+    path.resolve(process.cwd(), 'dist', 'config', 'combined-ca-certificates.pem')
+  );
+
+  for (const p of candidates) {
+    try {
+      if (p && fs.existsSync(p)) {
+        return fs.readFileSync(p, 'utf8');
+      }
+    } catch {
+      // ignore and continue
+    }
+  }
+
+  return undefined;
+}
+
+const sslCa = resolveSslCa();
+const forceSSL = process.env.DB_HOST?.includes('azure.com');
+
+console.log('Database SSL Config:', forceSSL ? 'Enabled' : 'Disabled');
 
 const dbConfig = {
   host: process.env.DB_HOST,
@@ -45,7 +55,12 @@ const dbConfig = {
   namedPlaceholders: true,
   dateStrings: true,
   connectTimeout: 10000,
-  ...(sslConfig && { ssl: sslConfig }),
+  ...(forceSSL && { ssl: {
+    // Enforce TLS; Azure MySQL requires secure transport when enabled
+    rejectUnauthorized: true,
+    ca: sslCa,
+    minVersion: 'TLSv1.2',
+  } }),
 };
 
 const pool = mysql.createPool(dbConfig);
