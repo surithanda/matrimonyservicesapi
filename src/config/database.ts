@@ -39,6 +39,9 @@ const sslCa = resolveSslCa();
 const forceSSL = process.env.DB_HOST?.includes('azure.com');
 
 console.log('Database SSL Config:', forceSSL ? 'Enabled' : 'Disabled');
+if (forceSSL && !sslCa) {
+  console.warn('Warning: SSL is required but no CA certificate found. Connection may fail.');
+}
 
 const dbConfig = {
   host: process.env.DB_HOST,
