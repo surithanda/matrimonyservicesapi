@@ -832,7 +832,7 @@ export class ProfileService {
     religion?: number;
     max_education?: number;
     occupation?: number;
-    country?: string;
+    country?: number;
     caste_id?: number;
     marital_status?: number;
   }): Promise<any> {
