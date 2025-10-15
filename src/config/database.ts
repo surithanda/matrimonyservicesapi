@@ -36,6 +36,12 @@ function resolveSslCa(): string | undefined {
 }
 
 const sslCa = resolveSslCa();
+const forceSSL = process.env.DB_HOST?.includes('azure.com');
+
+console.log('Database SSL Config:', forceSSL ? 'Enabled' : 'Disabled');
+if (forceSSL && !sslCa) {
+  console.warn('Warning: SSL is required but no CA certificate found. Connection may fail.');
+}
 
 const dbConfig = {
   host: process.env.DB_HOST,
@@ -52,12 +58,12 @@ const dbConfig = {
   namedPlaceholders: true,
   dateStrings: true,
   connectTimeout: 10000,
-  ssl: {
+  ...(forceSSL && sslCa && { ssl: {
     // Enforce TLS; Azure MySQL requires secure transport when enabled
     rejectUnauthorized: true,
     ca: sslCa,
     minVersion: 'TLSv1.2',
-  },
+  } }),
 };
 
 const pool = mysql.createPool(dbConfig);

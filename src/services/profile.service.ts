@@ -230,9 +230,9 @@ export class ProfileService {
     console.log("Response from repository:", response);
     if (response) {
       if (
-        response?.error_code !== null &&
+        (response?.error_code !== null &&
         response?.error_type !== null &&
-        response?.status !== "success"
+        response?.status !== "success") || response?.status === 'fail'
       ) {
         return {
           success: false,

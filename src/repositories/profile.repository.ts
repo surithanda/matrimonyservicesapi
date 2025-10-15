@@ -779,9 +779,10 @@ export class ProfileRepository {
     religion?: number;
     max_education?: number;
     occupation?: number;
-    country?: string;
+    country?: number;
     caste_id?: number;
     marital_status?: number;
+    gender?: number;
   }): Promise<any> {
     try {
       const params = [
@@ -794,10 +795,11 @@ export class ProfileRepository {
         searchParams.country || null,
         searchParams.caste_id || null,
         searchParams.marital_status || null,
+        searchParams.gender || null,
       ];
 
       const [result] = await pool.execute(
-        "CALL eb_profile_search_get(?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "CALL eb_profile_search_get(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         params
       );
 
