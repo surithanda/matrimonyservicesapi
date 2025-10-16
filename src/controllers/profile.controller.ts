@@ -1078,6 +1078,7 @@ export const searchProfiles = async (
       country: req.body.country,
       caste_id: req.body.caste_id,
       marital_status: req.body.marital_status,
+      gender:req.body.gender,
     };
 
     const result = await profileService.searchProfiles(searchParams);
