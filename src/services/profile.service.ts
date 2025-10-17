@@ -835,6 +835,7 @@ export class ProfileService {
     country?: number;
     caste_id?: number;
     marital_status?: number;
+    gender?:number;
   }): Promise<any> {
     try {
       const response = await this.profileRepository.searchProfiles(
