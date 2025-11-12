@@ -33,7 +33,7 @@ jobs:
       - name: List Uploaded Artifact Contents
         run: |
           echo "📦 Listing files in artifact:"
-          find ./Service-API -type f
+          find ./artifacts -type f
 
       - name: Build and Upload Summary
         run: |
@@ -41,7 +41,7 @@ jobs:
           echo "- Environment: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "- Artifact: node-app" >> $GITHUB_STEP_SUMMARY
           echo "- Files included:" >> $GITHUB_STEP_SUMMARY
-          find ./artifact -type f | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+          find ./artifacts -type f | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
       
         
       
