@@ -20,7 +20,12 @@ jobs:
         run : |
           npm ci
           npm run build
-          
+      - name: List Files to Upload
+        run: |
+          echo "📦 Files to be uploaded:"
+          find ./dist -type f
+          ls package.json package-lock.json
+    
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -30,18 +35,15 @@ jobs:
             package-lock.json            
             ./dist
 
-      - name: List Uploaded Artifact Contents
-        run: |
-          echo "📦 Listing files in artifact:"
-          find ./artifacts -type f
-
       - name: Build and Upload Summary
         run: |
           echo "### ✅ Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "- Environment: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Artifact: node-app" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifact: Service-API" >> $GITHUB_STEP_SUMMARY
           echo "- Files included:" >> $GITHUB_STEP_SUMMARY
-          find ./artifacts -type f | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+          find ./dist -type f | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+          echo "- package.json" >> $GITHUB_STEP_SUMMARY
+          echo "- package-lock.json" >> $GITHUB_STEP_SUMMARY
       
         
       
