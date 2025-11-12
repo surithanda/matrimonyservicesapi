@@ -33,7 +33,7 @@ jobs:
       - name: List Uploaded Artifact Contents
         run: |
           echo "📦 Listing files in artifact:"
-          find ./artifact -type f
+          find ./Service-API -type f
 
       - name: Build and Upload Summary
         run: |
