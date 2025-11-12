@@ -25,7 +25,24 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Service-API
-          path: ./dist
+          path: |
+            package.json
+            package-lock.json            
+            ./dist
+
+      - name: List Uploaded Artifact Contents
+        run: |
+          echo "📦 Listing files in artifact:"
+          find ./artifact -type f
+
+      - name: Build and Upload Summary
+        run: |
+          echo "### ✅ Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifact: node-app" >> $GITHUB_STEP_SUMMARY
+          echo "- Files included:" >> $GITHUB_STEP_SUMMARY
+          find ./artifact -type f | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY
+      
         
       
     
