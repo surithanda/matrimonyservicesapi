@@ -3,28 +3,28 @@ import pool from '../config/database';
 
 // Default allowed origins
 let allowedOrigins = [
-  'http://localhost:3000', 
+  'http://localhost:3000',
   /^https:\/\/matrimonyservices-[a-zA-Z0-9]+-superreaders-projects\.vercel\.app$/,
 ];
 
 // Function to load active domains from database
 async function loadAllowedOrigins(): Promise<void> {
   try {
-    const query = `CALL api_clients_get(null, null)`;
-    
+    const query = `CALL api_clients_get_all()`;
+
     const [results] = await pool.execute(query) as any;
     const rows = results[0]; // Stored procedure results are nested in an array
-    
+
     // Add database domains to allowedOrigins array
     const dbDomains = rows.map((row: any) => row.partner_root_domain);
-    
+
     // Merge with existing origins, avoiding duplicates
     const existingOrigins = allowedOrigins.filter(origin => typeof origin === 'string');
     const existingRegexOrigins = allowedOrigins.filter(origin => origin instanceof RegExp);
-    
+
     const uniqueDomains = [...new Set([...existingOrigins, ...dbDomains])];
     allowedOrigins = [...uniqueDomains, ...existingRegexOrigins];
-    
+
     console.log('Loaded allowed origins from database:', allowedOrigins);
   } catch (error) {
     console.error('Error loading allowed origins from database:', error);

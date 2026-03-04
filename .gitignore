@@ -49,3 +49,4 @@ temp/
 # Vercel
 .vercel 
 *.dmg
+.vercel

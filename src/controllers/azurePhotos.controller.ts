@@ -2,9 +2,8 @@ import { Request, Response } from "express";
 import { AuthenticatedRequest } from "../interfaces/auth.interface";
 import multer from "multer";
 import pool from "../config/database";
-import { applyWatermark } from "../utils/watermark.util";
+import { processImage } from '../utils/imageProcessor.util';
 import { uploadToBlobStorage, deleteFromBlobStorage, generateSASUrl, AZURE_CONFIG } from "../utils/azure.util";
-import sharp from "sharp";
 
 const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -101,13 +100,17 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
             try {
                 // Delete from Azure (main + thumb)
                 const blob = exactMatch.url.startsWith('http') ? extractBlobName(exactMatch.url) : exactMatch.url;
-                await deleteFromBlobStorage(blob);
+                try {
+                    await deleteFromBlobStorage(blob);
+                } catch (e) { console.error("Could not delete blob", blob) }
 
-                const thumbBlob = blob.replace(/(\.[^.]+)$/, '_thumb$1');
-                await deleteFromBlobStorage(thumbBlob);
+                try {
+                    const thumbBlob = blob.replace(/(\.[^.]+)$/, '_thumb$1');
+                    await deleteFromBlobStorage(thumbBlob);
+                } catch (e) { }
 
                 // DB Delete (Raw query because no delete SP found)
-                await pool.execute("DELETE FROM profile_photos WHERE photo_id = ?", [exactMatch.photo_id]);
+                await pool.execute("DELETE FROM profile_photos WHERE profile_photo_id = ?", [exactMatch.profile_photo_id]);
             } catch (err) {
                 console.error("Failed to delete replacing photo", err);
             }
@@ -115,33 +118,31 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
 
         const partnerId = req.user?.partner_id || 1;
 
-        // Auto-rotate and Resize to 1200px
-        const resizedMain = await sharp(req.file.buffer)
-            .rotate()
-            .resize({ width: 1200, withoutEnlargement: true })
-            .toBuffer();
-
-        const watermarkedBuffer = await applyWatermark(resizedMain, req.file.mimetype);
-
-        // Generate thumb
-        const thumbBuffer = await sharp(watermarkedBuffer)
-            .resize({ width: 300, withoutEnlargement: true })
-            .toBuffer();
+        // Process Image: resize, watermark (5-point + text), and thumbnail
+        // Using "MataMatrimony" for text watermark, could fetch from DB using partnerId dynamically
+        const { main, thumbnail } = await processImage(
+            req.file.buffer,
+            null, // partnerLogoUrl
+            "MataMatrimony" // partnerBrandName
+        );
 
         // Azure Upload
         // blobName is {partner_id}/{profile_id}/{category_slug}.{ext}
-        const blobName = AZURE_CONFIG.generateBlobName(partnerId.toString(), profileId.toString(), req.file.originalname, caption);
+        let blobName = AZURE_CONFIG.generateBlobName(partnerId.toString(), profileId.toString(), req.file.originalname, caption);
+
+        // Force .jpg extension because processImage outputs jpeg
+        blobName = blobName.replace(/\.[^/.]+$/, "") + ".jpg";
 
         // e.g., photo.jpg -> photo_thumb.jpg
-        const thumbBlobName = blobName.replace(/(\.[^.]+)$/, '_thumb$1');
+        const thumbBlobName = blobName.replace(/\.jpg$/, '_thumb.jpg');
 
-        await uploadToBlobStorage(watermarkedBuffer, blobName, req.file.mimetype);
-        await uploadToBlobStorage(thumbBuffer, thumbBlobName, req.file.mimetype);
+        const mainUrl = await uploadToBlobStorage(main, blobName, 'image/jpeg');
+        await uploadToBlobStorage(thumbnail, thumbBlobName, 'image/jpeg');
 
-        // DB Insert - Save the raw blob path as requested
+        // DB Insert - Save the FULL absolute URL into the database (matching ekam-admin-api)
         const [insertResult] = await pool.execute("CALL eb_profile_photo_create(?, ?, ?, ?, ?, ?)", [
             profileId,
-            blobName || null,
+            mainUrl || null,
             photoType,
             caption || null,
             req.body.description || caption || null,
