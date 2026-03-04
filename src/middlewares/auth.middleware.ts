@@ -6,6 +6,7 @@ interface AuthenticatedRequest extends Request {
     email: string;
     account_code: string;
     account_id: number;
+    partner_id?: number;
     iat?: number;
     exp?: number;
   };
@@ -36,11 +37,13 @@ export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: 
       exp: number;
       account_code: string;
       account_id: number;
+      partner_id?: number;
     };
 
     req.user = {
       account_code: decoded.account_code,
       account_id: decoded.account_id,
+      partner_id: decoded.partner_id || 1, // default to 1 if missing for backwards compatibility
       email: decoded.email,
       iat: decoded.iat,
       exp: decoded.exp

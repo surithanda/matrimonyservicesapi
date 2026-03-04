@@ -1,3 +1,4 @@
+import "./polyfill";
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
 import accountRoutes from "./routes/account.routes";
@@ -11,7 +12,9 @@ import logger from "./config/logger";
 import path from "path";
 import fs from "fs";
 import stripeRoutes from "./routes/stripe.routes";
+import azurePhotosRoutes from "./routes/azurePhotos.routes";
 import { handleWebhookEvent } from "./controllers/stripe.controller";
+import { testAzureConnection } from "./utils/azure.util";
 
 // Ensure directory structure exists for persistent disk storage
 const isRenderEnvironment = process.env.RENDER === 'true';
@@ -32,11 +35,11 @@ const ensureDirectoryExists = (dirPath: string) => {
 // Create necessary directory structure
 try {
   ensureDirectoryExists(baseStoragePath);
-  
+
   // Create common subdirectories for better organization
   ensureDirectoryExists(path.join(baseStoragePath, 'accounts'));
   ensureDirectoryExists(path.join(baseStoragePath, 'temp'));
-  
+
   logger.info(`Storage configured at: ${baseStoragePath}`);
 } catch (error) {
   logger.error('Error configuring storage directories:', error);
@@ -134,6 +137,7 @@ app.head("/readyz", (req: Request, res: Response) => {
 app.use("/api/account", accountRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/profiles/photos", azurePhotosRoutes);
 app.use("/api/metadata", metaDataRoutes);
 app.use("/api/stripe", stripeRoutes);
 
@@ -180,4 +184,13 @@ app.use(
 
 app.listen(port, () => {
   logger.info(`Server is running on port ${port}`);
+
+  // ─── Azure Blob Storage: verify connection is healthy on startup
+  (async () => {
+    try {
+      await testAzureConnection();
+    } catch (err) {
+      logger.error("[Azure] Connection check failed — photo uploads may not work:", err);
+    }
+  })();
 });

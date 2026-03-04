@@ -8,9 +8,17 @@ import {
 } from "../interfaces/profile.interface";
 import { IProfileHobbyInterest } from "../interfaces/hobby.interface";
 import multer from "multer";
-import path, { relative } from "path";
+import path from "path";
 import fs from "fs";
-import { createFile, testDriveConnection } from "../utils/drive.util";
+// ─── Azure Blob Storage (replaces Google Drive) ───────────────────────────────
+import {
+  uploadToBlobStorage,
+  deleteFromBlobStorage,
+} from "../utils/azure.util";
+import { AZURE_CONFIG } from "../config/azure.config";
+import { applyWatermark } from "../utils/watermark.util";
+// Google Drive import kept for reference — can be removed once Azure is confirmed in prod
+// import { createFile, testDriveConnection } from "../utils/drive.util";
 
 export const getPersonalProfile = async (
   req: AuthenticatedRequest,
@@ -546,48 +554,17 @@ const sanitizeFilename = (filename: string): string => {
     .toLowerCase();
 };
 
-// Configure storage for Render persistent disk
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    try {
-      const accountId = (req as AuthenticatedRequest)?.user?.account_code;
-      const profileId = req.body.profile_id;
+// ─── Multer: memory storage (no temp files on disk — buffer passed directly to Azure) ───
+// The old diskStorage is preserved below in comments for reference during rollback
+const storage = multer.memoryStorage();
 
-      if (!accountId || !profileId) {
-        throw new Error("Missing account ID or profile ID");
-      }
-
-      // Use environment-aware storage path
-      const basePath = getStorageBasePath();
-      const uploadPath = path.join(
-        basePath,
-        'accounts',
-        accountId.toString(),
-        'profiles',
-        profileId.toString(),
-        'photos'
-      );
-
-      ensureDirectoryExists(uploadPath);
-      cb(null, uploadPath);
-    } catch (error) {
-      cb(error as Error, "");
-    }
-  },
-  filename: (req, file, cb) => {
-    try {
-      const fileExt = path.extname(file.originalname).toLowerCase();
-      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      const sanitizedCaption = req.body.caption
-        ? `${sanitizeFilename(req.body.caption)}-`
-        : "";
-
-      cb(null, `${sanitizedCaption}${uniqueSuffix}${fileExt}`);
-    } catch (error) {
-      cb(error as Error, "");
-    }
-  },
-});
+/*
+  LEGACY Google Drive diskStorage (kept for rollback reference):
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => { ... },
+    filename: (req, file, cb) => { ... },
+  });
+*/
 
 // File filter for validation
 const fileFilter = (
@@ -760,8 +737,11 @@ export const createProfilePhoto = async (
   req: AuthenticatedRequest,
   res: Response
 ) => {
+  // Track blob name so we can clean it up if the DB insert fails
+  let uploadedBlobName: string | null = null;
+
   try {
-    console.log("Uploading profile photo:", req.body);
+    console.log("[createProfilePhoto] Uploading profile photo:", req.body);
 
     if (!req.file) {
       return res.status(400).json({
@@ -770,9 +750,16 @@ export const createProfilePhoto = async (
       });
     }
 
-    const profileService = new ProfileService();
+    // memoryStorage gives us req.file.buffer — no temp file on disk
+    if (!req.file.buffer || req.file.buffer.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Uploaded file is empty",
+      });
+    }
 
-    const accountId = (req as AuthenticatedRequest)?.user?.account_code;
+    const profileService = new ProfileService();
+    const accountId = req.user?.account_code;
     const profileId = req.body.profile_id;
 
     if (!accountId || !profileId) {
@@ -782,91 +769,79 @@ export const createProfilePhoto = async (
       });
     }
 
-    // ✅ Upload file to Google Drive
-    const driveFile = await createFile(req.file, accountId, profileId);
+    // ✅ Step 1: Apply watermark in-memory (© MataMatrimony, bottom-right)
+    const watermarkedBuffer = await applyWatermark(
+      req.file.buffer,
+      req.file.mimetype
+    );
+    console.log(`[createProfilePhoto] Watermark applied — buffer size: ${watermarkedBuffer.length} bytes`);
 
-    if (!driveFile?.data?.id) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to upload file to Google Drive",
-      });
-    }
+    // ✅ Step 2: Generate a structured blob name mirroring the old folder hierarchy
+    const blobName = AZURE_CONFIG.generateBlobName(
+      accountId,
+      profileId.toString(),
+      req.file.originalname,
+      req.body.caption
+    );
 
-    // ✅ Generate proper relative and public URLs
-    const basePath = getStorageBasePath();
-    const relativePath = path
-      .relative(basePath, req.file.path)
-      .replace(/\\/g, "/");
+    // ✅ Step 3: Upload watermarked image to Azure Blob Storage
+    const azureUrl = await uploadToBlobStorage(
+      watermarkedBuffer,
+      blobName,
+      req.file.mimetype
+    );
+    uploadedBlobName = blobName;
+    console.log(`[createProfilePhoto] Azure upload successful: ${azureUrl}`);
 
+    // ✅ Step 4: Build the photo DB record
     const photoData: IProfilePhoto = {
       profile_id: parseInt(req.body.profile_id),
       photo_type: parseInt(req.body.photo_type) || 456,
       description: req.body.description || "",
       caption: req.body.caption || path.parse(req.file.originalname).name,
-      // Use Drive web link if available, else fallback to local
-      url:
-        driveFile.data.webViewLink ||
-        `/uploads/${relativePath}`,
+      url: azureUrl, // Direct CDN URL — no Drive re-resolution needed on GET
       user_created: req.user?.email || "system",
       ip_address: req.ip || "",
       browser_profile: req.headers["user-agent"] || "",
     };
 
+    // ✅ Step 5: Save URL to database
     const result = await profileService.createProfilePhoto(photoData);
-    console.log("Photo upload DB result:", result);
+    console.log("[createProfilePhoto] DB result:", result);
 
     if (!result.success) {
-      // ❌ Database insert failed — cleanup Drive + local file
-      try {
-        const { deleteFile } = await import("../utils/drive.util");
-        await deleteFile(driveFile.data.id);
-        console.log("Cleaned up Drive file after DB error");
-      } catch (err) {
-        console.error(
-          "Failed to delete Drive file after DB error:",
-          err
-        );
+      // ❌ DB insert failed — clean up the already-uploaded Azure blob
+      if (uploadedBlobName) {
+        try {
+          await deleteFromBlobStorage(uploadedBlobName);
+          console.log("[createProfilePhoto] Azure blob cleaned up after DB error");
+        } catch (cleanupErr) {
+          console.error("[createProfilePhoto] Failed to clean up Azure blob after DB error:", cleanupErr);
+        }
       }
-
-      try {
-        fs.unlinkSync(req.file.path);
-        console.log("Cleaned up local file after DB error");
-      } catch (err) {
-        console.error("Failed to clean up local file after DB error:", err);
-      }
-
       return res.status(400).json(result);
     }
 
-    // ✅ DB save successful — cleanup local file
-    try {
-      fs.unlinkSync(req.file.path);
-      console.log("Local file cleaned up after successful upload");
-    } catch (err) {
-      console.error("Failed to clean up local file:", err);
-    }
-
-    res.status(201).json({
+    // ✅ All done — return the Azure CDN URL and photo ID
+    return res.status(201).json({
       success: true,
       message: "Profile photo uploaded successfully",
       data: {
         ...result.data,
-        url: photoData.url,
-        driveId: driveFile.data.id, // optional, if you need to track Drive ID
+        url: azureUrl,
       },
     });
   } catch (error: any) {
-    // ⚠️ Cleanup on unexpected error
-    if (req.file) {
+    // ⚠️ Unexpected error — clean up blob if it was uploaded
+    if (uploadedBlobName) {
       try {
-        fs.unlinkSync(req.file.path);
-      } catch (unlinkError) {
-        console.error("Failed to clean up local file on error:", unlinkError);
+        await deleteFromBlobStorage(uploadedBlobName);
+      } catch (cleanupErr) {
+        console.error("[createProfilePhoto] Failed to clean up Azure blob on error:", cleanupErr);
       }
     }
-
-    console.error("Error uploading profile photo:", error);
-    res.status(500).json({
+    console.error("[createProfilePhoto] Error uploading profile photo:", error);
+    return res.status(500).json({
       success: false,
       message: "Failed to upload profile photo",
       error: error.message,
@@ -1078,7 +1053,7 @@ export const searchProfiles = async (
       country: req.body.country,
       caste_id: req.body.caste_id,
       marital_status: req.body.marital_status,
-      gender:req.body.gender,
+      gender: req.body.gender,
     };
 
     const result = await profileService.searchProfiles(searchParams);

@@ -3,12 +3,13 @@ import { AuthService } from '../services/auth.service';
 import jwt from 'jsonwebtoken';
 import { OTPVerificationResponse } from '../interfaces/auth.interface';
 import logger from '../config/logger';
-//import { AppError } from '../middleware/error.middleware';
+import pool from '../config/database';
 
 // Add custom interface for Request with user
 interface AuthenticatedRequest extends Request {
   user?: {
     email: string;
+    partner_id?: number;
   };
 }
 
@@ -45,8 +46,8 @@ export class AuthController {
         location: req.get('accept-language') || 'unknown'    // Gets user's locale
       };
 
-      const result = await this.authService.login({ 
-        email, 
+      const result = await this.authService.login({
+        email,
         password,
         clientInfo  // Pass client info to service
       });
@@ -98,12 +99,28 @@ export class AuthController {
           message: 'Invalid OTP verification result'
         });
       }
-    
+
+      // Fetch partner_id using x-api-key for the session payload
+      let partnerId = 1; // Default
+      const apiKey = req.headers['x-api-key'] || req.headers['X-API-KEY'] || req.headers['x-api-key'];
+      if (apiKey) {
+        try {
+          const [clientResults] = await pool.execute("CALL api_clients_get(?, ?)", [apiKey, null]) as any;
+          const match = clientResults?.[0]?.[0];
+          if (match?.partner_id) {
+            partnerId = match.partner_id;
+          }
+        } catch (err) {
+          console.warn("Failed to lookup partner_id for JWT", err);
+        }
+      }
+
       // Generate JWT token after successful verification
       const token = jwt.sign(
-        { 
+        {
           account_code: result.user?.account_code,
           account_id: result.user?.account_id,
+          partner_id: partnerId,
           email: result.user?.email,
           iat: Math.floor(Date.now() / 1000),
           exp: Math.floor(Date.now() / 1000) + (72 * 60 * 60) // 24 hours from now
@@ -133,7 +150,7 @@ export class AuthController {
   public changePassword = async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
     try {
       const { current_password, new_password, confirm_new_password } = req.body;
-      
+
       // Get token from Authorization header
       const authHeader = req.headers.authorization;
       if (!authHeader) {
@@ -197,7 +214,7 @@ export class AuthController {
         current_password,
         new_password
       );
-      
+
       if (!result.success) {
         return res.status(400).json(result);
       }
@@ -227,7 +244,7 @@ export class AuthController {
         systemName: req.get('sec-ch-ua-platform') || 'web', // Gets OS platform
         location: req.get('accept-language') || 'unknown'    // Gets user's locale
       };
-      const { email} = req.body;
+      const { email } = req.body;
 
       if (!email) {
         return res.status(400).json({
@@ -237,7 +254,7 @@ export class AuthController {
       }
 
       const result = await this.authService.forgotPassword(email, clientInfo);
-      
+
       if (!result.success) {
         return res.status(400).json(result);
       }
@@ -254,7 +271,7 @@ export class AuthController {
 
   public resetPassword = async (req: Request, res: Response): Promise<Response> => {
     try {
-      const { email, otp, new_password} = req.body;
+      const { email, otp, new_password } = req.body;
 
       // Validate request
       if (!email || !otp || !new_password) {
@@ -265,7 +282,7 @@ export class AuthController {
       }
 
       // Check if new passwords match
-      
+
 
       // Validate password strength
       const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -277,7 +294,7 @@ export class AuthController {
       }
 
       const result = await this.authService.resetPassword(email, otp, new_password);
-      
+
       if (!result.success) {
         return res.status(400).json(result);
       }
@@ -323,7 +340,7 @@ export class AuthController {
   //     }
 
   //     const result = await this.authService.resetPassword(history_id, otp, new_password);
-      
+
   //     if (!result.success) {
   //       return res.status(400).json(result);
   //     }
@@ -341,7 +358,7 @@ export class AuthController {
 
 
 
-} 
+}
 
 
 
