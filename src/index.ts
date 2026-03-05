@@ -9,41 +9,10 @@ import { specs } from "./config/swagger";
 import profileRoutes from "./routes/profile.routes";
 import metaDataRoutes from "./routes/metaData.routes";
 import logger from "./config/logger";
-import path from "path";
-import fs from "fs";
 import stripeRoutes from "./routes/stripe.routes";
 import azurePhotosRoutes from "./routes/azurePhotos.routes";
 import { handleWebhookEvent } from "./controllers/stripe.controller";
 import { testAzureConnection } from "./utils/azure.util";
-
-// Ensure directory structure exists for persistent disk storage
-const isRenderEnvironment = process.env.RENDER === 'true';
-const baseStoragePath = isRenderEnvironment ? '/photos' : path.join(__dirname, '../uploads');
-
-// Helper function to ensure directory exists with proper permissions
-const ensureDirectoryExists = (dirPath: string) => {
-  try {
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true, mode: 0o755 });
-      logger.info(`Created directory: ${dirPath}`);
-    }
-  } catch (error) {
-    logger.error(`Error creating directory ${dirPath}:`, error);
-  }
-};
-
-// Create necessary directory structure
-try {
-  ensureDirectoryExists(baseStoragePath);
-
-  // Create common subdirectories for better organization
-  ensureDirectoryExists(path.join(baseStoragePath, 'accounts'));
-  ensureDirectoryExists(path.join(baseStoragePath, 'temp'));
-
-  logger.info(`Storage configured at: ${baseStoragePath}`);
-} catch (error) {
-  logger.error('Error configuring storage directories:', error);
-}
 
 dotenv.config();
 
@@ -59,35 +28,16 @@ app.post(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve photos from persistent disk storage
-// Use /photos route to serve files from the mounted persistent disk
-app.use('/photos', express.static('/photos', {
-  maxAge: '7d', // Cache photos for 7 days
-  setHeaders: (res, path) => {
-    // Set proper headers for images
-    if (path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-      res.setHeader('Content-Type', 'image/' + path.split('.').pop()?.toLowerCase());
-      res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
-    }
-  }
-}));
-
-// Backward compatibility: serve legacy uploads if they exist
-const legacyUploadsPath = path.join(__dirname, '../uploads');
-if (fs.existsSync(legacyUploadsPath)) {
-  app.use('/uploads', express.static(legacyUploadsPath, {
-    maxAge: '7d'
-  }));
-}
-
-// Request logging middleware
+// Request logging middleware — skip noisy browser auto-requests and health probes
+const SKIP_LOG_PATHS = new Set(['/favicon.ico', '/healthz', '/livez', '/readyz']);
 app.use((req, res, next) => {
-  logger.info(`Incoming ${req.method} request to ${req.url}`, {
-    method: req.method,
-    url: req.url,
-    ip: req.ip,
-    headers: req.headers,
-  });
+  if (!SKIP_LOG_PATHS.has(req.url)) {
+    logger.info(`${req.method} ${req.url}`, {
+      method: req.method,
+      url: req.url,
+      ip: req.headers['x-forwarded-for'] || req.ip,
+    });
+  }
   next();
 });
 
@@ -114,23 +64,11 @@ app.head("/livez", (req: Request, res: Response) => {
 });
 
 app.get("/readyz", (req: Request, res: Response) => {
-  try {
-    const storageExists = fs.existsSync(baseStoragePath);
-    const ready = storageExists;
-    const details = {
-      status: ready ? "ok" : "degraded",
-      storageExists,
-      storagePath: baseStoragePath,
-      timestamp: new Date().toISOString(),
-    };
-    res.status(ready ? 200 : 503).json(details);
-  } catch (e) {
-    res.status(503).json({ status: "error", error: (e as Error).message });
-  }
+  // Storage is Azure Blob — no local disk dependency
+  res.status(200).json({ status: "ok", storage: "azure", timestamp: new Date().toISOString() });
 });
 app.head("/readyz", (req: Request, res: Response) => {
-  const storageExists = fs.existsSync(baseStoragePath);
-  res.status(storageExists ? 200 : 503).end();
+  res.status(200).end();
 });
 
 // Routes
