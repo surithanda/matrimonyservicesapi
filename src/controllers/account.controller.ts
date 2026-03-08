@@ -12,23 +12,36 @@ export const registerAccount = async (req: Request, res: Response) => {
     const domain = req.headers.origin || req.headers.referer;
     console.log("Request received:", { apiKey, domain });
 
-    if(req?.body) {
-      if (domain?.search('localhost') != -1) {
+    if (req?.body) {
+      if (domain?.includes('localhost')) {
         // Bypass domain check for localhost during development
         console.log("Bypassing domain check for localhost");
         req.body.client_id = -1;
       } else {
         const query = `CALL api_clients_get(?, ?)`;
         const [results] = await pool.execute(query, [apiKey, null]) as any;
-        const match = results[0][0];
+        const match = results[0]?.[0];
+
+        if (!match) {
+          console.log("No API client found for apiKey:", apiKey);
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid API key. Please contact support.',
+            error: 'Failed to register account'
+          });
+        }
 
         console.log("API Client lookup result:", match.partner_root_domain);
-        // match found, now try to validate the domain
-        if (domain?.search(match?.partner_root_domain) != -1) {
+
+        // Sanitize the stored domain (strip trailing slash) and do a plain string comparison
+        const storedDomain = match.partner_root_domain?.trim().replace(/\/+$/, '');
+        const requestDomain = (domain ?? '').replace(/\/+$/, '');
+
+        if (storedDomain && requestDomain.includes(storedDomain)) {
           // Domain is valid, proceed with registration
           console.log("Domain validation succeeded:", domain);
         } else {
-          console.log("Domain validation failed:", domain);
+          console.log("Domain validation failed:", { requestDomain, storedDomain });
           return res.status(400).json({
             success: false,
             message: 'The current domain is not registered with us. Please contact support.',
@@ -36,23 +49,20 @@ export const registerAccount = async (req: Request, res: Response) => {
           });
         }
 
-        // req.body.client_id = (match && match?.partner_id) ? match.partner_id : null;
-        if(!(match && match?.partner_id)) {
-          // No valid match found
-          console.log("No valid API client match found for registration:", { apiKey, domain });
+        if (!match?.partner_id) {
+          console.log("No valid partner_id found for:", { apiKey, domain });
           return res.status(400).json({
             success: false,
             message: 'No client match found for the provided domain: ' + domain,
             error: 'Failed to register account'
           });
-        } else {
-          console.log("Valid API client match found for registration:", { apiKey, domain, partner_id: match?.partner_id });
-          // client/partner id is either match.id or match.partner_id based on your db schema
-          req.body.client_id = (match && match?.partner_id) ? match.partner_id : null;
         }
+
+        console.log("Valid API client match found:", { apiKey, domain, partner_id: match.partner_id });
+        req.body.client_id = match.partner_id;
       }
     }
-    
+
     console.log("Account registration data:", req.body);
 
     const accountService = new AccountService();
@@ -63,7 +73,7 @@ export const registerAccount = async (req: Request, res: Response) => {
     if (!result.success) {
       return res.status(409).json(result);
     }
-    
+
     res.status(201).json(result);
   } catch (error: any) {
     res.status(500).json({
@@ -87,11 +97,11 @@ export const updateAccount = async (req: AuthenticatedRequest, res: Response) =>
     }
 
     const result = await accountService.updateAccount(accountCode, req.body);
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
-    
+
     res.status(200).json(result);
   } catch (error: any) {
     res.status(500).json({
@@ -115,11 +125,11 @@ export const getAccountDetails = async (req: AuthenticatedRequest, res: Response
     }
 
     const result = await accountService.getAccount(String(req?.user?.email));
-    
+
     if (!result.success) {
       return res.status(400).json(result);
     }
-    
+
     res.status(200).json(result);
   } catch (error: any) {
     res.status(500).json({
@@ -142,7 +152,7 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
 
     const accountService = new AccountService();
     const accountCode = req.user?.account_code;
-    
+
     if (!accountCode) {
       // Delete uploaded file if unauthorized
       try {
