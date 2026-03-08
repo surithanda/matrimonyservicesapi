@@ -131,6 +131,38 @@ router.post('/verify-otp', validateApiKey, authController.verifyOTP);
 
 /**
  * @swagger
+ * /auth/resend-otp:
+ *   post:
+ *     summary: Resend OTP to user email
+ *     tags: [Auth]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: OTP resent successfully
+ *       400:
+ *         description: Invalid request or email not found
+ *       500:
+ *         description: Server error
+ */
+router.post('/resend-otp', validateApiKey, authController.resendOTP);
+
+
+
+/**
+ * @swagger
  * /auth/change-password:
  *   post:
  *     summary: Change user password

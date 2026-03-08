@@ -269,4 +269,39 @@ export class AuthService {
       };
     }
   }
+
+  async resendOTP(email: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Reuse the same SP (eb_validate_mail_and_generate_OTP) that generates a fresh OTP
+      const result = await this.authRepository.resendOTP(email);
+
+      if (!result || !result.otp) {
+        return {
+          success: false,
+          message: "Email not found or account is not active.",
+        };
+      }
+
+      // Send the new OTP via email
+      const otpSent = await sendOTP(email, String(result.otp));
+      if (!otpSent) {
+        return {
+          success: false,
+          message: "Failed to send OTP. Please try again.",
+        };
+      }
+
+      return {
+        success: true,
+        message: "A new OTP has been sent to your email.",
+      };
+    } catch (error) {
+      console.error("Resend OTP service error:", error);
+      return {
+        success: false,
+        message: "Internal server error. Please try again later.",
+      };
+    }
+  }
 }
+

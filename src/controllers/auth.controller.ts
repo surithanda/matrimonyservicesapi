@@ -356,7 +356,32 @@ export class AuthController {
   // };
 
 
+  public resendOTP = async (req: Request, res: Response): Promise<Response> => {
+    try {
+      const { email } = req.body;
 
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required',
+        });
+      }
+
+      const result = await this.authService.resendOTP(email);
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  };
 
 }
 
