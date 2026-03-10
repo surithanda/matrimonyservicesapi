@@ -70,9 +70,10 @@ export class AuthService {
       } else {
         return {
           success: false,
-          message: loginresult.error_message,
+          message: loginresult.error_message || 'Invalid credentials. Please check your email and password.',
         };
       }
+
     } catch (error) {
       console.error("Login error:", error);
       return {

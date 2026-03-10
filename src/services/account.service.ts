@@ -105,7 +105,13 @@ export class AccountService {
 
   async getAccount(accountEmail: string): Promise<{ success: boolean; message: string; data?: any }> {
     try {
-      const account = await this.accountRepository.getAccountByEmail(accountEmail);
+      const rawResult = await this.accountRepository.getAccountByEmail(accountEmail);
+
+      // MySQL2 CALL statements return result sets as arrays.
+      // The repository's getAccountByEmail does accounts[0] on the outer [results, fields] tuple,
+      // but that still gives us the result SET (an array of rows), not a single row.
+      // We extract the first row here so all callers get a plain account object.
+      const account = Array.isArray(rawResult) ? rawResult[0] : rawResult;
 
       if (!account) {
         return {
@@ -121,12 +127,13 @@ export class AccountService {
       return {
         success: true,
         message: 'Account found',
-        data: account
+        data: account   // ← single plain object: { payment_status: 'paid', ... }
       };
     } catch (error) {
       throw error;
     }
   }
+
 
   async updateAccount(accountCode: string, accountData: Partial<IAccount>): Promise<{ success: boolean; message: string; data?: any }> {
     const connection = await pool.getConnection();

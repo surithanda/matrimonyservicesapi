@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
+import { AccountService } from '../services/account.service';
 import jwt from 'jsonwebtoken';
 import { OTPVerificationResponse } from '../interfaces/auth.interface';
 import logger from '../config/logger';
 import pool from '../config/database';
+
 
 // Add custom interface for Request with user
 interface AuthenticatedRequest extends Request {
@@ -147,7 +149,26 @@ export class AuthController {
         path: '/'
       });
 
+      // Fetch payment_status and created_date from account.
+      // This is included directly in the OTP response so the frontend has the data
+      // immediately after login — without requiring a separate cross-domain API call
+      // that may fail due to browser third-party cookie restrictions.
+      const accountService = new AccountService();
+      let paymentStatus = 'unpaid';
+      let createdDate: string | null = null;
+      try {
+        const accountDetails = await accountService.getAccount(result.user?.email || '');
+        if (accountDetails.success && accountDetails.data) {
+          paymentStatus = accountDetails.data.payment_status || 'unpaid';
+          createdDate = accountDetails.data.created_date || null;
+        }
+      } catch (err) {
+        console.warn('Non-critical: could not fetch payment status for OTP response:', err);
+      }
+
       // Phase 3: token removed from JSON body — delivered exclusively via HttpOnly Set-Cookie header.
+      // The user object includes payment_status + created_date so usePaymentStatus()
+      // works immediately from Redux state without a separate API call.
       return res.status(200).json({
         success: true,
         message: 'OTP verified successfully',
@@ -155,6 +176,8 @@ export class AuthController {
           account_code: result.user?.account_code,
           email: result.user?.email,
           account_id: result.user?.account_id,
+          payment_status: paymentStatus,
+          created_date: createdDate,
         }
       });
 
@@ -171,32 +194,17 @@ export class AuthController {
     try {
       const { current_password, new_password, confirm_new_password } = req.body;
 
-      // Get token from Authorization header
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
+      // FIX: Previously read Authorization header manually to get email.
+      // Since Phase 3 removed the Bearer token from axios, that always returned 401.
+      // authenticateJWT middleware already verified the JWT (via cookie) and sets req.user.
+      const email = req.user?.email;
+
+      if (!email) {
         return res.status(401).json({
           success: false,
-          message: 'Authorization header missing'
+          message: 'Unauthorized: session not found'
         });
       }
-
-      const token = authHeader.split(' ')[1];
-      if (!token) {
-        return res.status(401).json({
-          success: false,
-          message: 'Token missing'
-        });
-      }
-
-      // Decrypt JWT token to get email
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-
-        email: string;  // Using account_code as it contains email
-        iat: number;
-        exp: number;
-      };
-
-      const email = decoded.email; // Get email from account_code
 
       // Validate request
       if (!current_password || !new_password || !confirm_new_password) {
