@@ -49,3 +49,5 @@ temp/
 # Vercel
 .vercel 
 *.dmg
+.vercel
+.env*.local

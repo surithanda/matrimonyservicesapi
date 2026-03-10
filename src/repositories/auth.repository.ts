@@ -86,15 +86,15 @@ export class AuthRepository {
       const iVerifyOTPResult: VerifyOTPResult = {
         success: userDetails.status,
         message: userDetails.message,
-        user: 
-          {
-              account_id: userDetails.account_id,
-              account_code: userDetails.account_code,
-              email: userDetails.email,
-            }         
+        user:
+        {
+          account_id: userDetails.account_id,
+          account_code: userDetails.account_code,
+          email: userDetails.email,
+        }
       };
       return iVerifyOTPResult;
-      } catch (error) {
+    } catch (error) {
       console.error("Error in verifyOTP:", error);
       throw error;
     }
@@ -120,11 +120,11 @@ export class AuthRepository {
   }
 
 
-async   validateEmailAndGenerateOTP(email: string, ipAddress: string, userAgent: string, systemName: string, location: string): Promise<any> {
+  async validateEmailAndGenerateOTP(email: string, ipAddress: string, userAgent: string, systemName: string, location: string): Promise<any> {
     try {
       const results = await pool.execute(
         "CALL eb_validate_mail_and_generate_OTP(?, ?, ?, ?, ?)",
-        [email, ipAddress,  systemName, userAgent, location]
+        [email, ipAddress, systemName, userAgent, location]
       );
 
       let response = (results[0] as any)[0][0];
@@ -134,26 +134,44 @@ async   validateEmailAndGenerateOTP(email: string, ipAddress: string, userAgent:
       console.error("Forgot password error:", error);
       throw error;
     }
-  } 
-
-
-  
-async updateNewPassword(
-  email: string,
-  newPassword: string
-): Promise<any> {
-  try {
-    const [results] = await pool.execute(
-      "CALL eb_update_new_password(?, ?)",
-      [email, newPassword]
-    );
-    return (results as any)[0][0];
-  } catch (error) {
-    console.error("Update password error:", error);
-    throw error;
   }
-}
+
+
+
+  async updateNewPassword(
+    email: string,
+    newPassword: string
+  ): Promise<any> {
+    try {
+      const [results] = await pool.execute(
+        "CALL eb_update_new_password(?, ?)",
+        [email, newPassword]
+      );
+      return (results as any)[0][0];
+    } catch (error) {
+      console.error("Update password error:", error);
+      throw error;
+    }
+  }
+
+  async resendOTP(email: string): Promise<any> {
+    try {
+      // Reuse the same SP that forgot-password uses — generates a new OTP and saves it
+      const results = await pool.execute(
+        "CALL eb_validate_mail_and_generate_OTP(?, ?, ?, ?, ?)",
+        [email, "127.0.0.1", "web", "web", "unknown"]
+      );
+      const response = (results[0] as any)[0][0];
+      return response;
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      throw error;
+    }
+  }
 
 }
+
+
+
 
 

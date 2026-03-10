@@ -43,6 +43,35 @@ export const createCheckoutSession = async (
   }
 };
 
+export const verifySession = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const sessionId = req.query.session_id as string;
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        message: "session_id query parameter is required",
+      });
+    }
+
+    const stripeService = new StripeService();
+    const result = await stripeService.verifySession(sessionId);
+
+    return res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      verified: false,
+      payment_status: null,
+      message: "Failed to verify session",
+      error: error.message,
+    });
+  }
+};
+
 export const handleWebhookEvent = async (req: Request, res: Response) => {
   try {
     let data = req.body;

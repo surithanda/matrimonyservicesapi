@@ -44,18 +44,18 @@ export class AccountService {
 
   async registerAccount(accountData: IAccount): Promise<{ success: boolean; message: string; data?: any }> {
     const connection = await pool.getConnection();
-    
+
     try {
       // Hash password
-      const fixedSalt:string = String(process.env.FIXED_SALT);
+      const fixedSalt: string = String(process.env.FIXED_SALT);
       const hashedPassword = await bcrypt.hash(accountData.password, fixedSalt);
       // const hashedPassword = accountData.password
-//      await connection.beginTransaction();
+      //      await connection.beginTransaction();
       console.log(accountData);
-      console.log("hasedPassword------->",hashedPassword);
+      console.log("hasedPassword------->", hashedPassword);
       const result = await this.accountRepository.create(accountData, hashedPassword, connection);
-      console.log("result------->",result[0]);
-      console.log("result status------->",result[0][0].status);
+      console.log("result------->", result[0]);
+      console.log("result status------->", result[0][0].status);
       let response = null;
       response = this.validateResponse(result[0][0], 'Account registered successfully');
       // if(result[0][0].status=="success"){
@@ -105,8 +105,14 @@ export class AccountService {
 
   async getAccount(accountEmail: string): Promise<{ success: boolean; message: string; data?: any }> {
     try {
-      const account = await this.accountRepository.getAccountByEmail(accountEmail);
-      
+      const rawResult = await this.accountRepository.getAccountByEmail(accountEmail);
+
+      // MySQL2 CALL statements return result sets as arrays.
+      // The repository's getAccountByEmail does accounts[0] on the outer [results, fields] tuple,
+      // but that still gives us the result SET (an array of rows), not a single row.
+      // We extract the first row here so all callers get a plain account object.
+      const account = Array.isArray(rawResult) ? rawResult[0] : rawResult;
+
       if (!account) {
         return {
           success: false,
@@ -117,24 +123,25 @@ export class AccountService {
       // Remove sensitive fields
       delete account.password;
       delete account.secret_answer;
-      
+
       return {
         success: true,
         message: 'Account found',
-        data: account
+        data: account   // ← single plain object: { payment_status: 'paid', ... }
       };
     } catch (error) {
       throw error;
     }
   }
 
+
   async updateAccount(accountCode: string, accountData: Partial<IAccount>): Promise<{ success: boolean; message: string; data?: any }> {
     const connection = await pool.getConnection();
-    
+
     try {
       // Check if account exists
       const existingAccount = await this.accountRepository.findByAccountCode(accountCode);
-      
+
       if (!existingAccount) {
         return {
           success: false,
@@ -155,13 +162,13 @@ export class AccountService {
       //     }
       //   }
       // }
-      
+
       // await connection.beginTransaction();
-      
+
       const [result] = await this.accountRepository.update(accountCode, accountData, connection);
       // console.log(result[0])
       // await connection.commit();
-      
+
       // return {
       //   success: true,
       //   message: 'Account updated successfully'
@@ -215,7 +222,7 @@ export class AccountService {
   async getProfilePhoto(accountCode: string): Promise<{ success: boolean; message: string; photoUrl?: string }> {
     try {
       const account = await this.accountRepository.findByAccountCode(accountCode);
-      
+
       if (!account) {
         return {
           success: false,

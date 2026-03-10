@@ -12,7 +12,8 @@ import {
 import { IProfileHobbyInterest } from "../interfaces/hobby.interface";
 import { ProfileRepository } from "../repositories/profile.repository";
 import { validate } from "uuid";
-import { getFileById } from "../utils/drive.util";
+// Google Drive import replaced by Azure Blob Storage — URLs are now stored directly in DB
+// import { getFileById } from "../utils/drive.util";
 
 export class ProfileService {
   private profileRepository: ProfileRepository;
@@ -231,8 +232,8 @@ export class ProfileService {
     if (response) {
       if (
         (response?.error_code !== null &&
-        response?.error_type !== null &&
-        response?.status !== "success") || response?.status === 'fail'
+          response?.error_type !== null &&
+          response?.status !== "success") || response?.status === 'fail'
       ) {
         return {
           success: false,
@@ -711,18 +712,20 @@ export class ProfileService {
           error: "Profile ID is required",
         } as any;
       }
+
       const photos = await this.profileRepository.getProfilePhotos(profileId);
-      const normalized = await Promise.all(
-        (photos || []).map(async (p: any) => {
-          const image = await getFileById(p?.url);
-          return {
-            ...p,
-            url: image?.imgUrl || null,
-            caption: p?.caption || p?.photo_caption || null,
-            photo_type: p?.photo_type ?? p?.type ?? null,
-          };
-        })
-      );
+
+      // —————————————————————————————————————————————————————————
+      // Azure Blob Storage: URLs are stored directly in the DB as CDN URLs.
+      // No per-photo API call needed (replaces the old Google Drive getFileById loop).
+      // —————————————————————————————————————————————————————————
+      const normalized = (photos || []).map((p: any) => ({
+        ...p,
+        url: p?.url || null,  // Direct Azure CDN URL from DB
+        caption: p?.caption || p?.photo_caption || null,
+        photo_type: p?.photo_type ?? p?.type ?? null,
+      }));
+
       return {
         success: true,
         message: "Profile photos retrieved successfully",
@@ -835,22 +838,18 @@ export class ProfileService {
     country?: number;
     caste_id?: number;
     marital_status?: number;
-    gender?:number;
+    gender?: number;
   }): Promise<any> {
     try {
       const response = await this.profileRepository.searchProfiles(
         searchParams
       );
 
-      let updatedResponse = await Promise.all(
-        (response || []).map(async (p: any) => {
-          const image = await getFileById(p?.url);
-          return {
-            ...p,
-            url: image?.imgUrl || null,
-          };
-        })
-      );
+      // Azure Blob Storage: URLs are direct CDN links stored in DB — no Drive resolution needed
+      let updatedResponse = (response || []).map((p: any) => ({
+        ...p,
+        url: p?.url || null,
+      }));
 
       console.log("updatedResponse", updatedResponse);
 
@@ -1288,12 +1287,8 @@ export class ProfileService {
       const repository = new ProfileRepository();
       const response = await repository.getCompleteProfile(profileData);
 
-      if (response.profile_photo_url) {
-        const image = await getFileById(response.profile_photo_url);
-        if (image) {
-          response.profile_photo_url = image.imgUrl;
-        }
-      }
+      // Azure Blob Storage: profile_photo_url is already a direct CDN URL stored in DB
+      // No Drive resolution needed — URL is used as-is
       // Return the response directly for now - will validate after repository method is added
       return {
         success: true,
@@ -1314,17 +1309,13 @@ export class ProfileService {
       const repository = new ProfileRepository();
       const response = await repository.getAllProfiles(profileData);
 
-      let updatedResponse = await Promise.all(
-        (response || []).map(async (p: any) => {
-          const image = await getFileById(p?.url);
-          return {
-            ...p,
-            url: image?.imgUrl || null,
-            caption: p?.caption || p?.photo_caption || null,
-            photo_type: p?.photo_type ?? p?.type ?? null,
-          };
-        })
-      );
+      // Azure Blob Storage: URLs are direct CDN links stored in DB — no Drive resolution needed
+      let updatedResponse = (response || []).map((p: any) => ({
+        ...p,
+        url: p?.url || null,
+        caption: p?.caption || p?.photo_caption || null,
+        photo_type: p?.photo_type ?? p?.type ?? null,
+      }));
       // Return the response directly for now - will validate after repository method is added
       return {
         success: true,

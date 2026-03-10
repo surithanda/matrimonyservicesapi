@@ -25,4 +25,7 @@ export interface IAccount {
   // driving_license?: string;
   is_active?: boolean;
   client_id?: number;
-} 
+  // Payment & trial fields — populated by get_accountDetails proc
+  payment_status?: 'paid' | 'unpaid' | null;
+  created_date?: string; // ISO date string from DB (column: created_date)
+}

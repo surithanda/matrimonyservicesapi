@@ -70,9 +70,10 @@ export class AuthService {
       } else {
         return {
           success: false,
-          message: loginresult.error_message,
+          message: loginresult.error_message || 'Invalid credentials. Please check your email and password.',
         };
       }
+
     } catch (error) {
       console.error("Login error:", error);
       return {
@@ -85,13 +86,13 @@ export class AuthService {
   async verifyOTP(email: string, otp: string): Promise<VerifyOTPResult> {
     try {
       const results = await this.authRepository.verifyOTP(email, otp);
-      
-      console.log("result from auth service",results);
-      console.log("user",results.user);
-      console.log("message",results.message);
-      console.log("success",results.success);
+
+      console.log("result from auth service", results);
+      console.log("user", results.user);
+      console.log("message", results.message);
+      console.log("success", results.success);
       return results;
-      
+
     } catch (error) {
       console.error("OTP verification error:", error);
       return {
@@ -105,7 +106,7 @@ export class AuthService {
         }
       };
     }
-  } 
+  }
 
 
 
@@ -115,7 +116,7 @@ export class AuthService {
     newPassword: string
   ): Promise<{ success: boolean; message: string }> {
     try {
-      const fixedSalt:string = String(process.env.FIXED_SALT);
+      const fixedSalt: string = String(process.env.FIXED_SALT);
       const hashedPassword = await bcrypt.hash(newPassword, fixedSalt);
       // Call the stored procedure directly
       const [updateResult] = await this.authRepository.updatePassword(
@@ -213,7 +214,7 @@ export class AuthService {
     try {
       const hashedPassword = await bcrypt.hash(newPassword, this.fixedSalt);
       // Verify OTP
-      const result = await this.authRepository.verifyOTP(email,otp);
+      const result = await this.authRepository.verifyOTP(email, otp);
 
       if (!result || !result.success) {
         return {
@@ -224,15 +225,15 @@ export class AuthService {
 
       // Update password with null as currentPassword for reset flow
       const updateResult = await this.authRepository.updateNewPassword(
-        result.user.email,  
+        result.user.email,
         hashedPassword
       );
-      console.log("updateResult",updateResult);
+      console.log("updateResult", updateResult);
       // Check if we have a result and it has the expected message
       if (!updateResult || !updateResult.message) {
         return {
-            success: false,
-            message: updateResult.message
+          success: false,
+          message: updateResult.message
         };
       }
 
@@ -269,4 +270,39 @@ export class AuthService {
       };
     }
   }
+
+  async resendOTP(email: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Reuse the same SP (eb_validate_mail_and_generate_OTP) that generates a fresh OTP
+      const result = await this.authRepository.resendOTP(email);
+
+      if (!result || !result.otp) {
+        return {
+          success: false,
+          message: "Email not found or account is not active.",
+        };
+      }
+
+      // Send the new OTP via email
+      const otpSent = await sendOTP(email, String(result.otp));
+      if (!otpSent) {
+        return {
+          success: false,
+          message: "Failed to send OTP. Please try again.",
+        };
+      }
+
+      return {
+        success: true,
+        message: "A new OTP has been sent to your email.",
+      };
+    } catch (error) {
+      console.error("Resend OTP service error:", error);
+      return {
+        success: false,
+        message: "Internal server error. Please try again later.",
+      };
+    }
+  }
 }
+
