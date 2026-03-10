@@ -20,8 +20,17 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// CRITICAL: Trust the reverse proxy (Render/Railway/Nginx/etc.) to forward the real client IP.
+// Without this, req.ip = '127.0.0.1' for ALL users in production, which means:
+//   - Rate limiter treats everyone as the same IP → 5 auth failures locks out ALL users
+//   - All access logs show 127.0.0.1 instead of real IPs
+// '1' = trust one proxy hop (the platform's load balancer). Use a higher number if multi-hop.
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors);
+
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),

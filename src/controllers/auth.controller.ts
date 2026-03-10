@@ -134,13 +134,15 @@ export class AuthController {
         process.env.JWT_SECRET!  // startup guard in auth.middleware.ts ensures this is set
       );
 
-      // Phase 1+3: Set HttpOnly cookie — token delivered exclusively via Set-Cookie.
-      // SameSite=Lax allows cross-origin CORS requests with credentials (localhost dev).
-      // SameSite=Strict would block cookies from port 3000 -> port 8080 on localhost.
+      // Cookie config:
+      // - Production: SameSite=None;Secure — required when frontend and API are on different
+      //   domains (e.g. *.vercel.app subdomains are separate sites per the Public Suffix List).
+      //   SameSite=Lax/Strict refuses to send cookies in cross-site XHR even with credentials.
+      // - Development: SameSite=Lax — frontend and API on localhost (same site, no Secure needed).
       res.cookie('matrimony-token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 72 * 60 * 60 * 1000, // 72h — matches JWT exp
         path: '/'
       });
@@ -408,9 +410,10 @@ export class AuthController {
     res.clearCookie('matrimony-token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       path: '/'
     });
+
     return res.status(200).json({ success: true, message: 'Logged out successfully' });
   };
 
