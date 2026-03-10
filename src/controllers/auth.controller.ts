@@ -92,13 +92,19 @@ export class AuthController {
       }
 
       const result = await this.authService.verifyOTP(email, otp);
-      // console.log("result from auth controller",result);
-      if (!result || !result.success) {
-        return res.status(401).json({
+
+      // FIX: result.success is typed as boolean in the interface, but the service
+      // actually returns the string 'Success' or 'Fail' at runtime (type mismatch in service).
+      // String() normalizes both cases: String(true)='true', String('Success')='Success'.
+      // A failed OTP returns 400 (user input error), NOT 401 (which triggers UnauthorizedModal).
+      const isVerified = result && String(result.success) === 'Success';
+      if (!isVerified) {
+        return res.status(400).json({
           success: false,
-          message: 'Invalid OTP verification result'
+          message: (result as any)?.message || 'OTP verification failed. Please try again.'
         });
       }
+
 
       // Fetch partner_id using x-api-key for the session payload
       let partnerId = 1; // Default
@@ -123,21 +129,33 @@ export class AuthController {
           partner_id: partnerId,
           email: result.user?.email,
           iat: Math.floor(Date.now() / 1000),
-          exp: Math.floor(Date.now() / 1000) + (72 * 60 * 60) // 24 hours from now
+          exp: Math.floor(Date.now() / 1000) + (72 * 60 * 60) // 72 hours from now
         },
-        process.env.JWT_SECRET || 'Abhishek@123'
+        process.env.JWT_SECRET!  // startup guard in auth.middleware.ts ensures this is set
       );
 
+      // Phase 1+3: Set HttpOnly cookie — token delivered exclusively via Set-Cookie.
+      // SameSite=Lax allows cross-origin CORS requests with credentials (localhost dev).
+      // SameSite=Strict would block cookies from port 3000 -> port 8080 on localhost.
+      res.cookie('matrimony-token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        maxAge: 72 * 60 * 60 * 1000, // 72h — matches JWT exp
+        path: '/'
+      });
+
+      // Phase 3: token removed from JSON body — delivered exclusively via HttpOnly Set-Cookie header.
       return res.status(200).json({
         success: true,
         message: 'OTP verified successfully',
-        token,
         user: {
           account_code: result.user?.account_code,
           email: result.user?.email,
           account_id: result.user?.account_id,
         }
       });
+
     } catch (error) {
       console.error('OTP verification error:', error);
       return res.status(500).json({
@@ -169,7 +187,8 @@ export class AuthController {
       }
 
       // Decrypt JWT token to get email
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'Abhishek@123') as {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+
         email: string;  // Using account_code as it contains email
         iat: number;
         exp: number;
@@ -383,7 +402,18 @@ export class AuthController {
     }
   };
 
-}
+  public logout = async (req: Request, res: Response): Promise<Response> => {
+    // Phase 1 (S-3/S-4): Clear the HttpOnly cookie server-side.
+    // Browser cannot clear HttpOnly cookies via JS — only the server can.
+    res.clearCookie('matrimony-token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      path: '/'
+    });
+    return res.status(200).json({ success: true, message: 'Logged out successfully' });
+  };
 
+}
 
 

@@ -26,6 +26,32 @@ export class StripeService {
     };
   }
 
+  async verifySession(sessionId: string): Promise<{
+    success: boolean;
+    verified: boolean;
+    payment_status: string | null;
+    message: string;
+  }> {
+    try {
+      const result = await this.stripeRepository.retrieveSession(sessionId);
+      return {
+        success: true,
+        verified: result.payment_status === "paid",
+        payment_status: result.payment_status,
+        message: result.payment_status === "paid"
+          ? "Payment verified successfully"
+          : "Payment not yet completed",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        verified: false,
+        payment_status: null,
+        message: error.message || "Failed to verify payment session",
+      };
+    }
+  }
+
   async handleWebhookEvent(data: any) {
     try {
       let res = await this.stripeRepository.handleWebhookEvent(data);

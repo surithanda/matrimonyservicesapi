@@ -1,6 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+// S-1 Guard: fail fast at startup if JWT_SECRET is not configured.
+// Without this, jwt.verify() would throw at request time with a cryptic error
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('[FATAL] JWT_SECRET environment variable is not set. Server cannot start securely.');
+  process.exit(1);
+}
+
 interface AuthenticatedRequest extends Request {
   user?: {
     email: string;
@@ -13,25 +21,21 @@ interface AuthenticatedRequest extends Request {
 }
 
 export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
 
-  if (!authHeader) {
-    return res.status(401).json({
-      success: false,
-      message: 'Authorization header is missing'
-    });
-  }
+  // Phase 3: Cookie-only auth. Bearer header fallback removed.
+  // All clients use HttpOnly cookie set by backend on login.
+  const token = req.cookies?.['matrimony-token'];
 
-  const token = authHeader.split(' ')[1];
   if (!token) {
     return res.status(401).json({
       success: false,
-      message: 'Token is missing'
+      message: 'Authentication required: no token provided'
     });
   }
 
+
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'Abhishek@123') as {
+    const decoded = jwt.verify(token, JWT_SECRET) as {
       email: string;
       iat: number;
       exp: number;
@@ -56,4 +60,4 @@ export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: 
       message: 'Invalid or expired token'
     });
   }
-}; 
+};

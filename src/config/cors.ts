@@ -72,8 +72,9 @@ const corsDelegate: CorsOptionsDelegate<Request> = async (req, callback) => {
     origin: isAllowed,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'Cookie'],
   });
+
 };
 
 export default cors(corsDelegate);

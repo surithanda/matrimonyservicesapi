@@ -1,6 +1,7 @@
 import "./polyfill";
 import express, { Request, Response } from "express";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import accountRoutes from "./routes/account.routes";
 import authRoutes from "./routes/auth.routes";
 import swaggerUi from "swagger-ui-express";
@@ -13,6 +14,7 @@ import stripeRoutes from "./routes/stripe.routes";
 import azurePhotosRoutes from "./routes/azurePhotos.routes";
 import { handleWebhookEvent } from "./controllers/stripe.controller";
 import { testAzureConnection } from "./utils/azure.util";
+
 
 dotenv.config();
 
@@ -27,6 +29,10 @@ app.post(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Phase 1 — S-3/S-4: cookie-parser enables req.cookies for HttpOnly cookie auth.
+// Must be registered AFTER the stripe raw webhook (which needs raw body) and BEFORE routes.
+app.use(cookieParser());
+
 
 // Request logging middleware — skip noisy browser auto-requests and health probes
 const SKIP_LOG_PATHS = new Set(['/favicon.ico', '/healthz', '/livez', '/readyz']);
@@ -79,24 +85,28 @@ app.use("/api/profiles/photos", azurePhotosRoutes);
 app.use("/api/metadata", metaDataRoutes);
 app.use("/api/stripe", stripeRoutes);
 
-// Swagger documentation setup
-app.use("/api-docs", swaggerUi.serve);
-app.get(
-  "/api-docs",
-  swaggerUi.setup(specs, {
-    customCss: ".swagger-ui .topbar { display: none }",
-    customSiteTitle: "Account Management API Documentation",
-    swaggerOptions: {
-      url: "/api-docs/swagger.json",
-    },
-  })
-);
+// S-7: Only expose Swagger docs in non-production environments.
+// In production, /api-docs would reveal all endpoints, schemas, and auth headers.
+if (process.env.NODE_ENV !== 'production') {
+  app.use("/api-docs", swaggerUi.serve);
+  app.get(
+    "/api-docs",
+    swaggerUi.setup(specs, {
+      customCss: ".swagger-ui .topbar { display: none }",
+      customSiteTitle: "Account Management API Documentation",
+      swaggerOptions: {
+        url: "/api-docs/swagger.json",
+      },
+    })
+  );
 
-// Serve swagger spec
-app.get("/api-docs/swagger.json", (req, res) => {
-  res.setHeader("Content-Type", "application/json");
-  res.send(specs);
-});
+  // Serve swagger spec
+  app.get("/api-docs/swagger.json", (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(specs);
+  });
+}
+
 
 // Error handling middleware
 app.use(

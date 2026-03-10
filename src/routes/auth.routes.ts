@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { validateApiKey } from '../middlewares/apiKey.middleware';
 import { authenticateJWT } from '../middlewares/auth.middleware';
+import { authLimiter } from '../middlewares/rateLimiter.middleware';
+
 
 const router = Router();
 const authController = new AuthController();
@@ -59,7 +61,7 @@ const authController = new AuthController();
  *       500:
  *         description: Server error
  */
-router.post('/login', validateApiKey, authController.login);
+router.post('/login', authLimiter, validateApiKey, authController.login);
 
 /**
  * @swagger
@@ -127,7 +129,7 @@ router.post('/login', validateApiKey, authController.login);
  *       500:
  *         description: Server error
  */
-router.post('/verify-otp', validateApiKey, authController.verifyOTP);
+router.post('/verify-otp', authLimiter, validateApiKey, authController.verifyOTP);
 
 /**
  * @swagger
@@ -157,7 +159,7 @@ router.post('/verify-otp', validateApiKey, authController.verifyOTP);
  *       500:
  *         description: Server error
  */
-router.post('/resend-otp', validateApiKey, authController.resendOTP);
+router.post('/resend-otp', authLimiter, validateApiKey, authController.resendOTP);
 
 
 
@@ -250,7 +252,7 @@ router.post('/change-password', validateApiKey, authenticateJWT, authController.
  *       500:
  *         description: Server error
  */
-router.post('/forgot-password', validateApiKey, authController.forgotPassword);
+router.post('/forgot-password', authLimiter, validateApiKey, authController.forgotPassword);
 
 /**
  * @swagger
@@ -299,6 +301,10 @@ router.post('/forgot-password', validateApiKey, authController.forgotPassword);
  *       500:
  *         description: Server error
  */
-router.post('/reset-password', validateApiKey, authController.resetPassword);
+router.post('/reset-password', authLimiter, validateApiKey, authController.resetPassword);
 
-export default router; 
+// S-3/S-4: Logout clears the HttpOnly cookie server-side.
+// No authenticateJWT — logout must succeed even with an expired token.
+router.post('/logout', validateApiKey, authController.logout);
+
+export default router;
