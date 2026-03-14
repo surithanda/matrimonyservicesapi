@@ -13,7 +13,6 @@ export class AccountService {
   }
 
   validateResponse = (response: any, successMessage: string) => {
-    console.log("Response from repository:", response);
     if (response) {
       if (
         response?.error_code !== null &&
@@ -51,11 +50,7 @@ export class AccountService {
       const hashedPassword = await bcrypt.hash(accountData.password, fixedSalt);
       // const hashedPassword = accountData.password
       //      await connection.beginTransaction();
-      console.log(accountData);
-      console.log("hasedPassword------->", hashedPassword);
       const result = await this.accountRepository.create(accountData, hashedPassword, connection);
-      console.log("result------->", result[0]);
-      console.log("result status------->", result[0][0].status);
       let response = null;
       response = this.validateResponse(result[0][0], 'Account registered successfully');
       // if(result[0][0].status=="success"){

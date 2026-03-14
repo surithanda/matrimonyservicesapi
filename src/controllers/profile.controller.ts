@@ -17,8 +17,6 @@ import {
 } from "../utils/azure.util";
 import { AZURE_CONFIG } from "../config/azure.config";
 import { applyWatermark } from "../utils/watermark.util";
-// Google Drive import kept for reference — can be removed once Azure is confirmed in prod
-// import { createFile, testDriveConnection } from "../utils/drive.util";
 
 export const getPersonalProfile = async (
   req: AuthenticatedRequest,
@@ -525,46 +523,9 @@ const ALLOWED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_FILES_PER_UPLOAD = 1;
 
-// Helper function to ensure directory exists
-const ensureDirectoryExists = (dirPath: string) => {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true, mode: 0o755 });
-  }
-};
-
-// Environment detection
-const isRenderEnvironment = () => {
-  return process.env.RENDER === 'true' || process.env.NODE_ENV === 'production';
-};
-
-// Get the appropriate storage base path
-const getStorageBasePath = () => {
-  if (isRenderEnvironment()) {
-    return '/photos'; // Render persistent disk mount path
-  }
-  return path.join(__dirname, '../../uploads'); // Local development path
-};
-
-// Sanitize filename to prevent directory traversal and special characters
-const sanitizeFilename = (filename: string): string => {
-  // Remove any path traversal attempts and replace special characters
-  return filename
-    .replace(/^.*[\\/]/, "") // Remove path
-    .replace(/[^\w\d.-]/g, "_") // Replace special chars with underscore
-    .toLowerCase();
-};
-
-// ─── Multer: memory storage (no temp files on disk — buffer passed directly to Azure) ───
-// The old diskStorage is preserved below in comments for reference during rollback
+// ─── Multer: memory storage (buffer passed directly to Azure) ───
 const storage = multer.memoryStorage();
 
-/*
-  LEGACY Google Drive diskStorage (kept for rollback reference):
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => { ... },
-    filename: (req, file, cb) => { ... },
-  });
-*/
 
 // File filter for validation
 const fileFilter = (
@@ -654,7 +615,6 @@ export const handleMulterError = (
 export const uploadProfilePhoto = [
   upload.single("photo"),
   (req: Request, res: Response, next: any) => {
-    console.log(req);
     if (!req.file) {
       return res.status(400).json({
         success: false,
