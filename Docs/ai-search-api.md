@@ -15,10 +15,11 @@
 7. [Quick Test (curl / bash)](#quick-test-curl--bash)
 8. [Error Codes](#error-codes)
 9. [Cost & Premium Pricing](#cost--premium-pricing)
-10. [Monthly Quota Enforcement](#monthly-quota-enforcement)
-11. [Environment Variables](#environment-variables)
-12. [Database Tables](#database-tables)
-13. [Unit Tests](#unit-tests)
+10. [AI Search Credit System](#ai-search-credit-system)
+11. [Credit Purchase Flow (Stripe)](#credit-purchase-flow-stripe)
+12. [Environment Variables](#environment-variables)
+13. [Database Tables](#database-tables)
+14. [Unit Tests](#unit-tests)
 
 ---
 
@@ -44,7 +45,8 @@ User query (English)
 ```
 src/
 ├── interfaces/
-│   └── aiSearch.interface.ts        # TypeScript contracts
+│   ├── aiSearch.interface.ts        # TypeScript contracts (incl. ICreditStatus)
+│   └── stripe.interface.ts          # IStripeBody (purchase_type, credits)
 ├── services/aiSearch/
 │   ├── providers/
 │   │   ├── openai.provider.ts       # OpenAI GPT adapter
@@ -54,9 +56,12 @@ src/
 │   ├── intentValidator.ts           # Sanitize & validate AI output
 │   ├── lookupResolver.ts            # Text → numeric ID resolution
 │   ├── queryBuilder.ts              # Parameterized SQL builder
+│   ├── creditChecker.ts             # Credit balance enforcement (replaces quotaChecker)
 │   └── aiSearch.service.ts          # Orchestrator
 ├── controllers/
-│   └── aiSearch.controller.ts       # Request handling + validation
+│   └── aiSearch.controller.ts       # Request handling + credit check/deduct
+├── repositories/
+│   └── stripe.repository.ts         # Stripe sessions + credit grants on payment
 ├── routes/
 │   └── aiSearch.routes.ts           # Routes + Swagger + rate limiting
 └── __tests__/aiSearch/
@@ -129,6 +134,11 @@ All endpoints require **API key** (`x-api-Key` header) and **JWT auth** (`matrim
     },
     "confidence": 0.9,
     "result_count": 0,
+    "credits": {
+      "allowed": true,
+      "credits_remaining": 9,
+      "free_credits_granted": true
+    },
     "ai_provider": "openai",
     "ai_model": "gpt-4o-mini",
     "tokens_used": 2178,
@@ -257,7 +267,7 @@ Invoke-RestMethod -Uri "http://localhost:8080/api/ai-search" `
 | 401  | No JWT token or invalid/expired token         |
 | 403  | Invalid API key                               |
 | 422  | AI confidence too low (unrelated query)        |
-| 429  | Monthly quota exceeded OR rate limit (10 req/min per IP) |
+| 429  | AI search credits exhausted OR rate limit (10 req/min per IP) |
 | 502  | AI returned invalid JSON                      |
 | 504  | AI provider timed out                         |
 | 500  | Unexpected server error                       |
@@ -304,30 +314,29 @@ Output:   200 tokens × ($0.60 / 1,000,000) = $0.000120
 | `GET /api/ai-search/provider-info` | No | 0 | $0.00 | $0.00 |
 | `GET /api/ai-search/history` | No | 0 | $0.00 (DB only) | $0.00 (DB only) |
 
-### Premium Pricing Cards
+### AI Search Credit Packs (Implemented)
 
-Suggested subscription tiers to monetize the AI Search feature:
+AI Search is monetized via **one-time credit packs** (not subscriptions). Credits are persistent, stackable, and never expire. Membership ($100/yr) is required to purchase credit packs and grants 10 free credits on activation.
 
-| | 🆓 Free | 🥉 Basic | 🥈 Pro | 🥇 Premium |
+| | � Free (with membership) | 🥉 Starter Pack | 🥈 Value Pack | 🥇 Power Pack |
 |---|---|---|---|---|
-| **Monthly Price** | $0 | $4.99 | $14.99 | $29.99 |
-| **AI Searches / month** | 5 | 50 | 250 | Unlimited |
-| **AI Provider** | gemini-2.0-flash | gemini-2.0-flash | gpt-4o-mini | gpt-4o-mini |
-| **Response Quality** | Standard | Standard | Enhanced | Enhanced |
-| **Search History** | Last 5 | Last 30 | Last 90 | Unlimited |
-| **Priority Support** | — | — | — | ✓ |
-| **Est. AI cost to you** | ~$0.0014 | ~$0.014 | ~$0.105 | ~$0.42 (at 1K calls) |
-| **Gross Margin** | — | ~99.7% | ~99.3% | ~98.6% |
+| **Price** | Included | $10 | $25 | $30 |
+| **Credits** | 10 | 50 | 250 | 1,000 |
+| **Cost per Search** | Free | $0.20 | $0.10 | $0.03 |
+| **Expiry** | Never | Never | Never | Never |
+| **Stackable** | — | ✓ | ✓ | ✓ |
+| **Est. AI cost to us** | ~$0.004 | ~$0.021 | ~$0.105 | ~$0.42 |
+| **Gross Margin** | — | ~99.8% | ~99.6% | ~98.6% |
 
 ### Revenue Projections
 
-| Scenario | Users | Mix (Free/Basic/Pro/Premium) | Monthly Revenue | Monthly AI Cost | Net Margin |
+| Scenario | Members | Pack Mix (Free-only / Starter / Value / Power) | Monthly Revenue | Monthly AI Cost | Net Margin |
 |---|---|---|---|---|---|
-| **Small** | 500 | 80/10/7/3% | $1,775 | $3.50 | 99.8% |
-| **Medium** | 5,000 | 70/15/10/5% | $21,495 | $42.00 | 99.8% |
-| **Large** | 50,000 | 60/20/12/8% | $259,900 | $500.00 | 99.8% |
+| **Small** | 500 | 70/15/10/5% | $1,575 | $4.50 | 99.7% |
+| **Medium** | 5,000 | 60/20/12/8% | $18,900 | $52.00 | 99.7% |
+| **Large** | 50,000 | 50/25/15/10% | $217,500 | $600.00 | 99.7% |
 
-> **Key insight:** AI cost per search is **sub-penny** ($0.0003–$0.0004). Even with generous quotas, AI infrastructure cost is negligible compared to subscription revenue. The primary value is the **user experience** of natural-language search.
+> **Key insight:** AI cost per search is **sub-penny** ($0.0003–$0.0004). Even with generous credit packs, AI infrastructure cost is negligible compared to credit pack revenue. The primary value is the **user experience** of natural-language search.
 
 ### Cost Optimization Tips
 
@@ -340,56 +349,32 @@ Suggested subscription tiers to monetize the AI Search feature:
 
 ---
 
-## Monthly Quota Enforcement
+## AI Search Credit System
 
-Each subscription plan defines a monthly AI search limit. The system enforces this quota in real-time and returns remaining usage in every response.
+> **Replaces** the previous monthly-quota model. Credits are persistent, stackable, and never expire.
 
 ### How It Works
 
 ```
 POST /api/ai-search
   → 1. Authenticate user (JWT + API key)
-  → 2. Look up user's active subscription → get plan
-  → 3. Count AI searches this month from ai_search_log
-  → 4. If used >= limit → return 429 with upgrade message
-  → 5. If within limit → proceed with AI search
-  → 6. Append quota info to response
+  → 2. creditChecker.check(accountId) → get credit balance
+  → 3. If credits_remaining <= 0 → return 429 with buy-credits message
+  → 4. If credits available → proceed with AI search
+  → 5. creditChecker.deduct(accountId) → subtract 1 credit
+  → 6. Append credits info to response
 ```
 
-### Quota Limits per Plan
+### Credit Acquisition
 
-Stored in `partner_admin_payment_plans.max_ai_searches_per_month`:
+| Source | Credits | Trigger |
+|---|---|---|
+| **Membership activation** | 10 free | Automatic on first payment (idempotent) |
+| **Starter Pack** | 50 | Purchase via Stripe ($10) |
+| **Value Pack** | 250 | Purchase via Stripe ($25) |
+| **Power Pack** | 1,000 | Purchase via Stripe ($30) |
 
-| Plan | plan_key | Monthly Price | AI Searches / Month | `-1` = Unlimited |
-|---|---|---|---|---|
-| **Free** | `free` | $0 | 5 | — |
-| **Bronze** | `bronze` | $29 | 50 | — |
-| **Silver** | `silver` | $59 | 250 | — |
-| **Gold** | `gold` | $99 | Unlimited | ✓ |
-
-### Auto-Reset (No Cron Needed)
-
-Usage count is **derived in real-time** — not stored in a counter:
-
-```sql
-SELECT COUNT(*) AS used_this_month
-FROM ai_search_log
-WHERE account_id = ?
-  AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
-```
-
-When a new calendar month starts, the `WHERE` clause naturally excludes old rows → quota **auto-resets to 0 usage**.
-
-| Date | Searches This Month | Free Plan (limit=5) | Status |
-|---|---|---|---|
-| Mar 1 | 0 | remaining = 5 | ✅ Allowed |
-| Mar 15 | 4 | remaining = 1 | ✅ Allowed |
-| Mar 20 | 5 | remaining = 0 | ❌ Quota exceeded |
-| Apr 1 | 0 (new month) | remaining = 5 | ✅ Auto-reset |
-
-### Quota in Every Response
-
-Every AI search response includes a `quota` object so the frontend always knows the remaining count:
+### Credits in Every Response
 
 **Successful search (200):**
 
@@ -398,89 +383,130 @@ Every AI search response includes a `quota` object so the frontend always knows 
   "success": true,
   "data": {
     "profiles": [...],
-    "interpretation": "Searching for Hindu women aged 25-30...",
     "confidence": 0.9,
-    "quota": {
-      "plan_name": "Bronze Plan",
-      "monthly_limit": 50,
-      "used_this_month": 12,
-      "remaining": 38,
-      "resets_at": "2026-04-01T00:00:00.000Z"
+    "credits": {
+      "allowed": true,
+      "credits_remaining": 9,
+      "free_credits_granted": true
     }
   }
 }
 ```
 
-**Quota exceeded (429):**
+**Credits exhausted (429):**
 
 ```json
 {
   "success": false,
-  "message": "Monthly AI search limit reached. You have used all 5 searches for this month. Please use standard filters to search, or upgrade your plan for more AI searches.",
+  "message": "AI search credits exhausted. Purchase a credit pack to continue.",
   "data": {
-    "quota": {
-      "plan_name": "Free Plan",
-      "monthly_limit": 5,
-      "used_this_month": 5,
-      "remaining": 0,
-      "resets_at": "2026-04-01T00:00:00.000Z"
+    "credits": {
+      "allowed": false,
+      "credits_remaining": 0,
+      "free_credits_granted": true
     },
-    "upgrade_url": "/plans"
+    "upgrade_url": "/payments?source=ai-search"
   }
 }
 ```
 
-### No Subscription = Free Plan
+### No Credits Row = Fail-Open
 
-If a user has no active subscription (or their subscription is expired/canceled), the system defaults to the **Free Plan** quota (5 searches/month) rather than blocking them entirely.
+If a user has no row in `ai_search_credits` (or a DB error occurs), the system **fails open** — allows the search but logs a warning. `credits_remaining: -1` signals this state to the frontend.
 
-### Schema Change
+### Database Tables
 
-One column added to the existing `partner_admin_payment_plans` table:
-
-```sql
-ALTER TABLE partner_admin_payment_plans
-  ADD COLUMN max_ai_searches_per_month INT NOT NULL DEFAULT 5
-  AFTER search_level;
-```
-
-This follows the same pattern as `max_bg_checks_per_month`, `max_exports_per_month`, and `max_views_per_day`.
-
-### Stored Procedure: `ai_search_get_quota`
-
-All quota logic lives in the database — no hardcoded plan limits in code.
-
-```sql
-CALL ai_search_get_quota(p_account_id);
-```
-
-**Returns one row:**
+**`ai_search_credits`** — one row per account:
 
 | Column | Type | Description |
 |---|---|---|
-| `plan_name` | VARCHAR(50) | e.g. "Bronze Plan" or "Free Plan" (fallback) |
-| `monthly_limit` | INT | `-1` = unlimited |
-| `used_this_month` | INT | COUNT from `ai_search_log` for current month |
+| `account_id` | INT (PK) | FK to accounts table |
+| `credit_balance` | INT | Current credit balance (default 0) |
+| `free_credits_granted` | TINYINT(1) | Whether 10 free credits have been granted |
+| `created_at` | TIMESTAMP | Row creation time |
+| `updated_at` | TIMESTAMP | Last modification time |
 
-**Logic:**
-1. Look up active subscription for `p_account_id` → get plan
-2. If none found → fall back to `plan_key = 'free'` from `partner_admin_payment_plans`
-3. Count this month's searches from `ai_search_log`
-4. Return all three values
+**`ai_search_credit_log`** — audit trail:
 
-> **Note:** `partner_admin_payment_plans` and `partner_admin_subscriptions` are **end-user** tables (not partner/org tables). Partner-level subscriptions are a future feature.
+| Column | Type | Description |
+|---|---|---|
+| `log_id` | INT (PK, AI) | Auto-increment ID |
+| `account_id` | INT | FK to accounts table |
+| `credits_change` | INT | Positive = grant/purchase, negative = usage |
+| `transaction_type` | ENUM | `free_grant`, `purchase`, `usage` |
+| `description` | VARCHAR(255) | Human-readable description |
+| `stripe_session_id` | VARCHAR(255) | Stripe session ID (for purchases) |
+| `balance_after` | INT | Balance after this transaction |
+| `created_at` | TIMESTAMP | Transaction timestamp |
+
+### Stored Procedures
+
+| SP | Purpose |
+|---|---|
+| `ai_search_get_credits(p_account_id)` | Returns `credit_balance` + `free_credits_granted` |
+| `ai_search_grant_free_credits(p_account_id, p_credits)` | Idempotent: grants free credits only if not already granted |
+| `ai_search_add_credits(p_account_id, p_credits, p_description, p_stripe_session_id)` | Adds purchased credits + logs the transaction |
+| `ai_search_use_credit(p_account_id)` | Deducts 1 credit + logs usage; returns new balance |
+
+### Migration
+
+SQL file: `Docs/migrations/003_ai_search_credits.sql` — creates both tables and all 4 SPs.
 
 ### Implementation Files
 
 | File | Change |
 |---|---|
-| `ai_search_get_quota` SP | **New** — quota logic in DB (subscription lookup + free fallback + usage count) |
-| `src/services/aiSearch/quotaChecker.ts` | **New** — thin wrapper, calls SP, computes `remaining` and `resets_at` |
-| `src/interfaces/aiSearch.interface.ts` | Add `IQuotaStatus` interface |
-| `src/controllers/aiSearch.controller.ts` | Add quota check before search + append quota to response |
-| `src/routes/aiSearch.routes.ts` | Update Swagger for 429 + quota in response |
-| `src/__tests__/aiSearch/quotaChecker.test.ts` | **New** — 10 quota tests |
-| `src/__tests__/aiSearch/aiSearchController.test.ts` | 5 new quota-related tests (108 total) |
+| `Docs/migrations/003_ai_search_credits.sql` | **New** — tables + SPs |
+| `src/services/aiSearch/creditChecker.ts` | **New** — check, deduct, grantFreeCredits, addCredits |
+| `src/interfaces/aiSearch.interface.ts` | Add `ICreditStatus` interface + `credits` field on response |
+| `src/controllers/aiSearch.controller.ts` | Replace quotaChecker with creditChecker |
+| `src/interfaces/stripe.interface.ts` | Add `purchase_type`, `credits` to IStripeBody |
+| `src/repositories/stripe.repository.ts` | Add credit grants on payment success |
+
+---
+
+## Credit Purchase Flow (Stripe)
+
+### Stripe Session Metadata
+
+When creating a checkout session, the frontend passes `purchase_type` and `credits`:
+
+```json
+{
+  "amount": 25,
+  "currency": "usd",
+  "plan": "Value Pack",
+  "purchase_type": "ai_credits",
+  "credits": 250,
+  "front_end_success_uri": "...",
+  "front_end_failed_uri": "..."
+}
+```
+
+These are stored as Stripe session metadata: `purchase_type`, `credits`, `account_id`.
+
+### On Payment Success
+
+Both the webhook handler and `verifySession` call `handleCreditGrants()`:
+
+```
+1. Read metadata.purchase_type from Stripe session
+2. If "membership" → creditChecker.grantFreeCredits(accountId)  // 10 free, idempotent
+3. If "ai_credits" → creditChecker.addCredits(accountId, metadata.credits, ...)
+```
+
+### Frontend Flow
+
+```
+/payments page
+  ├── Section 1: Account Membership ($100/yr)  → /payments/billings?type=membership
+  └── Section 2: AI Search Credit Packs        → /payments/billings?type=ai_credits&credits=N
+       ├── Starter Pack (50 / $10)
+       ├── Value Pack (250 / $25)   ← "Best Value"
+       └── Power Pack (1000 / $30)
+```
+
+When navigating from AI Search (`?source=ai-search`), the page auto-scrolls to the credit packs section.
 
 ---
 
@@ -530,6 +556,33 @@ Every AI search is logged for analytics and debugging:
 | `sql_query`       | TEXT         | Generated parameterized SQL      |
 | `result_count`    | INT          | Number of profiles returned     |
 | `created_at`      | TIMESTAMP    | Log timestamp                   |
+
+### `ai_search_credits`
+
+Persistent credit balance per account (replaces monthly quota model):
+
+| Column               | Type         | Description                              |
+|----------------------|--------------|------------------------------------------|
+| `account_id`         | INT (PK)     | FK to accounts table                     |
+| `credit_balance`     | INT          | Current credit balance (default 0)       |
+| `free_credits_granted`| TINYINT(1)  | Whether 10 free credits have been granted|
+| `created_at`         | TIMESTAMP    | Row creation time                        |
+| `updated_at`         | TIMESTAMP    | Last modification time (auto-updates)    |
+
+### `ai_search_credit_log`
+
+Audit trail for all credit transactions:
+
+| Column              | Type          | Description                              |
+|---------------------|---------------|------------------------------------------|
+| `log_id`            | INT (PK, AI)  | Auto-increment ID                        |
+| `account_id`        | INT           | FK to accounts table                     |
+| `credits_change`    | INT           | +N = grant/purchase, -1 = usage          |
+| `transaction_type`  | ENUM          | `free_grant`, `purchase`, `usage`        |
+| `description`       | VARCHAR(255)  | Human-readable (e.g. "Purchased 250 AI search credits") |
+| `stripe_session_id` | VARCHAR(255)  | Stripe checkout session ID (purchases)   |
+| `balance_after`     | INT           | Balance after this transaction           |
+| `created_at`        | TIMESTAMP     | Transaction timestamp                    |
 
 ---
 

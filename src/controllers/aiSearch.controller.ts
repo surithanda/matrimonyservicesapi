@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { AISearchService } from '../services/aiSearch/aiSearch.service';
-import { QuotaChecker } from '../services/aiSearch/quotaChecker';
+import { CreditChecker } from '../services/aiSearch/creditChecker';
 import logger from '../config/logger';
 
 interface AuthenticatedRequest extends Request {
@@ -16,7 +16,7 @@ interface AuthenticatedRequest extends Request {
 
 // Singleton instances — initialized once, reused across requests
 let aiSearchService: AISearchService | null = null;
-const quotaChecker = new QuotaChecker();
+const creditChecker = new CreditChecker();
 
 function getService(): AISearchService {
   if (!aiSearchService) {
@@ -60,22 +60,21 @@ export const aiSearch = async (req: AuthenticatedRequest, res: Response) => {
       });
     }
 
-    // Check monthly quota before calling AI
-    const quota = await quotaChecker.check(accountId);
+    // Check credit balance before calling AI
+    const creditStatus = await creditChecker.check(accountId);
 
-    if (!quota.allowed) {
+    if (!creditStatus.allowed) {
       return res.status(429).json({
         success: false,
-        message: `Monthly AI search limit reached. You have used all ${quota.monthly_limit} searches for this month. Please use standard filters to search, or upgrade your plan for more AI searches.`,
+        message: creditStatus.credits_remaining === 0 && !creditStatus.free_credits_granted
+          ? 'No AI search credits available. Complete your membership to receive 10 free credits, or purchase a credit pack.'
+          : 'You have run out of AI search credits. Purchase a credit pack to continue using AI Search.',
         data: {
-          quota: {
-            plan_name: quota.plan_name,
-            monthly_limit: quota.monthly_limit,
-            used_this_month: quota.used_this_month,
-            remaining: quota.remaining,
-            resets_at: quota.resets_at,
+          credits: {
+            credits_remaining: creditStatus.credits_remaining,
+            free_credits_granted: creditStatus.free_credits_granted,
           },
-          upgrade_url: '/plans',
+          upgrade_url: '/payments?source=ai-search',
         },
       });
     }
@@ -83,17 +82,16 @@ export const aiSearch = async (req: AuthenticatedRequest, res: Response) => {
     const service = getService();
     const result = await service.search(query.trim(), profile_id, accountId);
 
-    // Append quota info to response (increment used count since this search just happened)
-    const updatedQuota = {
-      plan_name: quota.plan_name,
-      monthly_limit: quota.monthly_limit,
-      used_this_month: quota.used_this_month + 1,
-      remaining: quota.monthly_limit === -1 ? -1 : Math.max(0, quota.remaining - 1),
-      resets_at: quota.resets_at,
-    };
+    // Deduct 1 credit after successful search
+    const deductResult = await creditChecker.deduct(accountId);
 
+    // Append credit info to response
     if (result.data) {
-      result.data.quota = { allowed: true, ...updatedQuota };
+      result.data.credits = {
+        allowed: true,
+        credits_remaining: deductResult ? deductResult.credit_balance : Math.max(0, creditStatus.credits_remaining - 1),
+        free_credits_granted: creditStatus.free_credits_granted,
+      };
     }
 
     if (!result.success) {

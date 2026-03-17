@@ -80,6 +80,12 @@ export interface IQuotaStatus {
   resets_at: string;           // ISO date of next month start
 }
 
+export interface ICreditStatus {
+  allowed: boolean;
+  credits_remaining: number;   // -1 = fail-open / unknown
+  free_credits_granted: boolean;
+}
+
 export interface IAISearchRequest {
   query: string;
   profile_id: number;
@@ -100,6 +106,7 @@ export interface IAISearchResult {
     tokens_used: number;
     response_time_ms: number;
     quota?: IQuotaStatus;
+    credits?: ICreditStatus;
   };
   error?: string;
 }
