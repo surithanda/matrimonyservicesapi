@@ -37,7 +37,6 @@ export class ProfileRepository {
         [profileId, viewedProfileId, account]
       );
       const extractedResponse = (result as any[])[0][0];
-      console.log(extractedResponse);
       return extractedResponse;
     } catch (error) {
       console.error("Error tracking profile view:", error);
@@ -60,7 +59,6 @@ export class ProfileRepository {
       );
 
       const extractedResponse = (result as any[])[0][0];
-      console.log(extractedResponse);
       return extractedResponse;
     } catch (error) {
       console.error("Error in getPersonalProfile:", error);
@@ -122,7 +120,6 @@ export class ProfileRepository {
       );
 
       const extractedResponse = (result as any[])[0][0];
-      console.log(extractedResponse);
       return extractedResponse;
       // if(extractedResponse?.error_code === null)
       //   return extractedResponse?.profile_id;
@@ -143,7 +140,6 @@ export class ProfileRepository {
     let returnObj;
     if (!result || !Array.isArray(result) || result.length === 0) {
       const extractedResponse = (result as any[])[0];
-      console.log(extractedResponse);
       returnObj = {
         status: extractedResponse[0].status,
         error_type: extractedResponse[0].error_type,
@@ -371,7 +367,6 @@ export class ProfileRepository {
         employmentData.created_user,
       ];
 
-      console.log(params);
       const [result] = await pool.execute(
         "CALL eb_profile_employment_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         params
@@ -423,14 +418,12 @@ export class ProfileRepository {
           // propertyData.browser_profile
         ];
 
-        console.log('createProfileProperty params:', params);
 
       const [result] = await pool.execute(
         "CALL eb_profile_property_create(?, ?, ?, ?, ?, ?, ?, ?)",
         params
       );
 
-      console.log("Result from stored procedure:", result);
       return (result as any)[0][0];
     } catch (error) {
       console.error("Error in createProfileProperty:", error);
@@ -588,7 +581,6 @@ export class ProfileRepository {
         params
       );
 
-      console.log("result", result);
 
       const photoId = (result as any[])[0][0].photo_id;
       return photoId;
@@ -667,7 +659,6 @@ export class ProfileRepository {
           hobbyData.created_user || null
         ];
         
-        console.log('removeProfileHobby params:', params);
         
         const [result] = await pool.execute('CALL eb_profile_hobby_interest_delete(?, ?)', params);
         return (result as any[])[0][0];
@@ -830,7 +821,6 @@ export class ProfileRepository {
       // Handle case where no preferences exist yet
       const extractedResponse = (result as any[])[0];
       if (extractedResponse && extractedResponse.length > 0) {
-        console.log(extractedResponse[0]);
         return extractedResponse[0];
       } else {
         // Return null if no preferences found (this is normal for new users)
@@ -840,9 +830,6 @@ export class ProfileRepository {
       console.error("Error in getUserPreferences:", error);
       // If the error is about table not existing, return null (no preferences yet)
       if (error.message && error.message.includes("doesn't exist")) {
-        console.log(
-          "No preferences table found, returning null (normal for new users)"
-        );
         return null;
       }
       throw error;
@@ -863,7 +850,6 @@ export class ProfileRepository {
     created_user?: string;
   }): Promise<any> {
     try {
-      console.log("Saving preferences with data:", preferencesData);
 
       // Map frontend fields to stored procedure parameters
       const params = [
@@ -880,7 +866,6 @@ export class ProfileRepository {
         preferencesData.created_user || null,
       ];
 
-      console.log("Calling stored procedure with params:", params);
 
       const [result] = await pool.execute(
         "CALL eb_profile_search_preference_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -891,7 +876,6 @@ export class ProfileRepository {
       const extractedResponse = (result as any[])[0];
       if (extractedResponse && extractedResponse.length > 0) {
         const response = extractedResponse[0];
-        console.log("Preferences saved successfully:", response);
         return response;
       } else {
         // Return success response if no specific data returned
@@ -900,10 +884,6 @@ export class ProfileRepository {
           profile_id: preferencesData.profile_id,
           message: "Preferences saved successfully",
         };
-        console.log(
-          "No data returned from stored procedure, returning:",
-          response
-        );
         return response;
       }
     } catch (error: any) {
@@ -1007,7 +987,6 @@ export class ProfileRepository {
           propertyData.modified_user || null
         ];
 
-        console.log('updateProfileProperty params:', params);
 
         const [result] = await pool.execute(
           'CALL eb_profile_property_update(?, ?, ?, ?, ?, ?, ?, ?, ?)',

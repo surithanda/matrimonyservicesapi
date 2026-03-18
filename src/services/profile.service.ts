@@ -12,8 +12,7 @@ import {
 import { IProfileHobbyInterest } from "../interfaces/hobby.interface";
 import { ProfileRepository } from "../repositories/profile.repository";
 import { validate } from "uuid";
-// Google Drive import replaced by Azure Blob Storage — URLs are now stored directly in DB
-// import { getFileById } from "../utils/drive.util";
+
 
 export class ProfileService {
   private profileRepository: ProfileRepository;
@@ -78,7 +77,6 @@ export class ProfileService {
       if (!result) {
         throw new Error("Failed to track profile view");
       }
-      console.log(result);
       return {
         success: true,
         message: "Profile view tracked successfully",
@@ -151,7 +149,6 @@ export class ProfileService {
         account
       );
 
-      console.log(result);
       return this.validateResponse(
         result,
         isFavorite ? "Added to favorites" : "Removed from favorites"
@@ -228,7 +225,6 @@ export class ProfileService {
   }
 
   validateResponse = (response: any, successMessage: string) => {
-    console.log("Response from repository:", response);
     if (response) {
       if (
         (response?.error_code !== null &&

@@ -72,8 +72,6 @@ export class AuthRepository {
 
   async verifyOTP(email: string, otp: string): Promise<VerifyOTPResult> {
     try {
-      console.log("email", email);
-      console.log("otp", otp);
       // If status checks pass, proceed with OTP verification
       const [results] = await pool.execute("CALL eb_validate_email_otp(?, ?)", [
         email,
@@ -81,7 +79,6 @@ export class AuthRepository {
       ]);
 
       const userDetails = (results as any[])[0][0];
-      console.log("userDetails", userDetails);
 
       const iVerifyOTPResult: VerifyOTPResult = {
         success: userDetails.status,
@@ -128,7 +125,6 @@ export class AuthRepository {
       );
 
       let response = (results[0] as any)[0][0];
-      console.log("response", response);
       return response;
     } catch (error) {
       console.error("Forgot password error:", error);
