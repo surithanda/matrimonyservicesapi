@@ -166,9 +166,9 @@ export class AuthController {
         console.warn('Non-critical: could not fetch payment status for OTP response:', err);
       }
 
-      // Phase 3: token removed from JSON body — delivered exclusively via HttpOnly Set-Cookie header.
-      // The user object includes payment_status + created_date so usePaymentStatus()
-      // works immediately from Redux state without a separate API call.
+      // Token delivered exclusively via HttpOnly Set-Cookie header (SameSite=None;Secure
+      // in production). The user object includes payment_status + created_date so
+      // usePaymentStatus() works immediately from Redux state without extra API calls.
       return res.status(200).json({
         success: true,
         message: 'OTP verified successfully',
