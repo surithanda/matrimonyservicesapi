@@ -57,7 +57,6 @@ export class StripeRepository {
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
           )
         `;
-        console.log("payment data", paymentData);
         const params = [
           paymentData.account_id,
           referenceId,
@@ -122,7 +121,6 @@ export class StripeRepository {
             [session.client_reference_id, "paid", "verify-session"]
           );
           const extractedResponse = (res as any[])[0][0];
-          console.log("verify-session DB update:", extractedResponse);
         } catch (dbErr) {
           // Log but don't throw — we still return the Stripe status to the frontend
           console.error("verify-session: DB update failed:", dbErr);
@@ -213,17 +211,12 @@ export class StripeRepository {
 
       switch (event.type) {
         case "checkout.session.completed": {
-          console.log("Payment Success:", {
-            client_reference_id,
-            status: "Success",
-          });
 
           const [res] = await pool.execute(
             `CALL eb_payment_update_status(?, ?,?)`,
             [client_reference_id, "paid", "webhook"]
           );
 
-          console.log("database result", res);
           const extractedResponse = (res as any[])[0][0];
           response = {
             status: extractedResponse?.status || "success",
@@ -235,17 +228,12 @@ export class StripeRepository {
         }
 
         case "checkout.session.expired": {
-          console.log("Payment Failed/Expired:", {
-            client_reference_id,
-            status: "Failed",
-          });
 
           const [res] = await pool.execute(
             `CALL eb_payment_update_status(?, ?,?)`,
             [client_reference_id, "failed", "webhook"]
           );
 
-          console.log("database result", res);
 
           const extractedResponse = (res as any[])[0][0];
           response = {
@@ -256,17 +244,12 @@ export class StripeRepository {
         }
 
         case "checkout.session.async_payment_succeeded": {
-          console.log("Payment Success:", {
-            client_reference_id,
-            status: "Success",
-          });
 
           const [res] = await pool.execute(
             `CALL eb_payment_update_status(?, ?,?)`,
             [client_reference_id, "paid", "webhook"]
           );
 
-          console.log("database result", res);
           const extractedResponse = (res as any[])[0][0];
           response = {
             status: extractedResponse?.status || "success",
@@ -274,17 +257,12 @@ export class StripeRepository {
           break;
         }
         case "checkout.session.async_payment_failed": {
-          console.log("Payment Failed/Expired:", {
-            client_reference_id,
-            status: "Failed",
-          });
 
           const [res] = await pool.execute(
             `CALL eb_payment_update_status(?, ?,?)`,
             [client_reference_id, "failed", "webhook"]
           );
 
-          console.log("database result", res);
 
           const extractedResponse = (res as any[])[0][0];
           response = {
@@ -294,7 +272,6 @@ export class StripeRepository {
         }
 
         default:
-          console.log("Unhandled webhook event type:", event.type);
           throw new Error(`Unhandled webhook Event: ${event.type}`);
       }
 

@@ -31,10 +31,7 @@ export class AuthService {
   }): Promise<LoginResponse> {
     try {
 
-      console.log("Login credentials:", credentials);
       const hashedPassword = await bcrypt.hash(credentials.password, this.fixedSalt);
-
-      console.log("hashedPassword", hashedPassword);
       const loginresult = await this.authRepository.validateLogin(
         credentials.email,
         hashedPassword,
@@ -86,11 +83,6 @@ export class AuthService {
   async verifyOTP(email: string, otp: string): Promise<VerifyOTPResult> {
     try {
       const results = await this.authRepository.verifyOTP(email, otp);
-
-      console.log("result from auth service", results);
-      console.log("user", results.user);
-      console.log("message", results.message);
-      console.log("success", results.success);
       return results;
 
     } catch (error) {
@@ -169,9 +161,6 @@ export class AuthService {
       // const user = await this.authRepository.findUserByEmail(email);
 
       const result = await this.authRepository.validateEmailAndGenerateOTP(email, clientInfo.ipAddress, clientInfo.userAgent, clientInfo.systemName, clientInfo.location);
-
-      // For security, don't reveal if email exists or not
-      console.log("result--->", result);
       if (!result) {
         return {
           success: result.success,
@@ -228,7 +217,6 @@ export class AuthService {
         result.user.email,
         hashedPassword
       );
-      console.log("updateResult", updateResult);
       // Check if we have a result and it has the expected message
       if (!updateResult || !updateResult.message) {
         return {
