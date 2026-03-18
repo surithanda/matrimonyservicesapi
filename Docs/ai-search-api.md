@@ -38,6 +38,93 @@ User query (English)
   → MySQL → profile results
 ```
 
+**Credit System:**
+- Each AI search consumes 1 credit
+- Credits are persistent (no monthly reset)
+- New accounts get 10 free credits upon membership activation
+- Additional credits purchased via Stripe (50/$10, 250/$25, 1000/$30)
+
+---
+
+## Prerequisites (Setup Steps)
+
+1. **Database Migration**
+   ```bash
+   # Run the AI search credits migration
+   mysql -u username -p database_name < Docs/migrations/003_ai_search_credits.sql
+   ```
+
+2. **Environment Variables**
+   ```bash
+   # AI Provider (choose one or both)
+   OPENAI_API_KEY=sk-...
+   AI_OPENAI_MODEL=gpt-4o-mini
+   
+   GOOGLE_AI_API_KEY=AIza...
+   AI_GEMINI_MODEL=gemini-2.0-flash
+   
+   # Stripe for credit purchases
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_WEBHOOK_SECRET=whsec_...
+   
+   # Shared AI settings
+   AI_MAX_TOKENS=500
+   AI_TEMPERATURE=0.1
+   AI_TIMEOUT_MS=15000
+   ```
+
+3. **Verify Credit Tables**
+   ```sql
+   -- Check that tables exist
+   SHOW TABLES LIKE 'ai_search_%';
+   
+   -- Should show:
+   -- ai_search_credits
+   -- ai_search_credit_log
+   -- ai_search_log
+   ```
+
+---
+
+## Post-Implementation Steps
+
+1. **Test Credit Flow**
+   - Activate membership → verify 10 free credits granted
+   - Purchase credit pack → verify credits added
+   - Perform AI searches → verify credits deducted
+   - Check credit exhaustion behavior
+
+2. **Monitor Logs**
+   ```bash
+   # Check credit deductions
+   grep "creditChecker" logs/app.log
+   
+   # Check Stripe webhooks
+   grep "handleCreditGrants" logs/app.log
+   ```
+
+3. **Database Maintenance**
+   ```sql
+   -- Monitor credit usage
+   SELECT 
+     account_id,
+     credit_balance,
+     updated_at
+   FROM ai_search_credits
+   ORDER BY updated_at DESC;
+   
+   -- Check credit transactions
+   SELECT 
+     account_id,
+     credits_change,
+     transaction_type,
+     description,
+     created_at
+   FROM ai_search_credit_log
+   ORDER BY created_at DESC
+   LIMIT 10;
+   ```
+
 ---
 
 ## Architecture

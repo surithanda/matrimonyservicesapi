@@ -8,9 +8,6 @@ export const createCheckoutSession = async (
   res: Response
 ) => {
   try {
-    console.log("Request body:", req.body);
-    console.log("Request user:", req.user);
-    
     if (!req.body.amount || !req.body.currency) {
       return res.status(400).json({
         success: false,
@@ -25,13 +22,10 @@ export const createCheckoutSession = async (
       created_user: req.user?.email || "Unknown User",
     };
 
-    console.log("Prepared data:", data);
-
     let stripeService = new StripeService();
 
     let sessiondata = await stripeService.createSession(data);
 
-    console.log("sessiondata", sessiondata);
     if (!sessiondata) {
       return res.status(400).json({
         success: false,
@@ -40,7 +34,7 @@ export const createCheckoutSession = async (
     }
     return res.status(201).json(sessiondata);
   } catch (error: any) {
-    console.error("Full error:", error);
+    console.error("Stripe session creation error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to create checkout session",

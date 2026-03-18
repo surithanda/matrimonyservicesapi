@@ -2,7 +2,8 @@
 
 > Integration plan for the AI Search page in the **matamatrimony** Next.js frontend.  
 > **API backend:** matrimonyservicesapi  
-> **Prepared:** March 2026
+> **Prepared:** March 2026  
+> **Status:** ✅ COMPLETED - Credit system fully implemented
 
 ---
 
@@ -18,6 +19,105 @@
 8. [UX States & Transitions](#8-ux-states--transitions)
 9. [Implementation Plan](#9-implementation-plan)
 10. [File Inventory](#10-file-inventory)
+11. [Prerequisites (Setup)](#11-prerequisites-setup)
+12. [Post-Implementation Checklist](#12-post-implementation-checklist)
+
+---
+
+## 11. Prerequisites (Setup)
+
+### Required Environment Variables
+```bash
+# .env.local (frontend)
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+
+# .env (backend)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+### Dependencies Installation
+```bash
+# Frontend dependencies
+npm install @reduxjs/toolkit react-redux lucide-react react-toastify
+
+# Backend dependencies (already installed)
+npm install stripe @types/stripe
+```
+
+### Database Setup
+```bash
+# Run the migration
+mysql -u username -p database_name < Docs/migrations/003_ai_search_credits.sql
+```
+
+### Verify Setup
+1. Check API health: `GET http://localhost:8080/api/ai-search`
+2. Verify Stripe keys are configured
+3. Test authentication flow
+
+---
+
+## 12. Post-Implementation Checklist
+
+### ✅ Completed Features
+- [x] AI Search page with natural language input
+- [x] Credit system implementation (persistent, stackable)
+- [x] Stripe checkout for credit purchases
+- [x] Credit exhaustion handling (429 response)
+- [x] Success/failure modals without logout
+- [x] Redux state management for credits
+- [x] Real-time credit balance updates
+
+### 🔍 Testing Checklist
+- [ ] **Credit Purchase Flow**
+  - [ ] Membership activation grants 10 free credits
+  - [ ] Credit pack purchases add credits correctly
+  - [ ] Stripe checkout completes without errors
+  - [ ] Webhook grants credits after payment
+
+- [ ] **Credit Usage**
+  - [ ] Each AI search deducts 1 credit
+  - [ ] Credit balance updates in real-time
+  - [ ] Credits persist across sessions
+  - [ ] 429 error when credits exhausted
+
+- [ ] **UI/UX**
+  - [ ] Credit badge shows correct balance
+  - [ ] Interpretation card displays AI understanding
+  - [ ] Results grid renders profiles correctly
+  - [ ] Loading states work properly
+
+### 📊 Monitoring Tasks
+```bash
+# Monitor credit transactions
+SELECT 
+  account_id,
+  credits_change,
+  transaction_type,
+  description,
+  created_at
+FROM ai_search_credit_log
+ORDER BY created_at DESC
+LIMIT 20;
+
+# Check Stripe payment logs
+grep "handleCreditGrants" /var/log/app.log;
+
+# Monitor API usage
+grep "POST /api/ai-search" /var/log/nginx/access.log;
+```
+
+### 🚀 Production Readiness
+- [ ] Update Stripe keys to production
+- [ ] Set up webhook endpoint in Stripe dashboard
+- [ ] Configure monitoring alerts for:
+  - Credit balance reaching zero
+  - Stripe webhook failures
+  - AI provider rate limits
+- [ ] Document credit purchase process for users
+- [ ] Add credit usage analytics dashboard
 
 ---
 

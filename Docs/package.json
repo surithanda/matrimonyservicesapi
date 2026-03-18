@@ -1,0 +1,22 @@
+{
+  "name": "mata-matrimony-docs",
+  "version": "1.0.0",
+  "description": "Documentation for MATA Matrimony Platform",
+  "scripts": {
+    "convert-pdf": "node convert-to-pdf.js",
+    "convert-single": "node -e \"require('./convert-to-pdf.js').convertFile(process.argv[2] || 'ai-search-api.md')\"",
+    "list-files": "echo 'Available markdown files:' && ls -la *.md"
+  },
+  "dependencies": {
+    "node-to-pdf": "^4.0.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "documentation",
+    "pdf",
+    "markdown",
+    "matrimony"
+  ],
+  "author": "MATA Matrimony Team",
+  "license": "MIT"
+}

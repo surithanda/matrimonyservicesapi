@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Search API - Developer Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #2c3e50;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        h1 {
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 8px;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #3498db;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .toc li {
+            margin: 5px 0;
+        }
+        .toc a {
+            text-decoration: none;
+            color: #3498db;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        .status-completed {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 15px;
+                font-size: 12px;
+            }
+            h1 { page-break-before: always; }
+            h2, h3 { page-break-after: avoid; }
+            pre, blockquote { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Search API — Developer Guide</h1>
+    <blockquote>
+        <p>Natural-language profile search powered by OpenAI / Google Gemini.</p>
+    </blockquote>
+
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#overview">1. Overview</a></li>
+            <li><a href="#prerequisites">2. Prerequisites (Setup Steps)</a></li>
+            <li><a href="#post-implementation">3. Post-Implementation Steps</a></li>
+            <li><a href="#architecture">4. Architecture</a></li>
+            <li><a href="#api-endpoints">5. API Endpoints</a></li>
+            <li><a href="#authentication">6. Authentication</a></li>
+            <li><a href="#request--response">7. Request / Response</a></li>
+            <li><a href="#error-codes">8. Error Codes</a></li>
+            <li><a href="#cost--premium-pricing">9. Cost & Premium Pricing</a></li>
+            <li><a href="#ai-search-credit-system">10. AI Search Credit System</a></li>
+            <li><a href="#credit-purchase-flow">11. Credit Purchase Flow (Stripe)</a></li>
+            <li><a href="#environment-variables">12. Environment Variables</a></li>
+            <li><a href="#database-tables">13. Database Tables</a></li>
+            <li><a href="#unit-tests">14. Unit Tests</a></li>
+        </ul>
+    </div>
+
+    <h2 id="overview">Overview</h2>
+    <p>The AI Search feature converts a plain-English query into structured filters, resolves text values to database IDs via lookup tables, builds a parameterized SQL query, executes it, and returns matching profiles — all in a single API call.</p>
+    
+    <p><strong>Pipeline:</strong></p>
+    <pre><code>User query (English)
+  → AI Provider (OpenAI / Gemini) → JSON intent
+  → IntentValidator → sanitized filters
+  → LookupResolver → numeric IDs
+  → QueryBuilder → parameterized SQL
+  → MySQL → profile results</code></pre>
+
+    <p><strong>Credit System:</strong></p>
+    <ul>
+        <li>Each AI search consumes 1 credit</li>
+        <li>Credits are persistent (no monthly reset)</li>
+        <li>New accounts get 10 free credits upon membership activation</li>
+        <li>Additional credits purchased via Stripe (50/$10, 250/$25, 1000/$30)</li>
+    </ul>
+
+    <h2 id="prerequisites">Prerequisites (Setup Steps)</h2>
+    
+    <h3>1. Database Migration</h3>
+    <pre><code># Run the AI search credits migration
+mysql -u username -p database_name &lt; Docs/migrations/003_ai_search_credits.sql</code></pre>
+
+    <h3>2. Environment Variables</h3>
+    <pre><code># AI Provider (choose one or both)
+OPENAI_API_KEY=sk-...
+AI_OPENAI_MODEL=gpt-4o-mini
+
+GOOGLE_AI_API_KEY=AIza...
+AI_GEMINI_MODEL=gemini-2.0-flash
+
+# Stripe for credit purchases
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Shared AI settings
+AI_MAX_TOKENS=500
+AI_TEMPERATURE=0.1
+AI_TIMEOUT_MS=15000</code></pre>
+
+    <h3>3. Verify Credit Tables</h3>
+    <pre><code>-- Check that tables exist
+SHOW TABLES LIKE 'ai_search_%';
+
+-- Should show:
+-- ai_search_credits
+-- ai_search_credit_log
+-- ai_search_log</code></pre>
+
+    <h2 id="post-implementation">Post-Implementation Steps</h2>
+    
+    <h3>1. Test Credit Flow</h3>
+    <ul>
+        <li>Activate membership → verify 10 free credits granted</li>
+        <li>Purchase credit pack → verify credits added</li>
+        <li>Perform AI searches → verify credits deducted</li>
+        <li>Check credit exhaustion behavior</li>
+    </ul>
+
+    <h3>2. Monitor Logs</h3>
+    <pre><code># Check credit deductions
+grep "creditChecker" logs/app.log
+
+# Check Stripe webhooks
+grep "handleCreditGrants" logs/app.log</code></pre>
+
+    <h3>3. Database Maintenance</h3>
+    <pre><code>-- Monitor credit usage
+SELECT 
+  account_id,
+  credit_balance,
+  updated_at
+FROM ai_search_credits
+ORDER BY updated_at DESC;
+
+-- Check credit transactions
+SELECT 
+  account_id,
+  credits_change,
+  transaction_type,
+  description,
+  created_at
+FROM ai_search_credit_log
+ORDER BY created_at DESC
+LIMIT 10;</code></pre>
+
+    <h2 id="architecture">Architecture</h2>
+    <pre><code>src/
+├── interfaces/
+│   ├── aiSearch.interface.ts        # TypeScript contracts (incl. ICreditStatus)
+│   └── stripe.interface.ts          # IStripeBody (purchase_type, credits)
+├── services/aiSearch/
+│   ├── aiSearchService.ts           # Main service orchestrating the flow
+│   ├── intentValidator.ts           # Validate and sanitize AI response
+│   ├── lookupResolver.ts            # Convert text to database IDs
+│   ├── queryBuilder.ts              # Build parameterized SQL
+│   └── creditChecker.ts             # Credit balance management
+├── repositories/
+│   ├── aiSearch.repository.ts       # Database queries
+│   └── stripe.repository.ts         # Stripe integration + credit grants
+├── controllers/
+│   ├── aiSearch.controller.ts       # API endpoints
+│   └── stripe.controller.ts         # Payment endpoints
+└── routes/
+    ├── aiSearch.routes.ts           # Route definitions + Swagger
+    └── stripe.routes.ts             # Payment routes</code></pre>
+
+    <h2 id="api-endpoints">API Endpoints</h2>
+    
+    <h3>POST /api/ai-search</h3>
+    <p>Execute an AI-powered natural language search.</p>
+    
+    <p><strong>Request Headers:</strong></p>
+    <table>
+        <tr><th>Header</th><th>Value</th></tr>
+        <tr><td>Content-Type</td><td>application/json</td></tr>
+        <tr><td>x-api-key</td><td>Your API key</td></tr>
+        <tr><td>Cookie</td><td>jwt=... (authenticated users)</td></tr>
+    </table>
+
+    <p><strong>Request Body:</strong></p>
+    <pre><code>{
+  "query": "software engineer in Bangalore who likes reading",
+  "limit": 10
+}</code></pre>
+
+    <p><strong>Response (200 OK):</strong></p>
+    <pre><code>{
+  "success": true,
+  "data": {
+    "profiles": [...],
+    "interpretation": "Software engineers in Bangalore with reading as hobby",
+    "filters_applied": {
+      "profession": "Software Engineer",
+      "city": "Bangalore",
+      "hobbies": ["Reading"]
+    },
+    "resolved_ids": {
+      "profession_id": 123,
+      "city_id": 456,
+      "hobby_ids": [78, 89]
+    },
+    "confidence": 0.85,
+    "result_count": 9,
+    "credits": {
+      "allowed": 50,
+      "plan_name": "Value Pack",
+      "credit_balance": 49,
+      "remaining_searches": 49
+    }
+  }
+}</code></pre>
+
+    <h3>POST /api/stripe/create-session</h3>
+    <p>Create a Stripe checkout session for credit pack purchases.</p>
+    
+    <p><strong>Request Body:</strong></p>
+    <pre><code>{
+  "amount": 10,
+  "currency": "USD",
+  "plan": "Starter Pack",
+  "purchase_type": "ai_credits",
+  "credits": 50,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "address": "123 Main St",
+  "city": "Bangalore",
+  "country": "India",
+  "zip_code": "560001"
+}</code></pre>
+
+    <h2 id="authentication">Authentication</h2>
+    <p>Two authentication methods are supported:</p>
+    
+    <h3>1. API Key (External Services)</h3>
+    <pre><code>curl -X POST http://localhost:8080/api/ai-search \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{"query": "software engineer in bangalore"}'</code></pre>
+
+    <h3>2. JWT Cookie (Authenticated Users)</h3>
+    <pre><code>curl -X POST http://localhost:8080/api/ai-search \
+  -H "Content-Type: application/json" \
+  -H "Cookie: jwt=your-jwt-token" \
+  -d '{"query": "software engineer in bangalore"}'</code></pre>
+
+    <h2 id="error-codes">Error Codes</h2>
+    <table>
+        <tr><th>Status</th><th>Code</th><th>Description</th></tr>
+        <tr><td>400</td><td>INVALID_QUERY</td><td>Query is empty or too short</td></tr>
+        <tr><td>400</td><td>INVALID_LIMIT</td><td>Limit must be between 1 and 100</td></tr>
+        <tr><td>401</td><td>UNAUTHORIZED</td><td>Missing or invalid API key/JWT</td></tr>
+        <tr><td>429</td><td>INSUFFICIENT_CREDITS</td><td>No credits remaining</td></tr>
+        <tr><td>500</td><td>AI_PROVIDER_ERROR</td><td>OpenAI/Gemini API error</td></tr>
+        <tr><td>500</td><td>INTERNAL_ERROR</td><td>Database or server error</td></tr>
+    </table>
+
+    <h2 id="cost--premium-pricing">Cost & Premium Pricing</h2>
+    
+    <h3>Credit-Based Pricing</h3>
+    <table>
+        <tr><th>Credit Pack</th><th>Price</th><th>Cost per Search</th></tr>
+        <tr><td>50 credits</td><td>$10</td><td>$0.20</td></tr>
+        <tr><td>250 credits</td><td>$25</td><td>$0.10</td></tr>
+        <tr><td>1000 credits</td><td>$30</td><td>$0.03</td></tr>
+    </table>
+
+    <h3>Membership Benefits</h3>
+    <ul>
+        <li>Free membership: 5 AI searches per month</li>
+        <li>Premium membership: 50 AI searches per month</li>
+        <li>Additional credits: Purchase anytime, never expire</li>
+    </ul>
+
+    <h2 id="ai-search-credit-system">AI Search Credit System</h2>
+    
+    <h3>Credit Features</h3>
+    <ul>
+        <li><strong>Persistent:</strong> Credits never expire</li>
+        <li><strong>Stackable:</strong> Multiple purchases add up</li>
+        <li><strong>Transparent:</strong> Real-time balance tracking</li>
+        <li><strong>Fair Usage:</strong> 1 credit per search</li>
+    </ul>
+
+    <h3>Credit Management</h3>
+    <ul>
+        <li><strong>Grant Credits:</strong> Membership activation, purchases, refunds</li>
+        <li><strong>Deduct Credits:</strong> AI searches, failed searches (retry protection)</li>
+        <li><strong>Track Usage:</strong> Complete audit trail in credit_log table</li>
+    </ul>
+
+    <h2 id="credit-purchase-flow">Credit Purchase Flow (Stripe)</h2>
+    
+    <h3>1. Initiate Purchase</h3>
+    <pre><code>POST /api/stripe/create-session
+→ Creates Stripe checkout session
+→ Records payment intent in database
+→ Returns checkout URL</code></pre>
+
+    <h3>2. Complete Payment</h3>
+    <pre><code>User pays on Stripe
+→ Stripe webhook fires
+→ Grants credits to account
+→ Updates payment status</code></pre>
+
+    <h3>3. Verification (Fallback)</h3>
+    <pre><code>GET /api/stripe/verify-session?session_id=...
+→ Verifies payment if webhook missed
+→ Ensures credits are granted</code></pre>
+
+    <h2 id="environment-variables">Environment Variables</h2>
+    <pre><code># AI Provider Configuration
+OPENAI_API_KEY=sk-...
+AI_OPENAI_MODEL=gpt-4o-mini
+GOOGLE_AI_API_KEY=AIza...
+AI_GEMINI_MODEL=gemini-2.0-flash
+
+# AI Behavior
+AI_MAX_TOKENS=500
+AI_TEMPERATURE=0.1
+AI_TIMEOUT_MS=15000
+
+# Stripe Integration
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...</code></pre>
+
+    <h2 id="database-tables">Database Tables</h2>
+    
+    <h3>ai_search_credits</h3>
+    <table>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+        <tr><td>account_id</td><td>BIGINT</td><td>Primary key</td></tr>
+        <tr><td>credit_balance</td><td>INT</td><td>Current balance</td></tr>
+        <tr><td>updated_at</td><td>TIMESTAMP</td><td>Last update</td></tr>
+    </table>
+
+    <h3>ai_search_credit_log</h3>
+    <table>
+        <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+        <tr><td>log_id</td><td>BIGINT</td><td>Primary key</td></tr>
+        <tr><td>account_id</td><td>BIGINT</td><td>User account</td></tr>
+        <tr><td>credits_change</td><td>INT</td><td>+/- credits</td></tr>
+        <tr><td>transaction_type</td><td>ENUM</td><td>Type of transaction</td></tr>
+        <tr><td>description</td><td>VARCHAR</td><td>Transaction details</td></tr>
+        <tr><td>created_at</td><td>TIMESTAMP</td><td>When occurred</td></tr>
+    </table>
+
+    <h2 id="unit-tests">Unit Tests</h2>
+    
+    <h3>Test Coverage</h3>
+    <ul>
+        <li>AI Search Service: 15 tests</li>
+        <li>Credit Checker: 10 tests</li>
+        <li>Intent Validator: 8 tests</li>
+        <li>Lookup Resolver: 12 tests</li>
+        <li>Query Builder: 6 tests</li>
+        <li>Stripe Controller: 5 tests</li>
+    </ul>
+
+    <h3>Running Tests</h3>
+    <pre><code>npm test
+npm run test:ai-search
+npm run test:stripe</code></pre>
+
+    <div class="note">
+        <p><strong>Status:</strong> <span class="status-completed">✅ COMPLETED</span> - AI Search credit system fully implemented and tested</p>
+    </div>
+</body>
+</html>
