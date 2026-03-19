@@ -12,7 +12,10 @@ export interface IStripeBody {
   currency: string;
   email?: string;
   account_id?: number;
-  created_user:string
+  created_user: string;
+  // AI Search credit pack metadata
+  purchase_type?: 'membership' | 'ai_credits';
+  credits?: number;  // number of credits in the pack (50, 250, 1000)
 }
 
 export interface IStripeResponse {

@@ -4,14 +4,20 @@ import {
 } from "../interfaces/stripe.interface";
 import Stripe from "stripe";
 import pool from "../config/database";
+import { CreditChecker } from "../services/aiSearch/creditChecker";
+import logger from "../config/logger";
+
+const creditChecker = new CreditChecker();
 let stripeKey = process.env.STRIPE_SECRET_KEY as string;
 let webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
 
 export class StripeRepository {
   private stripe;
+
   constructor() {
     this.stripe = new Stripe(stripeKey);
   }
+
   async createCheckoutSession(paymentData: IStripeBody) {
     try {
       let data = paymentData;
@@ -36,6 +42,11 @@ export class StripeRepository {
         ],
         mode: "payment",
         ...(data.email ? { customer_email: data.email } : {}),
+        metadata: {
+          purchase_type: data.purchase_type || 'membership',
+          credits: String(data.credits || 0),
+          account_id: String(data.account_id || ''),
+        },
         success_url: `${data.front_end_success_uri}`,
         cancel_url: `${data.front_end_failed_uri}`,
       });
@@ -114,6 +125,9 @@ export class StripeRepository {
           // Log but don't throw — we still return the Stripe status to the frontend
           console.error("verify-session: DB update failed:", dbErr);
         }
+
+        // Handle credit grants based on purchase type
+        await this.handleCreditGrants(session);
       }
 
       return {
@@ -125,6 +139,42 @@ export class StripeRepository {
     } catch (error) {
       console.error("Error retrieving Stripe session:", error);
       throw error;
+    }
+  }
+
+  /**
+   * After a successful payment, grant credits based on purchase_type metadata.
+   * - membership → grant 10 free credits (idempotent)
+   * - ai_credits → add purchased credits to balance
+   */
+  private async handleCreditGrants(session: any): Promise<void> {
+    try {
+      const metadata = session.metadata || {};
+      const purchaseType = metadata.purchase_type || 'membership';
+      const accountId = parseInt(metadata.account_id, 10);
+
+      if (!accountId || isNaN(accountId)) {
+        logger.warn('[StripeRepo] No valid account_id in session metadata', { sessionId: session.id });
+        return;
+      }
+
+      if (purchaseType === 'membership') {
+        // Grant 10 free AI search credits on membership activation
+        const result = await creditChecker.grantFreeCredits(accountId);
+        logger.info('[StripeRepo] Membership credit grant', { accountId, result });
+      } else if (purchaseType === 'ai_credits') {
+        const credits = parseInt(metadata.credits, 10);
+        if (!credits || isNaN(credits) || credits <= 0) {
+          logger.warn('[StripeRepo] Invalid credits in metadata', { sessionId: session.id, metadata });
+          return;
+        }
+        const description = `${credits} AI Search Credits`;
+        const result = await creditChecker.addCredits(accountId, credits, description, session.id);
+        logger.info('[StripeRepo] AI credits purchased', { accountId, credits, result });
+      }
+    } catch (error: any) {
+      // Non-blocking — log but don't fail the payment flow
+      logger.error('[StripeRepo] Credit grant failed', { error: error.message, sessionId: session.id });
     }
   }
 
@@ -171,6 +221,9 @@ export class StripeRepository {
           response = {
             status: extractedResponse?.status || "success",
           };
+
+          // Handle credit grants based on purchase type
+          await this.handleCreditGrants(event.data.object);
           break;
         }
 
