@@ -22,9 +22,8 @@ interface AuthenticatedRequest extends Request {
 
 export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
 
-  // HttpOnly cookie-only auth.
-  // The 'matrimony-token' cookie is set by the backend on OTP verification with
-  // SameSite=None; Secure in production, allowing cross-domain cookie delivery.
+  // Phase 3: Cookie-only auth. Bearer header fallback removed.
+  // All clients use HttpOnly cookie set by backend on login.
   const token = req.cookies?.['matrimony-token'];
 
   if (!token) {
@@ -33,6 +32,7 @@ export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: 
       message: 'Authentication required: no token provided'
     });
   }
+
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as {
@@ -47,7 +47,7 @@ export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: 
     req.user = {
       account_code: decoded.account_code,
       account_id: decoded.account_id,
-      partner_id: decoded.partner_id || 1,
+      partner_id: decoded.partner_id || 1, // default to 1 if missing for backwards compatibility
       email: decoded.email,
       iat: decoded.iat,
       exp: decoded.exp
@@ -61,4 +61,3 @@ export const authenticateJWT = (req: AuthenticatedRequest, res: Response, next: 
     });
   }
 };
-
