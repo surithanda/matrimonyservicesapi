@@ -92,3 +92,25 @@ export const handleWebhookEvent = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getPaymentHistory = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  try {
+    const accountId = req.user?.account_id;
+    if (!accountId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    const stripeService = new StripeService();
+    const result = await stripeService.getPaymentHistory(accountId);
+    return res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      data: [],
+      message: "Failed to retrieve payment history",
+      error: error.message,
+    });
+  }
+};

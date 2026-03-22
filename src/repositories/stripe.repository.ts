@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import {
   IStripeBody,
+  IPaymentHistoryItem,
 } from "../interfaces/stripe.interface";
 import Stripe from "stripe";
 import pool from "../config/database";
@@ -175,6 +176,22 @@ export class StripeRepository {
     } catch (error: any) {
       // Non-blocking — log but don't fail the payment flow
       logger.error('[StripeRepo] Credit grant failed', { error: error.message, sessionId: session.id });
+    }
+  }
+
+  async getPaymentHistory(accountId: number): Promise<IPaymentHistoryItem[]> {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT id, name, amount, currency, payment_status, created_at
+         FROM stripe_payment_intents
+         WHERE account_id = ?
+         ORDER BY created_at DESC`,
+        [accountId]
+      );
+      return rows as IPaymentHistoryItem[];
+    } catch (error) {
+      console.error("Error fetching payment history:", error);
+      throw error;
     }
   }
 

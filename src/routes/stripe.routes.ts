@@ -5,6 +5,7 @@ import {
   createCheckoutSession,
   verifySession,
   handleWebhookEvent,
+  getPaymentHistory,
 } from "../controllers/stripe.controller";
 
 const router = Router();
@@ -24,6 +25,15 @@ router.get(
   validateApiKey,
   authenticateJWT,
   verifySession
+);
+
+// Get payment history for the authenticated account
+// GET /api/stripe/payment-history
+router.get(
+  "/payment-history",
+  validateApiKey,
+  authenticateJWT,
+  getPaymentHistory
 );
 
 export default router;

@@ -948,21 +948,21 @@ export class ProfileRepository {
   }
 
   async deleteFavorite({
-    profileId,
+    favoriteId,
     account,
   }: {
-    profileId: number;
+    favoriteId: number;
     account: number;
   }): Promise<any> {
     try {
       const [result] = await pool.execute(
         "CALL eb_profile_favorites_delete(?, ?)",
-        [profileId, account]
+        [favoriteId, account]  // p_id = profile_favorite_id (join table PK), p_account_id = viewer account
       );
 
       return {
         success: true,
-        profile_id: profileId,
+        favorite_id: favoriteId,
         message: "Removed from favorites",
       };
     } catch (error: any) {

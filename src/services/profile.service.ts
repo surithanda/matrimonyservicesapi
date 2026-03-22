@@ -164,31 +164,31 @@ export class ProfileService {
   }
 
   async deleteFavorite({
-    profileId,
+    favoriteId,
     account,
   }: {
-    profileId: number;
+    favoriteId: number;
     account: number;
   }): Promise<IProfileResponse> {
     try {
-      if (!profileId) {
+      if (!favoriteId) {
         return {
           success: false,
           message: "Missing required parameters",
-          error: "Profile ID is required",
+          error: "Favorite ID (profile_favorite_id) is required",
         };
       }
 
       const result = await this.profileRepository.deleteFavorite({
-        profileId,
+        favoriteId,
         account,
       });
       return {
         success: true,
         message: result.message || "Removed from favorites",
         data: {
-          profile_id: profileId,
-        } as any, // Temporary type assertion to fix the type error
+          favorite_id: favoriteId,
+        } as any,
       };
     } catch (error: any) {
       console.error("Error in deleteFavorite:", error);
