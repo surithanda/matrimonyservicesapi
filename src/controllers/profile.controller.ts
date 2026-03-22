@@ -1377,18 +1377,19 @@ export const deleteFavorite = async (
 ) => {
   try {
     const profileService = new ProfileService();
-    const { profileId, favoriteProfileId } = req.body;
-    console.log(profileId, favoriteProfileId);
-    if (!profileId) {
+    // favoriteProfileId = the profile_favorite_id (join table PK) — required by the SP
+    const { favoriteProfileId } = req.body;
+    console.log("deleteFavorite called with favoriteProfileId:", favoriteProfileId);
+    if (!favoriteProfileId) {
       return res.status(400).json({
         success: false,
-        message: "Profile ID is required",
-        error: "Profile ID is required to delete favorite",
+        message: "favoriteProfileId is required",
+        error: "favoriteProfileId (profile_favorite_id) is required to delete favorite",
       });
     }
 
     const result = await profileService.deleteFavorite({
-      profileId: Number(profileId),
+      favoriteId: Number(favoriteProfileId),
       account: Number(req.user?.account_id),
     });
 

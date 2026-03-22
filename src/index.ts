@@ -12,6 +12,7 @@ import metaDataRoutes from "./routes/metaData.routes";
 import logger from "./config/logger";
 import stripeRoutes from "./routes/stripe.routes";
 import azurePhotosRoutes from "./routes/azurePhotos.routes";
+import aiSearchRoutes from "./routes/aiSearch.routes";
 import { handleWebhookEvent } from "./controllers/stripe.controller";
 import { testAzureConnection } from "./utils/azure.util";
 
@@ -93,6 +94,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/profiles/photos", azurePhotosRoutes);
 app.use("/api/metadata", metaDataRoutes);
 app.use("/api/stripe", stripeRoutes);
+app.use("/api/ai-search", aiSearchRoutes);
 
 // S-7: Only expose Swagger docs in non-production environments.
 // In production, /api-docs would reveal all endpoints, schemas, and auth headers.

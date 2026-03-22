@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { IStripeBody, IStripeResponse } from "../interfaces/stripe.interface";
+import { IStripeBody, IStripeResponse, IPaymentHistoryItem } from "../interfaces/stripe.interface";
 import { StripeRepository } from "../repositories/stripe.repository";
 
 export class StripeService {
@@ -68,6 +68,27 @@ export class StripeService {
       }
     } catch (error) {
       throw error;
+    }
+  }
+
+  async getPaymentHistory(accountId: number): Promise<{
+    success: boolean;
+    data: IPaymentHistoryItem[];
+    message: string;
+  }> {
+    try {
+      const history = await this.stripeRepository.getPaymentHistory(accountId);
+      return {
+        success: true,
+        data: history,
+        message: "Payment history retrieved successfully",
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        data: [],
+        message: error.message || "Failed to retrieve payment history",
+      };
     }
   }
 }
