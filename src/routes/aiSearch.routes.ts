@@ -133,9 +133,9 @@ const aiSearchRateLimiter = rateLimit({
  */
 router.post(
   '/',
+  aiSearchRateLimiter,
   validateApiKey,
   authenticateJWT,
-  aiSearchRateLimiter,
   aiSearch
 );
 
@@ -168,6 +168,7 @@ router.get(
   '/history',
   validateApiKey,
   authenticateJWT,
+  aiSearchRateLimiter,
   aiSearchHistory
 );
 
@@ -193,6 +194,7 @@ router.post(
   '/refresh-cache',
   validateApiKey,
   authenticateJWT,
+  aiSearchRateLimiter,
   aiSearchRefreshCache
 );
 
@@ -214,6 +216,7 @@ router.post(
 router.get(
   '/provider-info',
   validateApiKey,
+  aiSearchRateLimiter,
   authenticateJWT,
   aiSearchProviderInfo
 );
