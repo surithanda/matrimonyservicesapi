@@ -4,6 +4,11 @@ import pool from '../config/database';
 
 const DEFAULT_ORIGINS: (string | RegExp)[] = [
   'http://localhost:3000',
+  // Production frontend — always allowed regardless of DB state or cold start timing
+  'https://matrimony.mata-us.org',
+  // Vercel deployment URLs for this API project (used when frontend env is set to Vercel URL)
+  // 'https://matrimonyservicesapi-superreaders-projects.vercel.app',
+  // 'https://matrimonyservicesapi.vercel.app',
 ];
 
 let allowedOrigins: (string | RegExp)[] = [...DEFAULT_ORIGINS];
