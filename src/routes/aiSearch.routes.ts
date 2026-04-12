@@ -12,6 +12,10 @@ const aiSearchRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req: any) => {
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    return ip.replace(/:\d+[^:]*$/, '');
+  },
   message: {
     success: false,
     message: 'Too many AI search requests. Please wait a minute before trying again.',
@@ -133,9 +137,9 @@ const aiSearchRateLimiter = rateLimit({
  */
 router.post(
   '/',
-  aiSearchRateLimiter,
   validateApiKey,
   authenticateJWT,
+  aiSearchRateLimiter,
   aiSearch
 );
 
@@ -216,8 +220,8 @@ router.post(
 router.get(
   '/provider-info',
   validateApiKey,
-  aiSearchRateLimiter,
   authenticateJWT,
+  aiSearchRateLimiter,
   aiSearchProviderInfo
 );
 
